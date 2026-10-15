@@ -409,5 +409,18 @@ export const zhHant = {
   "For condos, everyone joins as a co-owner. The lender option is for houses and land.": "公寓僅以共有人身分加入，貸款選項用於房屋與土地。",
   "Enter a fixed yearly interest rate.": "請輸入固定年利率。",
   "Check this deed": "檢查此產權文件",
-  "Not readable": "無法辨識"
+  "Not readable": "無法辨識",
+  "per month": "每月",
+  "Other website listing": "其他網站的刊登",
+  "Open source ↗": "開啟來源 ↗",
+  "{site}, listed {date}": "{site}，刊登於 {date}",
+  "Not checked by U-Estate": "U-Estate 未查核",
+  "U-Estate listing": "U-Estate 刊登",
+  "Shown at the district centre ({district})": "標示於行政區中心（{district}）",
+  "View listing": "查看刊登",
+  "Market map": "市場地圖",
+  "U-Estate listings": "U-Estate 刊登物件",
+  "Other websites (not checked by U-Estate)": "其他網站（U-Estate 未查核）",
+  "The map could not load. Every listing is in the tables below.": "地圖無法載入。所有刊登都在下方表格中。",
+  "Loading map…": "地圖載入中…"
 } satisfies Dictionary;

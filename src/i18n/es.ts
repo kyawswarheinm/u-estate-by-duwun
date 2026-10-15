@@ -409,5 +409,18 @@ export const es = {
   "For condos, everyone joins as a co-owner. The lender option is for houses and land.": "En condominios todos son copropietarios. Los préstamos son para casas y terrenos.",
   "Enter a fixed yearly interest rate.": "Introduce un interés anual fijo.",
   "Check this deed": "Revisar este título",
-  "Not readable": "No legible"
+  "Not readable": "No legible",
+  "per month": "al mes",
+  "Other website listing": "Anuncio de otro sitio web",
+  "Open source ↗": "Abrir la fuente ↗",
+  "{site}, listed {date}": "{site}, publicado el {date}",
+  "Not checked by U-Estate": "No verificado por U-Estate",
+  "U-Estate listing": "Anuncio de U-Estate",
+  "Shown at the district centre ({district})": "Mostrado en el centro del distrito ({district})",
+  "View listing": "Ver anuncio",
+  "Market map": "Mapa del mercado",
+  "U-Estate listings": "Anuncios de U-Estate",
+  "Other websites (not checked by U-Estate)": "Otros sitios web (no verificados por U-Estate)",
+  "The map could not load. Every listing is in the tables below.": "No se pudo cargar el mapa. Todos los anuncios están en las tablas de abajo.",
+  "Loading map…": "Cargando el mapa…"
 } satisfies Dictionary;

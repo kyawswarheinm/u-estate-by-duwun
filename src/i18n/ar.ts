@@ -409,5 +409,18 @@ export const ar = {
   "For condos, everyone joins as a co-owner. The lender option is for houses and land.": "للشقق، ينضم الجميع كمالكين. الإقراض للمنازل والأراضي.",
   "Enter a fixed yearly interest rate.": "أدخل معدل فائدة سنوي ثابت.",
   "Check this deed": "افحص هذا السند",
-  "Not readable": "غير مقروء"
+  "Not readable": "غير مقروء",
+  "per month": "شهريًا",
+  "Other website listing": "إعلان من موقع آخر",
+  "Open source ↗": "فتح المصدر ↗",
+  "{site}, listed {date}": "{site}، نُشر في {date}",
+  "Not checked by U-Estate": "لم تتحقق منه U-Estate",
+  "U-Estate listing": "إعلان على U-Estate",
+  "Shown at the district centre ({district})": "معروض في وسط الحي ({district})",
+  "View listing": "عرض الإعلان",
+  "Market map": "خريطة السوق",
+  "U-Estate listings": "إعلانات U-Estate",
+  "Other websites (not checked by U-Estate)": "مواقع أخرى (لم تتحقق منها U-Estate)",
+  "The map could not load. Every listing is in the tables below.": "تعذّر تحميل الخريطة. جميع الإعلانات في الجداول أدناه.",
+  "Loading map…": "جارٍ تحميل الخريطة…"
 } satisfies Dictionary;

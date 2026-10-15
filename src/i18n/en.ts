@@ -407,7 +407,20 @@ export const en = {
   "For condos, everyone joins as a co-owner. The lender option is for houses and land.": "For condos, everyone joins as a co-owner. The lender option is for houses and land.",
   "Enter a fixed yearly interest rate.": "Enter a fixed yearly interest rate.",
   "Check this deed": "Check this deed",
-  "Not readable": "Not readable"
+  "Not readable": "Not readable",
+  "per month": "per month",
+  "Other website listing": "Other website listing",
+  "Open source ↗": "Open source ↗",
+  "{site}, listed {date}": "{site}, listed {date}",
+  "Not checked by U-Estate": "Not checked by U-Estate",
+  "U-Estate listing": "U-Estate listing",
+  "Shown at the district centre ({district})": "Shown at the district centre ({district})",
+  "View listing": "View listing",
+  "Market map": "Market map",
+  "U-Estate listings": "U-Estate listings",
+  "Other websites (not checked by U-Estate)": "Other websites (not checked by U-Estate)",
+  "The map could not load. Every listing is in the tables below.": "The map could not load. Every listing is in the tables below.",
+  "Loading map…": "Loading map…"
 } as const;
 export type MessageKey = keyof typeof en;
 export type Dictionary = { [K in MessageKey]: string };

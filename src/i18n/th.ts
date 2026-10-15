@@ -409,5 +409,18 @@ export const th = {
   "For condos, everyone joins as a co-owner. The lender option is for houses and land.": "คอนโดเข้าร่วมแบบเจ้าของร่วมเท่านั้น ผู้ให้กู้สำหรับบ้านและที่ดิน",
   "Enter a fixed yearly interest rate.": "กรอกดอกเบี้ยคงที่ต่อปี",
   "Check this deed": "ตรวจโฉนดนี้",
-  "Not readable": "อ่านไม่ได้"
+  "Not readable": "อ่านไม่ได้",
+  "per month": "ต่อเดือน",
+  "Other website listing": "ประกาศจากเว็บไซต์อื่น",
+  "Open source ↗": "เปิดแหล่งที่มา ↗",
+  "{site}, listed {date}": "{site} ลงประกาศ {date}",
+  "Not checked by U-Estate": "U-Estate ยังไม่ได้ตรวจสอบ",
+  "U-Estate listing": "ประกาศของ U-Estate",
+  "Shown at the district centre ({district})": "แสดงที่ใจกลางเขต ({district})",
+  "View listing": "ดูประกาศ",
+  "Market map": "แผนที่ตลาด",
+  "U-Estate listings": "ประกาศของ U-Estate",
+  "Other websites (not checked by U-Estate)": "เว็บไซต์อื่น (U-Estate ยังไม่ได้ตรวจสอบ)",
+  "The map could not load. Every listing is in the tables below.": "โหลดแผนที่ไม่ได้ ประกาศทั้งหมดอยู่ในตารางด้านล่าง",
+  "Loading map…": "กำลังโหลดแผนที่…"
 } satisfies Dictionary;
