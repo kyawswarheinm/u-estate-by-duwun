@@ -49,6 +49,8 @@ function Dock({ userName }: { userName: string }) {
   const [error, setError] = useState("");
   const [typed, setTyped] = useState("");
   const logRef = useRef<HTMLOListElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const add = (l: Line) => setLines((prev) => [...prev.slice(-40), l]);
 
   const serverTool = (name: string) => async (params: Record<string, unknown>) => {
@@ -88,6 +90,16 @@ function Dock({ userName }: { userName: string }) {
     logRef.current?.lastElementChild?.scrollIntoView({ block: "nearest" });
   }, [lines]);
 
+  // Non-modal panel (the call continues while you browse), so no focus trap: focus moves in on open,
+  // Esc or Close hides it, and focus returns to the toggle button (UI_SPEC §6).
+  useEffect(() => {
+    if (open) closeRef.current?.focus();
+  }, [open]);
+  function close() {
+    setOpen(false);
+    toggleRef.current?.focus();
+  }
+
   async function start() {
     setError("");
     const r = await fetch("/api/voice/agent-token", { cache: "no-store" });
@@ -115,10 +127,20 @@ function Dock({ userName }: { userName: string }) {
   return (
     <div className="fixed bottom-4 end-4 z-50 flex flex-col items-end gap-2">
       {open && (
-        <section aria-label="Talk to U-Estate" className="w-[min(92vw,380px)] rounded-xl border border-line bg-paper p-4 shadow-xl">
+        <section
+          id="voice-agent-panel"
+          aria-label="Talk to U-Estate"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.stopPropagation();
+              close();
+            }
+          }}
+          className="w-[min(92vw,380px)] rounded-xl border border-line bg-paper p-4 shadow-xl"
+        >
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-lg font-bold">Talk to U-Estate <span className="rounded bg-ink px-1.5 py-0.5 text-xs font-semibold text-paper">AI</span></h2>
-            <button type="button" onClick={() => setOpen(false)} className="rounded px-2 py-1 text-sm underline">Close</button>
+            <button ref={closeRef} type="button" onClick={close} className="rounded px-2 py-1 text-sm underline">Close</button>
           </div>
           <p className="text-xs text-ink-soft">Live voice by ElevenLabs. It can search, explain prices and fees, check token unlocks and open pages. It cannot move money or sign anything. Not financial advice.</p>
 
@@ -174,9 +196,11 @@ function Dock({ userName }: { userName: string }) {
         </section>
       )}
       <button
+        ref={toggleRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
+        aria-controls="voice-agent-panel"
         className="rounded-full bg-ink px-5 py-3 font-semibold text-paper shadow-lg"
       >
         <span aria-hidden="true">🎙</span> {connected ? "In a call" : "Talk to U-Estate"}

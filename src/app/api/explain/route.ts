@@ -8,7 +8,8 @@ import { rateLimit } from "@/lib/ratelimit";
 export async function POST(req: Request) {
   const limited = rateLimit(req, "explain", 20);
   if (limited) return limited;
-  const body = (await req.json()) as { listingId: string; lang?: string };
+  const body = (await req.json().catch(() => null)) as { listingId?: unknown; lang?: string } | null;
+  if (!body || typeof body.listingId !== "string") return Response.json({ code: "VALIDATION", message: "listingId is required." }, { status: 400 });
   const listingId = body.listingId;
   const lang = asLocale(body.lang);
   const db = await readDb();

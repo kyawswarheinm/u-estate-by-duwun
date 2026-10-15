@@ -66,6 +66,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
           <VerificationBadge status={listing.verificationStatus} />
           <span className="text-sm text-ink-soft">Seller: {seller.name} · Deed type: {property.deedType}</span>
         </div>
+        <p className="mt-1 text-sm text-ink-soft">Confirm ownership at the Land Office before any money moves.</p>
         {listing.verificationReasons.length > 0 && (
           <ul className="mt-2 list-inside list-disc text-sm text-amber">
             {listing.verificationReasons.map((r) => <li key={r}>{r}</li>)}
