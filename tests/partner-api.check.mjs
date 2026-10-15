@@ -82,6 +82,11 @@ await check("Tokenomist", "bad input → 400 VALIDATION", async () => {
 // ---------- Avalanche A1 ----------
 await check("Avalanche", "publish without wallet → 501 with computed fingerprint (or 409 when nothing new)", async () => {
   const { status, json } = await call("/api/anchor", { method: "POST" });
+  // Supabase mode: publishing is reviewer-only (Person 1 authorization fix), so a guest gets 403 first.
+  if (status === 403) {
+    expect(json.code === "FORBIDDEN", json.code);
+    return "Supabase mode: guest refused, reviewer-only publish";
+  }
   if (status === 501) {
     expect(json.code === "AVALANCHE_NOT_CONFIGURED", json.code);
     expect(/^[0-9a-f]{64}$/.test(json.headHash), "headHash missing");
@@ -101,6 +106,8 @@ await check("Avalanche", "publish rate limit: 4th call in a minute → 429", asy
   const ip = freshIp();
   const codes = [];
   for (let i = 0; i < 4; i++) codes.push((await call("/api/anchor", { method: "POST", ip })).status);
+  // Supabase mode refuses guests (403) before the limiter; the limiter is then exercised by reviewers only.
+  if (codes.every((c) => c === 403)) return "Supabase mode: every guest call refused (403), nothing published";
   expect(codes[3] === 429, `codes ${codes.join(",")}`);
   return codes.join(",");
 });
@@ -177,7 +184,8 @@ await check("Tools", "compute_fees ฿4,000,000 sale, non-member → ฿60,000",
 await check("Tools", "get_listing_facts l-condo: numbers present, appraisal labelled SAMPLE, test money flagged", async () => {
   const { json } = await call("/api/agent-tools", { method: "POST", body: { tool: "get_listing_facts", input: { listing_id: "l-condo" } } });
   const r = json.result;
-  expect(r.listing_id === "l-condo" && r.asking_price_thb > 0, JSON.stringify(r).slice(0, 200));
+  // JSON store returns the alias "l-condo"; Supabase returns the listing's UUID (the alias resolves to it).
+  expect((r.listing_id === "l-condo" || /^[0-9a-f-]{36}$/.test(r.listing_id)) && r.asking_price_thb > 0, JSON.stringify(r).slice(0, 200));
   expect(/SAMPLE/.test(r.official_appraisal?.note ?? ""), "appraisal not labelled SAMPLE");
   expect(r.test_money === true && /Land Office/.test(r.document_check.note), "missing honesty labels");
   return `asking ${r.asking_price_thb}`;

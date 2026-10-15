@@ -36,7 +36,7 @@ try:
   listing_path=seller.url.split(BASE)[1].split('?')[0]
   seller.get_by_role('button',name='Open offer room',exact=True).click();seller.wait_for_url('**/offers',timeout=30000);print('PASS listing creation and offer room')
   buyer=b.new_context().new_page();signup(buyer,'Browser QA Buyer');go(buyer,listing_path+'/offers')
-  buyer.get_by_label('Your offer (THB)',exact=True).fill('2800123');buyer.get_by_role('button',name='Submit sealed offer',exact=True).click();expect(buyer.get_by_role('status')).to_contain_text('sealed',timeout=20000)
+  buyer.get_by_label('Your offer (THB)',exact=True).fill('2800123');buyer.get_by_role('button',name='Submit sealed offer',exact=True).click();expect(buyer.locator('form').filter(has=buyer.locator('#priceThb')).get_by_role('status')).to_contain_text('sealed',timeout=20000)
   go(seller,listing_path+'/offers');assert '2,800,123' not in seller.locator('main').inner_text();print('PASS buyer submits; seller amount hidden')
   seller.get_by_role('button',name=re.compile('Close round and compare')).click();expect(seller.get_by_role('button',name='Accept',exact=True)).to_be_visible(timeout=60000)
   expect(seller.locator('main')).to_contain_text('2,800,123');seller.get_by_role('button',name='Accept',exact=True).click();expect(seller.locator('main')).to_contain_text('accepted',timeout=20000)
@@ -48,7 +48,7 @@ try:
   cobuy_listing=seller.url.split(BASE)[1].split('?')[0]
   go(buyer,'/account/settings');buyer.get_by_role('button',name='Link my U-topia membership (demo)',exact=True).click();expect(buyer.get_by_role('button',name='Unlink membership (demo)',exact=True)).to_be_visible()
   go(buyer,cobuy_listing);buyer.get_by_role('button',name='Start a co-buy group',exact=True).click();buyer.wait_for_url('**/cobuy/*',timeout=30000)
-  buyer.get_by_label('Amount (THB, test money)',exact=True).fill('1000000');buyer.get_by_role('button',name='Commit test money',exact=True).click();expect(buyer.get_by_role('status')).to_contain_text('Committed',timeout=20000)
+  buyer.get_by_label('Amount (THB, test money)',exact=True).fill('1000000');buyer.get_by_role('button',name='Commit test money',exact=True).click();expect(buyer.locator('form').filter(has=buyer.locator('#amountThb')).get_by_role('status')).to_contain_text('Committed',timeout=20000)
   group_path=buyer.url.split(BASE)[1];go(buyer,group_path);expect(buyer.locator('#funding')).to_have_attribute('value','1000000')
   go(buyer,'/account/wallet');expect(buyer.get_by_role('region',name='Balance')).to_contain_text('4,000,000');print('PASS co-buy creation, commitment, reload and wallet balance')
   print('QA co-buy listing ID:',cobuy_listing.split('/')[-1])
