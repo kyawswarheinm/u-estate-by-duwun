@@ -36,7 +36,13 @@ TimesFM was more accurate than the trend in 12 of 30 windows; the average in 14 
 - All three ranges cover **more** than 80%, so they are wider than they need to be (cautious).
 - 30 windows from overlapping periods is a small test. Treat these differences as indicative.
 
+![Backtest: mean error per method](../pipeline/analytics/charts/backtest.png)
+
 ## 3. Current forecast (from `forecast.json`)
+
+![BOT index since 2019 with the 12-month forecast range](../pipeline/analytics/charts/forecast.png)
+
+Charts are drawn by `pipeline/analytics/chart.py` from `forecast.json` and `backtest.csv`; rerun it after a new forecast.
 
 | Series | Last actual | 12 months later: p10 | p50 | p90 | Change (p10 / p50 / p90) | Last 12 months |
 |---|---|---|---|---|---|---|
@@ -49,7 +55,7 @@ TimesFM was more accurate than the trend in 12 of 30 windows; the average in 14 
 | | |
 |---|---|
 | **What** | Per district × type × kind (sale/rent), plus all districts together: count, median / p25 / p75 **asking price per m²**, median price, median area |
-| **Input** | P1's scraped listings snapshot (`src/data/market/listings.json`). Until P1's real snapshot is merged, this is the labelled FIXTURE (`is_sample: true`) |
+| **Input** | P1's listings snapshot (`src/data/market/listings.json`). Thai portals blocked access and their terms forbid scraping (`pipeline/scraper/SOURCES.md`), so today's snapshot is **1,200 SYNTHETIC condo sales** from `data/valuation/demo_sales.csv`, labelled `is_sample: true`. Every stats answer says SAMPLE |
 | **Method** | `describe.py` (pandas): medians and quartiles with linear interpolation. Groups with fewer than 5 listings are left out. The final `stats.json` is regenerated on the merged real snapshot (WORKPLAN M03) |
 | **Trend** | The snapshot covers a few weeks, too short for a per-district trend. The tools show the **regional BOT index trend** for the property type instead, labelled as regional |
 

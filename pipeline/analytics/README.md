@@ -23,6 +23,7 @@ Below, `PY` means `~/.venvs/u-estate-analytics/Scripts/python.exe` (macOS/Linux:
 | P2T01 BOT index | `PY pipeline/analytics/fetch_bot.py` | `data/bot_rppi.csv`, `data/SOURCE.md` (raw file in `raw/`) |
 | P2T02/T03 forecast + backtest | `PY pipeline/analytics/forecast.py` (default `--method blend`; also `timesfm`, `loglinear`). Add `HF_HUB_OFFLINE=1` once the model is cached | `src/data/market/forecast.json`, `data/backtest.csv` |
 | P2T04 market stats | `PY pipeline/analytics/describe.py` (`--listings <path> --out <path>`; `--min-count 1` only for the fixture) | `src/data/market/stats.json` |
+| Charts for the deck | `PY pipeline/analytics/chart.py` | `charts/forecast.png`, `charts/backtest.png` |
 
 **Model:** TimesFM 2.5 200M (`google/timesfm-2.5-200m-pytorch`, Apache-2.0, ~925 MB, downloaded once to the Hugging Face cache in your home folder). We don't use the TimesFM 3.0 checkpoint: its weights are under Google's non-commercial licence.
 
