@@ -14,7 +14,11 @@
     "db:verify": "node scripts/db/verify.mjs",
     "db:seed": "node --env-file-if-exists=.env.local scripts/db/seed-supabase.mjs",
     "brand": "node scripts/brand-assets.mjs",
-    "check": "npm run typecheck && npm run lint && npm test && npm run db:verify && npm run check:secrets"
+    "check": "npm run typecheck && npm run lint && npm test && npm run db:verify && npm run check:secrets",
+    "db:preflight": "node --env-file-if-exists=.env.local scripts/db/preflight.mjs",
+    "qa:hosted": "node --env-file-if-exists=.env.local scripts/db/verify-hosted.mjs && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-auth-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-offers-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-transactions-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-boundaries-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-services-hosted.mjs --allow-demo-writes && node --env-file-if-exists=.env.local scripts/db/archive-qa-fixtures.mjs --apply",
+    "qa:archive": "node --env-file-if-exists=.env.local scripts/db/archive-qa-fixtures.mjs --apply",
+    "db:make-reviewer": "node --env-file-if-exists=.env.local scripts/db/make-reviewer.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",

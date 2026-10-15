@@ -121,7 +121,8 @@ export async function signInAsPersona(formData: FormData) {
     const client = await supabaseServer();
     const { data: enabled } = await client.rpc("demo_mode");
     if (!enabled) redirect("/signin");
-    const { data: persona } = await client.from("profiles").select("id").eq("id", id).eq("is_demo_persona", true).single();
+    // Reviewer personas are never one-click: reviewers can read every private deed and reset the shared demo.
+    const { data: persona } = await client.from("profiles").select("id").eq("id", id).eq("is_demo_persona", true).eq("is_reviewer", false).single();
     if (!persona) redirect("/signin");
     const admin = supabaseAdmin();
     const account = await admin.auth.admin.getUserById(id);
@@ -134,7 +135,7 @@ export async function signInAsPersona(formData: FormData) {
     redirect(safeNext(formData.get("next"), "/"));
   }
   const db = await readDb();
-  const persona = db.profiles.find((p) => p.id === id && p.isDemoPersona);
+  const persona = db.profiles.find((p) => p.id === id && p.isDemoPersona && !p.isReviewer);
   if (!persona) redirect("/signin");
   await startSession(persona.id);
   revalidatePath("/", "layout");

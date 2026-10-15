@@ -3,10 +3,11 @@
 import { useActionState } from "react";
 import { submitOffer, type FormState } from "@/app/actions";
 
-export function OfferForm({ roundId, listingId }: { roundId: string; listingId: string }) {
+export function OfferForm({ roundId, listingId, requestId }: { roundId: string; listingId: string; requestId: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(submitOffer, null);
   return (
     <form action={action} className="grid gap-4">
+      <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="roundId" value={roundId} />
       <input type="hidden" name="listingId" value={listingId} />
       <div className="grid gap-1">

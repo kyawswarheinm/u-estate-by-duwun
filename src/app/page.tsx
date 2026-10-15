@@ -9,7 +9,7 @@ const EXAMPLE_PRICE = 4_000_000;
 
 export default async function Home() {
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const active = db.listings.filter((l) => l.status !== "sold");
+  const active = db.listings.filter((l) => l.status !== "sold" && !l.archivedAt);
 
   // The hero's centrepiece: the real fee rule on a ฿4M sale, computed by the same code as every listing.
   const fees = [

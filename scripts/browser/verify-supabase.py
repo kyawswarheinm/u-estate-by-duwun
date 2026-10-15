@@ -1,4 +1,4 @@
-import sys,secrets,re,os,hashlib
+import sys,secrets,re,os,hashlib,base64
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
 sys.stdout.reconfigure(encoding='utf-8')
@@ -52,6 +52,18 @@ try:
   group_path=buyer.url.split(BASE)[1];go(buyer,group_path);expect(buyer.locator('#funding')).to_have_attribute('value','1000000')
   go(buyer,'/account/wallet');expect(buyer.get_by_role('region',name='Balance')).to_contain_text('4,000,000');print('PASS co-buy creation, commitment, reload and wallet balance')
   print('QA co-buy listing ID:',cobuy_listing.split('/')[-1])
+  go(seller,'/sell?listing='+listing_path.split('/')[-1])
+  seller.locator('#listing-photo').set_input_files({'name':'qa-photo.png','mimeType':'image/png','buffer':base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aS1cAAAAASUVORK5CYII=')})
+  seller.get_by_role('button',name='Upload photo',exact=True).click();expect(seller.get_by_text('Photo uploaded.',exact=True)).to_be_visible(timeout=20000)
+  go(buyer,listing_path);expect(buyer.get_by_role('img',name='Property photo',exact=True)).to_be_visible();print('PASS browser photo upload and display')
+  buyer.get_by_role('button',name='Contact seller',exact=True).click();buyer.wait_for_url('**/messages/*',timeout=30000);thread=buyer.url.split(BASE)[1]
+  go(seller,thread)
+  expect(seller.get_by_text('Live updates connected',exact=True)).to_be_visible(timeout=30000);expect(buyer.get_by_text('Live updates connected',exact=True)).to_be_visible(timeout=30000);print('PASS both browser subscriptions ready')
+  buyer.get_by_label('Message',exact=True).fill('Browser QA live hello');buyer.get_by_role('button',name='Send message',exact=True).click()
+  expect(seller.get_by_text('Browser QA live hello',exact=True)).to_be_visible(timeout=20000)
+  seller.get_by_label('Message',exact=True).fill('Browser QA live reply');seller.get_by_role('button',name='Send message',exact=True).click();expect(buyer.get_by_text('Browser QA live reply',exact=True)).to_be_visible(timeout=20000)
+  print('PASS two browsers exchange live messages')
+  go(seller,'/notifications');seller.get_by_role('button',name='Mark all as read',exact=True).click();expect(seller.get_by_role('link',name='Notifications (0)',exact=True)).to_be_visible(timeout=20000);print('PASS notification count clears live')
   for page in [seller,buyer]:
    go(page,'/account/settings');page.locator('main').get_by_role('button',name='Sign out',exact=True).click();page.wait_for_url(BASE+'/')
   b.close()
@@ -62,5 +74,9 @@ try:
 
 
 except Exception as error:
+ trace=error.__traceback__
+ while trace:
+  if trace.tb_frame.f_code.co_filename==__file__:print("Failure at browser test line",trace.tb_lineno)
+  trace=trace.tb_next
  print("FAIL browser smoke ("+type(error).__name__+"). Reproduce the last reported step; credential-bearing call logs suppressed.")
  raise SystemExit(1) from None

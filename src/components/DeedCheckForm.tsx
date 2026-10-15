@@ -53,8 +53,8 @@ export function DeedCheckForm({ listings, defaultListingId }: { listings: { id: 
         </div>
         <div className="grid gap-1">
           <label htmlFor="deed" className="font-semibold">Title deed photo (SAMPLE documents only)</label>
-          <input id="deed" name="deed" type="file" required accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="deed-help" className="input" />
-          <p id="deed-help" className="text-sm text-ink-soft">JPG, PNG, WebP or GIF, up to 5 MB. Never upload a real person&apos;s deed in this demo.</p>
+          <input id="deed" name="deed" type="file" required accept="image/jpeg,image/png,image/webp" aria-describedby="deed-help" className="input" />
+          <p id="deed-help" className="text-sm text-ink-soft">JPG, PNG or WebP, up to 5 MB. Never upload a real person&apos;s deed in this demo.</p>
         </div>
         <button type="submit" disabled={busy} className="justify-self-start rounded-lg bg-blue-ink px-5 py-3 font-semibold text-paper disabled:opacity-60">
           {busy ? "Checking…" : "Check this deed"}

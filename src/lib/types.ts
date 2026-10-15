@@ -73,6 +73,7 @@ export interface Property {
 export type VerificationStatus = "unverified" | "verified_sample" | "needs_review";
 
 export interface Listing {
+  archivedAt?: string;
   code?: string;
   id: string;
   propertyId: string;

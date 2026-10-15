@@ -23,6 +23,7 @@ const NAV = [
 ];
 
 const ACCOUNT_LINKS = [
+  { href: "/messages", label: "Messages" },
   { href: "/account", label: "Overview" },
   { href: "/account/properties", label: "My properties" },
   { href: "/account/wallet", label: "Wallet" },
@@ -47,7 +48,7 @@ export function Logo({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-export function SiteHeader({ user, demoMode, signOutAction }: { user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void> }) {
+export function SiteHeader({ user, demoMode, signOutAction, notifications }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void> }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false); // account menu
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -93,6 +94,7 @@ export function SiteHeader({ user, demoMode, signOutAction }: { user: HeaderUser
         </nav>
 
         <div className="flex items-center gap-2">
+          {notifications}
           {user ? (
             <div ref={menuRef} className="relative">
               <button

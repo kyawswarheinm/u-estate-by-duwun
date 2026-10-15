@@ -7,7 +7,7 @@ mkdirSync(new URL("../../tmp/", import.meta.url), { recursive: true });
 writeFileSync(output, [
   "-- U-Estate: NEW demo/test project only. Do not run against an existing schema.",
   "begin;",
-  ...files.map((file) => `-- Migration: ${file}\n${readFileSync(new URL(file, directory), "utf8")}`),
+  ...files.map((file) => `-- Migration: ${file}\n${readFileSync(new URL(file, directory), "utf8").replace(/^(begin|commit);\r?$/gmi, "")}`),
   "commit;",
 ].join("\n\n"));
 console.log(`Bundled ${files.length} migrations into tmp/supabase-setup.sql. Apply once in the project's SQL Editor.`);

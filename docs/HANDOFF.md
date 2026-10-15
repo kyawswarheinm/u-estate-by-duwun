@@ -106,6 +106,12 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
 
 ## 8. Last changes
 
+- 16 Oct ~05:30, Person 1 (Claude, continuing Codex): **backend acceptance**. 165 hosted checks pass: auth lifecycle, authorization, FairOffer privacy, concurrency, retries/boundaries, storage, realtime. Browser two-context flow passed 3 runs in a row.
+  - **Fixed:** browser realtime joined as anonymous, so live chat didn't arrive.
+  - **Fixed:** anyone could one-click the Reviewer persona (private deeds + reset). Use `npm run db:make-reviewer -- --email …` for a real reviewer.
+  - QA fixtures are archived (`npm run qa:archive`).
+  - Open: the Vercel preview run, the coordinated hosted reset, and anchor persistence after Person 2's first live publish. Details in `docs/PERSON1_BACKEND_QA.md`.
+
 - 16 Oct, Person 1 branch: Supabase Auth + cookie refresh, RLS-backed app reads, listing/account/wallet/offer/co-buy RPCs, private deed and anchor persistence, safe sealed-offer counts; local 35 unit/75 DB checks and 28 hosted auth/RLS checks pass. Browser account, listing, FairOffer and co-buy smoke passes. New UI, concurrent transactions, real Storage/Realtime delivery, hosted reset and deployment acceptance remain open.
 
 - 16 Oct 00:45:

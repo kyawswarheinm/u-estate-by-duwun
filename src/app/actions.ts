@@ -9,20 +9,20 @@ import { aiConfigured, summariseOffers } from "@/lib/ai";
 import { checkCommitment, walletSummary } from "@/lib/wallet";
 import type { CobuyLane, FundingReadiness } from "@/lib/types";
 import { usesSupabase } from "@/lib/db/runtime";
-import { rpc, listingUuid } from "@/lib/db/rpc";
+import { rpc, listingUuid, mutationRequest } from "@/lib/db/rpc";
 import { readDb } from "@/lib/store";
 import { demoMode } from "@/lib/session";
 import { z } from "zod";
 
 export type FormState = { ok: boolean; message: string; errors?: string[] } | null;
 
-export async function resetDemo() {
+export async function resetDemo(formData: FormData) {
   if (usesSupabase()) {
     const user = await requireUser("/");
     if (!demoMode() || !user.isReviewer) throw new Error("Demo reset requires a reviewer.");
-    // Published ledger history cannot be deleted. Until an archive-aware reset RPC
-    // exists, leave hosted data intact rather than silently reset the JSON store.
-    redirect("/?reset=hosted-unavailable");
+    await rpc("demo_reset", { p_request: mutationRequest(formData) });
+    revalidatePath("/", "layout");
+    redirect("/");
   }
   if (!demoMode()) throw new Error("Demo reset is disabled.");
   await resetDb();
@@ -73,7 +73,7 @@ export async function joinCobuy(_prev: FormState, formData: FormData): Promise<F
       .safeParse({ groupId, lane, amountThb, interestRatePct });
     if (!parsed.success) return { ok: false, message: "Check the amount and lending rate.", errors: parsed.error.issues.map((e) => e.message) };
     try {
-      await rpc("cobuy_commit", { p_group: groupId, p_lane: lane, p_amount: amountThb, p_rate: interestRatePct ?? null });
+      await rpc("cobuy_commit", { p_group: groupId, p_lane: lane, p_amount: amountThb, p_rate: interestRatePct ?? null, p_request: mutationRequest(formData) });
     } catch (error) { return { ok: false, message: (error as Error).message }; }
     revalidatePath("/", "layout");
     return { ok: true, message: `Committed ${thb(amountThb)} in test money.` };
@@ -157,7 +157,7 @@ export async function submitOffer(_prev: FormState, formData: FormData): Promise
   if (errors.length) return { ok: false, message: "Please fix the highlighted fields.", errors };
   if (usesSupabase()) {
     if (!z.uuid().safeParse(roundId).success || !Number.isInteger(closingDays) || conditions.length > 500) return { ok: false, message: "Invalid offer details." };
-    try { await rpc("offer_submit", { p_round: roundId, p_price_thb: priceThb, p_funding: funding, p_closing_days: closingDays, p_conditions: conditions }); }
+    try { await rpc("offer_submit", { p_round: roundId, p_price_thb: priceThb, p_funding: funding, p_closing_days: closingDays, p_conditions: conditions, p_request: mutationRequest(formData) }); }
     catch (error) { return { ok: false, message: (error as Error).message }; }
     revalidatePath("/", "layout");
     return { ok: true, message: "Your sealed offer was saved." };
@@ -232,7 +232,7 @@ export async function acceptOffer(formData: FormData) {
   const listingId = String(formData.get("listingId"));
   const user = await requireUser(`/listing/${listingId}/offers`);
   if (usesSupabase()) {
-    await rpc("offer_accept", { p_offer: z.uuid().parse(offerId) });
+    await rpc("offer_accept", { p_offer: z.uuid().parse(offerId), p_request: mutationRequest(formData) });
     revalidatePath("/", "layout");
     return;
   }

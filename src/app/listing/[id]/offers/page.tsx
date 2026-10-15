@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readDb } from "@/lib/store";
@@ -58,7 +59,7 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
             <Card>
               <h2 className="text-xl font-bold">{mine ? "Update your sealed offer" : "Make a sealed offer"}</h2>
               {mine && <p className="text-sm text-ink-soft">Your current offer: {thb(mine.priceThb)}. Other buyers cannot see it.</p>}
-              <div className="mt-3"><OfferForm roundId={round.id} listingId={id} /></div>
+              <div className="mt-3"><OfferForm requestId={randomUUID()} roundId={round.id} listingId={id} /></div>
               <div className="mt-4"><TokenCheck defaultDepositThb={Math.round(listing.askingPriceThb * 0.1)} payWithinDays={30} context="your deposit" /></div>
             </Card>
           )}
@@ -99,6 +100,7 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
                   <td>
                     {round.status === "closed" && isSeller ? (
                       <form action={acceptOffer}>
+                        <input type="hidden" name="requestId" value={randomUUID()} />
                         <input type="hidden" name="offerId" value={r.offer.id} />
                         <input type="hidden" name="listingId" value={id} />
                         <button type="submit" className="rounded bg-blue-ink px-3 py-2 font-semibold text-paper">Accept</button>

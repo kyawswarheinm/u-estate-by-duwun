@@ -2,7 +2,16 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { z } from "zod";
 
+export function mutationRequest(form: FormData) {
+  const parsed = z.uuid().safeParse(form.get("requestId"));
+  if (!parsed.success) throw new Error("Refresh this page before submitting again.");
+  return parsed.data;
+}
 const messages: Record<string, string> = {
+  REQUEST_MISMATCH: "This request was already used with different details. Refresh before submitting again.",
+  MIN_PARTICIPANTS: "Co-buy requires at least two people. Leave part of the target for another member.",
+  LAST_SLOT: "The tenth participant must complete the remaining target.",
+  OWNER_REQUIRED: "A funded group must include a registered co-owner.",
   MEMBERS_ONLY: "Co-buy is open to U-topia members only.", GROUP_CLOSED: "This group is closed.",
   GROUP_FULL: "This group already has ten participants.", AMOUNT_INVALID: "Enter a positive amount within the remaining target.",
   ALREADY_JOINED: "You have already joined this group.", FOREIGN_LAND: "Foreign nationals can only join houses or land as lenders.",

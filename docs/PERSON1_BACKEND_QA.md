@@ -2,7 +2,34 @@
 
 Date: 16 October 2026 (ICT). Branch: `codex/person-1-backend-qa`, created from `main` at `a660fd3`.
 
-## Current implementation and evidence (16 October, Supabase wiring pass)
+## Results (16 October, ~05:30 ICT): Person 1 acceptance
+
+**Hosted project:** all 6 migrations applied (0100–0600) and seeded. Every hosted suite below ran against it with labelled QA fixtures, which are then archived (hidden from the site, history kept).
+
+| ID | Area | Result | Evidence |
+|---|---|---|---|
+| B01 | Hosted setup | **PASS**, except redeploy | `npm run db:preflight` 19/19. App reads and writes Supabase (home shows DB listings; JSON store unchanged in the browser run). Data survives server restarts. **BLOCKED (human):** persistence across a **Vercel redeploy** needs the preview URL |
+| B02 | Account lifecycle | **PASS** | `verify-auth-hosted` 16 lifecycle checks: sign-up trigger, two devices, refresh, forged/expired token rejected, password change, other device revoked, old password rejected, generic errors, sign-out. Browser run: sign up → sign out → protected pages redirect → sign in. Guest redirects verified on 6 protected routes |
+| B03 | Authorization | **PASS** (1 fix) | `verify-auth-hosted` 27 direct-API attacks all denied and stored rows unchanged. Admin-key code paths audited (anchor, deed check, photos, sign-up, personas). **Fixed:** the one-click Reviewer persona let any visitor become a reviewer (read all private deeds, run reset). Reviewer personas are now refused server-side and hidden; grant reviewer to a real account with `npm run db:make-reviewer -- --email …` |
+| B04 | FairOffer | **PASS** | `verify-offers-hosted` 29/29: amounts hidden from seller, other buyers, guests, ledger and notifications while open; count only; owner-only close/accept; late offers refused; ranking matches the hand calculation; one decision only; retries harmless. Guest page HTML and `/api/agent-tools` contain no sealed amounts |
+| B05 | Concurrency | **PASS** | `verify-transactions-hosted` 14/14: two sessions race one group (one winner, no overfund); one wallet across two groups; building-wide 49% quota race; top-up cap race. Losers leave **no** participant, ledger or notification rows |
+| B06 | Retries / boundaries | **PASS** | Parallel and sequential exact retries return one result and one ledger row; changed payload and foreign replay are refused. `verify-boundaries-hosted` 25/25: interest 0 / 15 / 15.01; amount 0, negative, above remaining; 2–10 participants (sole funder, last slot, no 11th); co-owner required; wallet limit at and above; duplicate join; expired group; legal lanes; non-member; own listing |
+| B07 | Storage | **PASS** | `verify-services-hosted`: real photo upload and public display; deeds private (owner and reviewer only); outsider cannot read, overwrite or write into folders; wrong MIME and >5 MB refused; signed URL expires. Browser photo upload and display pass |
+| B08 | Realtime | **PASS** (1 fix) | `verify-services-hosted`: two sessions receive messages and notifications live; outsider receives nothing; unread clears; reconnect recovers without duplicates. **Fixed:** browser channels joined as the anonymous role, so chat never arrived live in the UI. The token is now loaded before subscribing (`use-realtime.ts`). Browser two-context chat and notification clear pass |
+| B09 | Reset / persistence | **PASS locally; hosted needs a go-ahead** | `db:verify` checks the real reset (archives the three demo listings, recreates fresh copies, keeps accounts, their listings and all ledger history). Hosted: ordinary users refused; reviewer dry-run works. **Real hosted reset not run** (it changes the shared demo Person 2 is testing). Anchor persistence is wired (reviewer-only, append-only); **a deployed anchor needs Person 2's first live Fuji publish + the Vercel preview** |
+
+**Release gate so far:**
+- `npm run check` passes: 35 unit tests, 103 local database checks, secret scan.
+- `npm run build` passes.
+- `npm run qa:hosted` passes: 28 + 43 + 29 + 14 + 25 + 26 = **165 hosted checks**.
+- Browser flow (`scripts/browser/verify-supabase.py`, 13 steps, two browser contexts) passed **3 consecutive runs** locally.
+- Still to do: the deployed (Vercel preview) runs.
+
+**Run it again:**
+- `npm run qa:hosted` (writes labelled QA fixtures, then archives them)
+- `tmp/qa-venv/Scripts/python.exe scripts/browser/verify-supabase.py --allow-demo-writes`, then `npm run qa:archive`
+
+## Earlier implementation notes (16 October, Supabase wiring pass)
 
 Existing app operations now use Supabase when its public URL/key are configured: SSR Auth and refresh, profile/password/membership/wallet settings, test-money top-up, listing creation, FairOffer and co-buy RPCs. All snapshot reads use the caller's RLS session; credential arrays are empty. Configured database errors do not fall back to JSON and `updateDb` rejects hosted writes. `DEMO_OFFLINE=true` explicitly selects the old prototype; missing keys retain the no-key fallback.
 

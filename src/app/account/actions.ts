@@ -9,7 +9,7 @@ import { canTopUp, WALLET, walletSummary } from "@/lib/wallet";
 import type { AuthState } from "@/app/auth/actions";
 import { usesSupabase } from "@/lib/db/runtime";
 import { supabaseServer } from "@/lib/supabase/server";
-import { rpc, dbMessage } from "@/lib/db/rpc";
+import { rpc, dbMessage, mutationRequest } from "@/lib/db/rpc";
 
 const ProfileSchema = z.object({
   name: z.string().trim().min(1, { message: "Enter your name." }).max(60),
@@ -76,9 +76,9 @@ export async function toggleMembership() {
   revalidatePath("/", "layout");
 }
 
-export async function topUpWallet() {
+export async function topUpWallet(formData: FormData) {
   const me = await requireUser("/account/wallet");
-  if (usesSupabase()) await rpc("wallet_top_up");
+  if (usesSupabase()) await rpc("wallet_top_up", { p_request: mutationRequest(formData) });
   else await updateDb((db) => {
     if (!canTopUp(walletSummary(db, me.id).fundedThb)) return;
     db.walletTxns.push({ id: newId("w"), userId: me.id, kind: "top_up", amountThb: WALLET.topUpThb, note: "Test money added (demo)", createdAt: new Date().toISOString() });

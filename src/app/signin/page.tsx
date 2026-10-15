@@ -21,7 +21,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   const { next: rawNext } = await searchParams;
   const next = safeNext(rawNext, "/account");
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const personas = db.profiles.filter((p) => p.isDemoPersona);
+  // Reviewer personas are excluded: reviewer rights are granted to a real team account (scripts/db/make-reviewer.mjs).
+  const personas = db.profiles.filter((p) => p.isDemoPersona && !p.isReviewer);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-start">

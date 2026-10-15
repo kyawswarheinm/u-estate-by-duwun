@@ -69,7 +69,7 @@ export interface ListingSummary {
 
 export function searchListings(db: DB, f: SearchFilters, limit = 5): ListingSummary[] {
   return db.listings
-    .filter((l) => l.status === "active")
+    .filter((l) => l.status === "active" && !l.archivedAt)
     .map((l) => ({ l, p: db.properties.find((x) => x.id === l.propertyId)! }))
     .filter(({ l, p }) =>
       (!f.type || p.type === f.type) &&
