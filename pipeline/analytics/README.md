@@ -31,7 +31,7 @@ Below, `PY` means `~/.venvs/u-estate-analytics/Scripts/python.exe` (macOS/Linux:
 **P1's real listings before merge** (never commit P1's file on this branch):
 
 ```bash
-git fetch && git show origin/p1/market-data:src/data/market/listings.json > pipeline/analytics/out/listings-p1.json
+git fetch && git show origin/P1:src/data/market/listings.json > pipeline/analytics/out/listings-p1.json
 PY pipeline/analytics/describe.py --listings pipeline/analytics/out/listings-p1.json --out pipeline/analytics/out/stats-p1.json
 ```
 
