@@ -1,6 +1,6 @@
 # HANDOFF: status, who does what, what to do next
 
-**Updated:** Fri 16 Oct 2026, 00:45 ICT. **Update this file when you finish a task** (status table + "Last changes").
+**Updated:** Fri 16 Oct 2026, Person 1 Supabase wiring pass. **Update this file when you finish a task** (status table + "Last changes").
 
 **Event:** U-Hackathon 2026, AI track (Bangkok).
 
@@ -30,12 +30,12 @@
 npm install            # also enables the git pre-commit secret check (.githooks)
 cp .env.example .env.local   # fill only what you need; every partner is optional
 npm run dev            # http://localhost:3000
-npm run check          # typecheck + lint + 35 unit tests + 62 database checks + secret scan
+npm run check          # typecheck + lint + 35 unit tests + 75 database checks + secret scan
 ```
 
 **Where data lives today:**
-- The app runs on the **JSON store** (`.data/db.json`, git-ignored), so everything works with **zero keys**.
-- The real database (Supabase) is ready in `supabase/migrations/` and verified by `npm run db:verify`, but **not wired in yet** (§4).
+- With Supabase keys configured, existing app flows use **Supabase Auth and Postgres**. JSON is the no-key/offline fallback (`DEMO_OFFLINE=true`); configured DB failures never silently use JSON.
+- Hosted signup, account/wallet, listing, FairOffer and co-buy browser flows pass. Deed/anchor persistence is wired but partner execution remains unverified. New photo/chat/notification interfaces and concurrency/reset/deployment checks remain open; see [Person 1 QA](PERSON1_BACKEND_QA.md).
 
 ## 3. Done (in the repo, tested)
 
@@ -105,6 +105,8 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
   - The Avalanche wallet must be a throwaway Fuji wallet with faucet AVAX.
 
 ## 8. Last changes
+
+- 16 Oct, Person 1 branch: Supabase Auth + cookie refresh, RLS-backed app reads, listing/account/wallet/offer/co-buy RPCs, private deed and anchor persistence, safe sealed-offer counts; local 35 unit/75 DB checks and 28 hosted auth/RLS checks pass. Browser account, listing, FairOffer and co-buy smoke passes. New UI, concurrent transactions, real Storage/Realtime delivery, hosted reset and deployment acceptance remain open.
 
 - 16 Oct 00:45:
   - real-time database (migrations, RLS, RPCs, realtime, storage) + `db:verify` (62/62)

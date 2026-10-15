@@ -131,7 +131,7 @@ export const GOVERNANCE = [
 ];
 
 // ---- R10 FairOffer scoring (rules published before offers open) ----
-const FUNDING_SCORE = { pre_approved: 1, proof_uploaded: 0.8, declared: 0.4 } as const;
+const FUNDING_SCORE = { cash: 1, pre_approved: 1, proof_uploaded: 0.8, declared: 0.4 } as const;
 
 export function scoreOffers(offers: Offer[], criteria: OfferCriterion[]) {
   if (offers.length === 0) return [];

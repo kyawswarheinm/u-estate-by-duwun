@@ -186,6 +186,36 @@ check("demo personas keep fixed membership", await fails(() => as(P.somchai, () 
 await as(newUser, () => q("select wallet_top_up()"));
 check("test-money top-up", Number((await as(newUser, () => one("select funded_thb from wallet_balances"))).funded_thb) === 6000000);
 
+// ---------- Person 1: rejection paths and transaction rollback ----------
+check("guest cannot call co-buy RPC", await fails(() => as(null, () => q("select cobuy_commit($1, 'co_owner', 10000)", [houseGroup]))));
+check("funded group rejects further commitments", await fails(() => as(P.layla, () => q("select cobuy_commit($1, 'co_owner', 10000)", [condoGroup])), "GROUP_CLOSED"));
+check("zero lender interest rejected", await fails(() => as(P.aiko, () => q("select cobuy_commit($1, 'lender', 10000, 0)", [houseGroup])), "RATE_INVALID"));
+check("negative commitment rejected", await fails(() => as(P.aiko, () => q("select cobuy_commit($1, 'lender', -1, 7)", [houseGroup])), "AMOUNT_INVALID"));
+check("exactly 15 percent lender interest accepted", (await as(P.aiko, () => one("select cobuy_commit($1, 'lender', 10000, 15) as r", [houseGroup]))).r.ok === true);
+check("closed offer round rejects submissions", await fails(() => as(P.narin, () => q("select offer_submit($1, 4000000, 'cash', 30, '')", [ROUND])), "ROUND_CLOSED"));
+check("unrelated user cannot accept an offer", await fails(() => as(P.narin, () => q("select offer_accept($1)", [id(602)])), "NOT_OWNER"));
+
+// Force a ledger uniqueness failure after participant insertion; the whole RPC must roll back.
+const usedRequest = id(950);
+await as(P.layla, () => q("select cobuy_commit($1, 'lender', 10000, 7, $2)", [houseGroup, usedRequest]));
+const snapshot = async () => one(`select
+  (select count(*)::int from cobuy_participants) participants,
+  (select count(*)::int from ledger_entries) ledger,
+  (select count(*)::int from notifications) notifications`);
+const beforeRollback = await snapshot();
+check("reused request id rejects different actor", await fails(() => as(P.somchai, () => q("select cobuy_commit($1, 'co_owner', 10000, null, $2)", [houseGroup, usedRequest]))));
+check("failed commit leaves no partial rows or notifications", JSON.stringify(await snapshot()) === JSON.stringify(beforeRollback));
+
+await as(newUser, async () => {
+  for (let i = 0; i < 14; i++) await q("select wallet_top_up()");
+  check("wallet reaches exactly 20M cap", Number((await one("select funded_thb from wallet_balances")).funded_thb) === 20000000);
+  check("wallet rejects top-up above cap", await fails(() => q("select wallet_top_up()"), "WALLET_CAP"));
+});
+await as(P.somchai, async () => {
+  check("cannot modify another user's wallet settings", (await q("update profile_settings set max_commit_thb = 10000 where user_id = $1 returning user_id", [newUser])).length === 0);
+  check("cannot mark another user's notifications read", (await q("update notifications set read_at = now() where user_id = $1 returning id", [P.malee])).length === 0);
+});
+
 // ---------- realtime ----------
 const pub = (await q("select tablename from pg_publication_tables where pubname = 'supabase_realtime'")).map((r) => r.tablename);
 check("realtime streams messages, notifications, listings, co-buy and ledger", ["messages", "notifications", "listings", "cobuy_participants", "ledger_entries"].every((t) => pub.includes(t)));

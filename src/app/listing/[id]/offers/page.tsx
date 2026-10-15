@@ -8,13 +8,13 @@ import { OfferForm } from "@/components/OfferForm";
 import { TokenCheck } from "@/components/TokenCheck";
 import { acceptOffer, closeRound } from "@/app/actions";
 
-const FUNDING_LABEL = { pre_approved: "Bank pre-approval", proof_uploaded: "Proof of funds", declared: "Declared only" } as const;
+const FUNDING_LABEL = { cash: "Cash", pre_approved: "Bank pre-approval", proof_uploaded: "Proof of funds", declared: "Declared only" } as const;
 
 export default async function OffersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const listing = db.listings.find((l) => l.id === id);
-  const round = db.offerRounds.find((r) => r.listingId === id);
+  const listing = db.listings.find((l) => (l.id === id || l.code === id));
+  const round = db.offerRounds.find((r) => r.listingId === listing?.id);
   if (!listing || !round) notFound();
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const isSeller = me?.id === listing.sellerId;
@@ -64,7 +64,7 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
           )}
           <Card>
             <h2 className="text-xl font-bold">Offers received</h2>
-            <p className="mt-2 text-4xl font-bold">{offers.length}</p>
+            <p className="mt-2 text-4xl font-bold">{round.offerCount ?? offers.length}</p>
             <p className="text-ink-soft">Amounts stay sealed until the round closes, including from the seller.</p>
             {isSeller ? (
               <form action={closeRound} className="mt-3">

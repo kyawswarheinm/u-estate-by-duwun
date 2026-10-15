@@ -2,6 +2,11 @@ import { aiConfigured, checkDeed, type DeedResult } from "@/lib/ai";
 import { newId, nextLedgerId, readDb, updateDb } from "@/lib/store";
 import { currentUser } from "@/lib/session";
 import type { DeedFlag, VerificationStatus } from "@/lib/types";
+import { usesSupabase } from "@/lib/db/runtime";
+import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/ratelimit";
+import { randomUUID } from "node:crypto";
 
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -13,6 +18,8 @@ function normalise(s: string) {
 }
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "check-document", 6);
+  if (limited) return limited;
   const me = await currentUser();
   if (!me) return Response.json({ error: "Sign in to check a deed." }, { status: 401 });
   if (!aiConfigured()) {
@@ -50,7 +57,22 @@ export async function POST(req: Request) {
 
   const outcome: VerificationStatus = flags.some((f) => f.severity === "critical" || f.severity === "warning") ? "needs_review" : "verified_sample";
 
-  await updateDb((d) => {
+  if (usesSupabase()) {
+    const client = await supabaseServer();
+    // Re-check ownership using the authenticated session before privileged write-back.
+    const owned = await client.from("listings").select("id").eq("id", listing.id).eq("seller_id", me.id).single();
+    if (owned.error) return Response.json({ error: "Listing ownership changed. Please refresh." }, { status: 403 });
+    const storagePath = `${me.id}/${listing.id}/${randomUUID()}.${file.type.split("/")[1]}`;
+    const upload = await client.storage.from("deeds").upload(storagePath, file, { contentType: file.type });
+    if (upload.error) return Response.json({ error: "Private deed upload failed. Please try again." }, { status: 502 });
+    const admin = supabaseAdmin();
+    const document = await admin.from("documents").insert({ owner_id: me.id, listing_id: listing.id, storage_path: storagePath, extraction: result, flags, outcome });
+    if (document.error) return Response.json({ error: "Deed uploaded, but its check could not be saved. Please contact the reviewer." }, { status: 502 });
+    const updated = await admin.from("listings").update({ verification_status: outcome, verification_reasons: flags.filter((f) => f.severity !== "info").map((f) => f.message) }).eq("id", listing.id).eq("seller_id", me.id).select("id").single();
+    if (updated.error) return Response.json({ error: "Deed saved; listing status update needs reviewer attention." }, { status: 502 });
+    const logged = await admin.from("ledger_entries").insert({ user_id: me.id, listing_id: listing.id, entry_type: "document_checked", details: `Deed checked by AI: ${result.deed_type_label} → ${outcome} (sample)`, is_simulated: true });
+    if (logged.error) return Response.json({ error: "Deed check saved; ledger logging needs reviewer attention." }, { status: 502 });
+  } else await updateDb((d) => {
     d.documentChecks.push({
       id: newId("dc"), listingId: listing?.id, fileName: file.name, createdAt: new Date().toISOString(),
       extraction: result as unknown as Record<string, unknown>, flags, outcome, humanReview: "pending",

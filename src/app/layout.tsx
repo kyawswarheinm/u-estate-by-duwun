@@ -10,6 +10,7 @@ import { resetDemo } from "./actions";
 import { signOut } from "./auth/actions";
 import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 import { VoiceAgentDock } from "@/components/VoiceAgentDock";
+import { usesSupabase } from "@/lib/db/runtime";
 
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 const cormorant = Cormorant_Garamond({ variable: "--font-cormorant", subsets: ["latin"], weight: ["500", "600"] });
@@ -62,10 +63,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
             <div>
               <p className="text-sm font-semibold text-ice">Demo controls</p>
-              <p className="mt-2 text-sm">Resets offers, co-buy groups and the ledger. Signed-up accounts and their listings stay.</p>
-              <form action={resetDemo} className="mt-3">
+              {!usesSupabase() && <p className="mt-2 text-sm">Resets offers, co-buy groups and the ledger. Signed-up accounts and their listings stay.</p>}
+              {usesSupabase() ? <p className="mt-3 text-sm">Hosted demo data is persistent. Reset is unavailable while ledger history is preserved.</p> : <form action={resetDemo} className="mt-3">
                 <button type="submit" className="btn btn-ghost-dark">Reset demo data</button>
-              </form>
+              </form>}
             </div>
           </div>
         </footer>

@@ -13,7 +13,7 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
     .map((l) => {
       const p = db.properties.find((x) => x.id === l.propertyId)!;
       const round = db.offerRounds.find((r) => r.listingId === l.id);
-      const offers = round ? db.offers.filter((o) => o.roundId === round.id).length : 0;
+      const offers = round ? round.offerCount ?? db.offers.filter((o) => o.roundId === round.id).length : 0;
       const group = db.cobuyGroups.find((g) => g.listingId === l.id && g.status !== "cancelled");
       return { l, p, round, offers, group };
     })

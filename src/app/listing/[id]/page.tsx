@@ -15,7 +15,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { cobuyError, created } = await searchParams;
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const listing = db.listings.find((l) => l.id === id);
+  const listing = db.listings.find((l) => (l.id === id || l.code === id));
   if (!listing) notFound();
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const seller = db.profiles.find((p) => p.id === listing.sellerId)!;
@@ -28,7 +28,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const group = db.cobuyGroups.find((g) => g.listingId === listing.id && g.status !== "cancelled");
   const round = db.offerRounds.find((r) => r.listingId === listing.id);
   const isOwner = me?.id === listing.sellerId;
-  const offerCount = round ? db.offers.filter((o) => o.roundId === round.id).length : 0;
+  const offerCount = round ? round.offerCount ?? db.offers.filter((o) => o.roundId === round.id).length : 0;
 
   return (
     <article className="grid gap-5">

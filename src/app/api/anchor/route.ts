@@ -3,10 +3,14 @@ import { anchorMessage, headHash } from "@/lib/ledger-hash";
 import { AVALANCHE_CHAIN_ID, AVALANCHE_NETWORK, avalancheConfigured, explorerTxUrl, publishAnchor } from "@/lib/avalanche";
 import { rateLimit } from "@/lib/ratelimit";
 import { newId, readDb, updateDb } from "@/lib/store";
+import { usesSupabase } from "@/lib/db/runtime";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { currentUser } from "@/lib/session";
 
 // A1: publish the ledger fingerprint on Avalanche Fuji. Demo: a button on /ledger.
 // Production: an hourly cron job (Vercel Cron) plus a reviewer-only manual trigger.
 export async function POST(req: Request) {
+  if (usesSupabase() && !(await currentUser())?.isReviewer) return Response.json({ code: "FORBIDDEN", message: "Only a reviewer can publish a fingerprint." }, { status: 403 });
   const limited = rateLimit(req, "anchor", 3);
   if (limited) return limited;
 
@@ -28,6 +32,16 @@ export async function POST(req: Request) {
 
   try {
     const tx = await publishAnchor(message);
+    if (usesSupabase()) {
+      const { data, error } = await supabaseAdmin().from("ledger_anchors").insert({
+        up_to_entry_id: upToId, entry_count: head.count, head_hash: head.hash, message,
+        chain_id: AVALANCHE_CHAIN_ID, tx_hash: tx.txHash, explorer_url: explorerTxUrl(tx.txHash),
+      }).select("id").single();
+      if (error) return Response.json({ code: "PERSISTENCE", message: "Published on Fuji, but saving the anchor failed. Keep the transaction reference for recovery.", txHash: tx.txHash }, { status: 502 });
+      revalidatePath("/ledger");
+      const snapshot = await readDb();
+      return Response.json({ anchor: snapshot.anchors.find((a) => a.id === data.id) });
+    }
     const anchor = await updateDb((d) => {
       const a = {
         id: newId("anc"), upToEntryId: upToId, entryCount: head.count, headHash: head.hash, message,

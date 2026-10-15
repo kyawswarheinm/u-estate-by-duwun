@@ -8,10 +8,23 @@ import { COBUY, coOwnerShares, committedThb, scoreOffers, thb, validateJoin } fr
 import { aiConfigured, summariseOffers } from "@/lib/ai";
 import { checkCommitment, walletSummary } from "@/lib/wallet";
 import type { CobuyLane, FundingReadiness } from "@/lib/types";
+import { usesSupabase } from "@/lib/db/runtime";
+import { rpc, listingUuid } from "@/lib/db/rpc";
+import { readDb } from "@/lib/store";
+import { demoMode } from "@/lib/session";
+import { z } from "zod";
 
 export type FormState = { ok: boolean; message: string; errors?: string[] } | null;
 
 export async function resetDemo() {
+  if (usesSupabase()) {
+    const user = await requireUser("/");
+    if (!demoMode() || !user.isReviewer) throw new Error("Demo reset requires a reviewer.");
+    // Published ledger history cannot be deleted. Until an archive-aware reset RPC
+    // exists, leave hosted data intact rather than silently reset the JSON store.
+    redirect("/?reset=hosted-unavailable");
+  }
+  if (!demoMode()) throw new Error("Demo reset is disabled.");
   await resetDb();
   revalidatePath("/", "layout");
   redirect("/");
@@ -22,6 +35,11 @@ export async function createCobuyGroup(formData: FormData) {
   const listingId = String(formData.get("listingId"));
   const user = await requireUser(`/listing/${listingId}`);
   if (!user.utopiaMember) redirect(`/listing/${listingId}?cobuyError=members-only`);
+  if (usesSupabase()) {
+    const groupId = await rpc("cobuy_create_group", { p_listing: await listingUuid(listingId) });
+    revalidatePath("/", "layout");
+    redirect(`/cobuy/${groupId}`);
+  }
   const groupId = await updateDb((db) => {
     const listing = db.listings.find((l) => l.id === listingId);
     if (!listing || !listing.cobuyEnabled) throw new Error("Listing not available for co-buy");
@@ -50,6 +68,16 @@ export async function joinCobuy(_prev: FormState, formData: FormData): Promise<F
   const interestRatePct = rateRaw === null || rateRaw === "" ? undefined : Number(rateRaw);
   const user = await currentUser();
   if (!user) return { ok: false, message: "Sign in to join a co-buy group.", errors: [] };
+  if (usesSupabase()) {
+    const parsed = z.object({ groupId: z.uuid(), lane: z.enum(["co_owner", "lender"]), amountThb: z.number().positive(), interestRatePct: z.number().positive().max(15).optional() })
+      .safeParse({ groupId, lane, amountThb, interestRatePct });
+    if (!parsed.success) return { ok: false, message: "Check the amount and lending rate.", errors: parsed.error.issues.map((e) => e.message) };
+    try {
+      await rpc("cobuy_commit", { p_group: groupId, p_lane: lane, p_amount: amountThb, p_rate: interestRatePct ?? null });
+    } catch (error) { return { ok: false, message: (error as Error).message }; }
+    revalidatePath("/", "layout");
+    return { ok: true, message: `Committed ${thb(amountThb)} in test money.` };
+  }
 
   const result = await updateDb((db) => {
     const group = db.cobuyGroups.find((g) => g.id === groupId);
@@ -127,6 +155,13 @@ export async function submitOffer(_prev: FormState, formData: FormData): Promise
   if (!["pre_approved", "proof_uploaded", "declared"].includes(funding)) errors.push("Choose your funding readiness.");
   if (!Number.isFinite(closingDays) || closingDays < 7 || closingDays > 180) errors.push("Closing time must be 7–180 days.");
   if (errors.length) return { ok: false, message: "Please fix the highlighted fields.", errors };
+  if (usesSupabase()) {
+    if (!z.uuid().safeParse(roundId).success || !Number.isInteger(closingDays) || conditions.length > 500) return { ok: false, message: "Invalid offer details." };
+    try { await rpc("offer_submit", { p_round: roundId, p_price_thb: priceThb, p_funding: funding, p_closing_days: closingDays, p_conditions: conditions }); }
+    catch (error) { return { ok: false, message: (error as Error).message }; }
+    revalidatePath("/", "layout");
+    return { ok: true, message: "Your sealed offer was saved." };
+  }
 
   const res = await updateDb((db) => {
     const round = db.offerRounds.find((r) => r.id === roundId);
@@ -153,6 +188,21 @@ export async function submitOffer(_prev: FormState, formData: FormData): Promise
 export async function closeRound(formData: FormData) {
   const roundId = String(formData.get("roundId"));
   const user = await requireUser(`/listing/${String(formData.get("listingId"))}/offers`);
+  if (usesSupabase()) {
+    await rpc("offer_close_round", { p_round: z.uuid().parse(roundId) });
+    const db = await readDb();
+    const round = db.offerRounds.find((r) => r.id === roundId)!;
+    const ranked = scoreOffers(db.offers.filter((o) => o.roundId === roundId), round.criteria);
+    if (aiConfigured()) {
+      try {
+        const facts = JSON.stringify({ criteria: round.criteria, ranked });
+        const summary = await summariseOffers(facts);
+        if (summary) await rpc("offer_set_summary", { p_round: roundId, p_locale: "en", p_text: summary });
+      } catch { /* Ranking is deterministic; summary is optional. */ }
+    }
+    revalidatePath("/", "layout");
+    return;
+  }
   const facts = await updateDb((db) => {
     const round = db.offerRounds.find((r) => r.id === roundId)!;
     const listing = db.listings.find((l) => l.id === round.listingId)!;
@@ -181,6 +231,11 @@ export async function acceptOffer(formData: FormData) {
   const offerId = String(formData.get("offerId"));
   const listingId = String(formData.get("listingId"));
   const user = await requireUser(`/listing/${listingId}/offers`);
+  if (usesSupabase()) {
+    await rpc("offer_accept", { p_offer: z.uuid().parse(offerId) });
+    revalidatePath("/", "layout");
+    return;
+  }
   await updateDb((db) => {
     const offer = db.offers.find((o) => o.id === offerId);
     if (!offer) return;

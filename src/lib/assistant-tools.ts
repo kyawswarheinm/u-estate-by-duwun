@@ -46,7 +46,7 @@ async function searchTool(i: z.infer<(typeof ToolInputs)["search_listings"]>) {
 
 export async function listingFacts(listingId: string) {
   const db = await readDb();
-  const listing = db.listings.find((l) => l.id === listingId);
+  const listing = db.listings.find((l) => (l.id === listingId || l.code === listingId));
   if (!listing) return { error: `No listing with id ${listingId}` };
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const comparables = db.listings
