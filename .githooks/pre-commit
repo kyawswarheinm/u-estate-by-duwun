@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks commits that contain secrets or private files. Installed by `npm install` (scripts/install-hooks.mjs).
+node scripts/check-secrets.mjs --staged || exit 1

@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # First: stop the run if anything secret or private is in the tree.
+      - name: Secret and private-file scan
+        run: npm run check:secrets
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Database migrations + RLS checks (PGlite, no Supabase needed)
+        run: npm run db:verify
+      - name: Build (no keys needed; partners fall back)
+        run: npm run build

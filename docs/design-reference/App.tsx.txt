@@ -1,0 +1,902 @@
+import { createContext, useContext, useMemo, useState } from "react";
+
+type Screen = "home" | "match" | "browse" | "detail" | "offers" | "ai" | "saved";
+type Locale = "EN" | "TH" | "ZH" | "JA" | "KO" | "MY" | "VI" | "ID";
+type Currency = "THB" | "USD" | "EUR" | "CNY" | "JPY" | "SGD" | "MMK" | "AUD";
+type IconName =
+  | "arrow"
+  | "building"
+  | "check"
+  | "chevron"
+  | "clock"
+  | "close"
+  | "filter"
+  | "globe"
+  | "heart"
+  | "info"
+  | "map"
+  | "menu"
+  | "mic"
+  | "shield"
+  | "spark"
+  | "speaker"
+  | "train"
+  | "trend"
+  | "warning";
+
+const languages: { code: Locale; label: string; name: string }[] = [
+  { code: "EN", label: "English", name: "English" },
+  { code: "TH", label: "ไทย", name: "Thai" },
+  { code: "ZH", label: "简体中文", name: "Chinese" },
+  { code: "JA", label: "日本語", name: "Japanese" },
+  { code: "KO", label: "한국어", name: "Korean" },
+  { code: "MY", label: "မြန်မာ", name: "Burmese" },
+  { code: "VI", label: "Tiếng Việt", name: "Vietnamese" },
+  { code: "ID", label: "Bahasa Indonesia", name: "Indonesian" },
+];
+const currencies: { code: Currency; label: string; rate: number }[] = [
+  { code: "THB", label: "THB ฿", rate: 1 },
+  { code: "USD", label: "USD $", rate: .0273 },
+  { code: "EUR", label: "EUR €", rate: .0252 },
+  { code: "CNY", label: "CNY ¥", rate: .197 },
+  { code: "JPY", label: "JPY ¥", rate: 4.12 },
+  { code: "SGD", label: "SGD S$", rate: .0367 },
+  { code: "MMK", label: "MMK K", rate: 57.3 },
+  { code: "AUD", label: "AUD A$", rate: .0418 },
+];
+const currencySymbols: Record<Currency, string> = { THB: "฿", USD: "$", EUR: "€", CNY: "¥", JPY: "¥", SGD: "S$", MMK: "K", AUD: "A$" };
+const localeTags: Record<Locale, string> = { EN: "en-US", TH: "th-TH", ZH: "zh-CN", JA: "ja-JP", KO: "ko-KR", MY: "my-MM", VI: "vi-VN", ID: "id-ID" };
+
+const copy = {
+  EN: {
+    eyebrow: "Bangkok property intelligence",
+    hero: "Know what a Bangkok condo is really worth — before you buy.",
+    sub: "AI fair value, scam alerts and 5-year forecasts, trained on real Bangkok condo data.",
+    try: "Try asking",
+    quiz: "Take the 1-minute Smart Match quiz",
+    browse: "Browse condos",
+    detailDistrict: "Sukhumvit · Phra Khanong",
+    fair: "AI fair value",
+    risk: "Risk analysis",
+    abroad: "Buying from abroad",
+  },
+  TH: {
+    eyebrow: "ข้อมูลอสังหาริมทรัพย์กรุงเทพฯ",
+    hero: "รู้ราคาที่แท้จริงของคอนโดในกรุงเทพฯ ก่อนตัดสินใจซื้อ",
+    sub: "ประเมินราคาที่เหมาะสมด้วย AI แจ้งเตือนมิจฉาชีพ และคาดการณ์ราคา 5 ปี จากข้อมูลคอนโดจริงในกรุงเทพฯ",
+    try: "ลองถาม",
+    quiz: "ทำแบบทดสอบ Smart Match 1 นาที",
+    browse: "เลือกดูคอนโด",
+    detailDistrict: "สุขุมวิท · พระโขนง",
+    fair: "ราคาที่เหมาะสมโดย AI",
+    risk: "การวิเคราะห์ความเสี่ยง",
+    abroad: "การซื้อจากต่างประเทศ",
+  },
+  ZH: {
+    eyebrow: "曼谷房产智能分析",
+    hero: "买房前，先了解曼谷公寓的真实价值。",
+    sub: "基于真实曼谷公寓数据的 AI 合理估价、诈骗预警和五年价格预测。",
+    try: "试着问",
+    quiz: "开始 1 分钟智能匹配",
+    browse: "浏览公寓",
+    detailDistrict: "素坤逸 · 帕卡隆",
+    fair: "AI 合理估价",
+    risk: "风险分析",
+    abroad: "境外购房指南",
+  },
+};
+
+type GlobalPreferences = {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  currency: Currency;
+  setCurrency: (currency: Currency) => void;
+  area: "m²" | "sq ft";
+  setArea: (area: "m²" | "sq ft") => void;
+};
+const PreferencesContext = createContext<GlobalPreferences | null>(null);
+function usePreferences() {
+  const value = useContext(PreferencesContext);
+  if (!value) throw new Error("PreferencesContext is missing");
+  return value;
+}
+function displayPrice(price: string, currency: Currency, locale: Locale) {
+  const thb = Number(price.replace(/[^\d]/g, ""));
+  if (currency === "THB") return null;
+  const amount = Math.round(thb * currencies.find((item) => item.code === currency)!.rate);
+  return `≈ ${currencySymbols[currency]}${new Intl.NumberFormat(localeTags[locale]).format(amount)}`;
+}
+
+const photos = {
+  dusk:
+    "https://images.unsplash.com/photo-1775027687637-6d09c3297137?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=1400",
+  city:
+    "https://images.unsplash.com/photo-1752543523195-aa4916950b40?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=1400",
+  interior:
+    "https://images.unsplash.com/photo-1678393068680-7d58aebe981c?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=85&w=1400",
+  white:
+    "https://images.unsplash.com/photo-1595262493050-5b0f29ccf4b1?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=1400",
+  skyline:
+    "https://images.unsplash.com/photo-1738638728584-66f72bd47f6e?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=1400",
+  river:
+    "https://images.unsplash.com/photo-1783855190987-ac7039d13610?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=1400",
+};
+
+const listings = [
+  {
+    name: "The Line Sukhumvit 101",
+    district: "Sukhumvit",
+    price: "฿4,850,000",
+    size: "35 m²",
+    ppm: "฿138,571 / m²",
+    badge: "Good value",
+    delta: "6% below AI fair value",
+    tone: "good",
+    image: photos.dusk,
+    station: "BTS Punnawithi · 8 min",
+    risk: "Low risk",
+    reason: "8 minutes’ walk to BTS Punnawithi, priced 6% below its AI fair value.",
+  },
+  {
+    name: "Rhythm Sathorn",
+    district: "Sathorn",
+    price: "฿6,200,000",
+    size: "42 m²",
+    ppm: "฿147,619 / m²",
+    badge: "Fair price",
+    delta: "2% below AI fair value",
+    tone: "fair",
+    image: photos.city,
+    station: "BTS Surasak · 6 min",
+    risk: "Low risk",
+    reason: "Strong rental demand and a projected 4.8% gross yield.",
+  },
+  {
+    name: "Noble Around Ari",
+    district: "Ari",
+    price: "฿7,450,000",
+    size: "44 m²",
+    ppm: "฿169,318 / m²",
+    badge: "Overpriced",
+    delta: "9% above AI fair value",
+    tone: "warn",
+    image: photos.interior,
+    station: "BTS Ari · 6 min",
+    risk: "Medium risk",
+    reason: "Excellent location, but priced 9% above similar units nearby.",
+  },
+  {
+    name: "Ideo Mobi Bangna",
+    district: "Bang Na",
+    price: "฿1,950,000",
+    size: "32 m²",
+    ppm: "฿60,938 / m²",
+    badge: "SCAM ALERT",
+    delta: "35% below AI fair value",
+    tone: "danger",
+    image: photos.dusk,
+    station: "BTS Bang Na · 7 min",
+    risk: "High risk",
+    reason: "Too good to be true — priced 35% below AI fair value.",
+  },
+  {
+    name: "Saladaeng One",
+    district: "Silom",
+    price: "฿12,900,000",
+    size: "50 m²",
+    ppm: "฿258,000 / m²",
+    badge: "Fair price",
+    delta: "1% above AI fair value",
+    tone: "fair",
+    image: photos.city,
+    station: "MRT Silom · 5 min",
+    risk: "Low risk",
+    reason: "Rare low-density building with resilient long-term demand.",
+  },
+  {
+    name: "Whizdom Essence",
+    district: "Sukhumvit",
+    price: "฿5,350,000",
+    size: "41 m²",
+    ppm: "฿130,488 / m²",
+    badge: "Good value",
+    delta: "4% below AI fair value",
+    tone: "good",
+    image: photos.interior,
+    station: "BTS Punnawithi · 5 min",
+    risk: "Low risk",
+    reason: "Larger than average for the area and 350 m from the BTS.",
+  },
+  {
+    name: "The Esse Thonglor",
+    district: "Thonglor",
+    price: "฿9,800,000",
+    size: "46 m²",
+    ppm: "฿213,043 / m²",
+    badge: "Fair price",
+    delta: "2% above AI fair value",
+    tone: "fair",
+    image: photos.white,
+    station: "BTS Thong Lo · 7 min",
+    risk: "Low risk",
+    reason: "Prime location with durable rental demand and balanced pricing.",
+  },
+  {
+    name: "Life Asoke Rama 9",
+    district: "Ratchada",
+    price: "฿4,290,000",
+    size: "35 m²",
+    ppm: "฿122,571 / m²",
+    badge: "Good value",
+    delta: "5% below AI fair value",
+    tone: "good",
+    image: photos.skyline,
+    station: "MRT Phra Ram 9 · 5 min",
+    risk: "Medium risk",
+    reason: "Strong transit access and below-median price per square metre.",
+  },
+  {
+    name: "Ideo Q Phaya Thai",
+    district: "Phaya Thai",
+    price: "฿6,750,000",
+    size: "40 m²",
+    ppm: "฿168,750 / m²",
+    badge: "Fair price",
+    delta: "1% below AI fair value",
+    tone: "fair",
+    image: photos.river,
+    station: "BTS Phaya Thai · 4 min",
+    risk: "Low risk",
+    reason: "Direct airport link access and resilient owner-occupier demand.",
+  },
+  {
+    name: "The Base Park East",
+    district: "On Nut",
+    price: "฿3,390,000",
+    size: "31 m²",
+    ppm: "฿109,355 / m²",
+    badge: "Good value",
+    delta: "7% below AI fair value",
+    tone: "good",
+    image: photos.white,
+    station: "BTS On Nut · 9 min",
+    risk: "Low risk",
+    reason: "Well-priced entry point near daily amenities and green space.",
+  },
+];
+
+function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const paths: Record<IconName, React.ReactNode> = {
+    arrow: <><path d="M5 12h14" /><path d="m14 6 6 6-6 6" /></>,
+    building: <><path d="M4 21V5l8-3 8 3v16" /><path d="M9 21v-4h6v4M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    chevron: <path d="m9 18 6-6-6-6" />,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    close: <><path d="m6 6 12 12M18 6 6 18" /></>,
+    filter: <path d="M4 5h16M7 12h10M10 19h4" />,
+    globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></>,
+    heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />,
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></>,
+    map: <><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z" /><path d="M9 3v15M15 6v15" /></>,
+    menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+    mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" /></>,
+    shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></>,
+    spark: <><path d="m12 3 1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4Z" /><path d="m19 15 .7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7Z" /></>,
+    speaker: <><path d="M11 5 6 9H3v6h3l5 4Z" /><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" /></>,
+    train: <><rect x="5" y="3" width="14" height="15" rx="3" /><path d="M8 21l2-3h4l2 3M8 8h8M8 13h.01M16 13h.01" /></>,
+    trend: <><path d="m3 17 6-6 4 4 8-9" /><path d="M15 6h6v6" /></>,
+    warning: <><path d="m12 3 10 18H2Z" /><path d="M12 9v5M12 17h.01" /></>,
+  };
+  return (
+    <svg aria-hidden="true" className="icon" fill="none" height={size} viewBox="0 0 24 24" width={size}>
+      {paths[name]}
+    </svg>
+  );
+}
+
+function Logo({ inverse = false }: { inverse?: boolean }) {
+  return (
+    <button className={`logo ${inverse ? "logo-inverse" : ""}`} data-plain onClick={() => location.assign("#home")}>
+      <span className="logo-mark" aria-hidden="true"><i /><b /></span>
+      <span>U-Estate</span>
+    </button>
+  );
+}
+
+function Button({
+  children,
+  kind = "primary",
+  icon,
+  onClick,
+  className = "",
+}: {
+  children: React.ReactNode;
+  kind?: "primary" | "secondary" | "ghost" | "danger";
+  icon?: IconName;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button className={`btn btn-${kind} ${className}`} onClick={onClick}>
+      {children}{icon && <Icon name={icon} size={18} />}
+    </button>
+  );
+}
+
+function AiLabel() {
+  const { locale } = usePreferences();
+  const label = locale === "ZH" ? "AI 估价" : locale === "TH" ? "AI ประเมิน" : "AI estimate";
+  const tooltip = locale === "ZH" ? "由基于曼谷公寓数据训练的模型估算，并非正式估价。" : locale === "TH" ? "ประเมินโดยโมเดลที่ฝึกจากข้อมูลคอนโดในกรุงเทพฯ ไม่ใช่การประเมินราคาอย่างเป็นทางการ" : "Estimated by our model trained on Bangkok condo data. Not a formal valuation.";
+  return <span className="ai-label" tabIndex={0}><Icon name="spark" size={13} /> {label} <Icon name="info" size={13} /><span className="ai-tooltip">{tooltip}</span></span>;
+}
+
+function GlobalControls({ footer = false }: { footer?: boolean }) {
+  const { locale, setLocale, currency, setCurrency, area, setArea } = usePreferences();
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  return (
+    <div className={`global-controls ${footer ? "footer-controls" : ""}`}>
+      <div className="global-select">
+        <button aria-expanded={languageOpen} onClick={() => { setLanguageOpen(!languageOpen); setCurrencyOpen(false); }}><Icon name="globe" size={17} /><span>{locale}</span><Icon name="chevron" size={13} /></button>
+        {languageOpen && <div className="global-menu language-menu"><strong>Language</strong>{languages.map(item => <button className={locale === item.code ? "active" : ""} key={item.code} onClick={() => { setLocale(item.code); setLanguageOpen(false); }}><span><b>{item.label}</b><small>{item.name}</small></span>{locale === item.code && <Icon name="check" size={16} />}</button>)}</div>}
+      </div>
+      <div className="global-select">
+        <button aria-expanded={currencyOpen} onClick={() => { setCurrencyOpen(!currencyOpen); setLanguageOpen(false); }}><span>{currency}</span><Icon name="chevron" size={13} /></button>
+        {currencyOpen && <div className="global-menu currency-menu"><strong>Reference currency</strong>{currencies.map(item => <button className={currency === item.code ? "active" : ""} key={item.code} onClick={() => { setCurrency(item.code); setCurrencyOpen(false); }}><span>{item.label}</span>{currency === item.code && <Icon name="check" size={15} />}</button>)}<small><Icon name="info" size={12} /> Converted at today’s rate. For reference only.</small></div>}
+      </div>
+      <div className="area-toggle"><button className={area === "m²" ? "active" : ""} onClick={() => setArea("m²")}>m²</button><button className={area === "sq ft" ? "active" : ""} onClick={() => setArea("sq ft")}>sq ft</button></div>
+    </div>
+  );
+}
+
+function Header({ screen, go, openVoice }: { screen: Screen; go: (screen: Screen) => void; openVoice: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="site-header">
+      <div className="nav-shell">
+        <button className="logo" data-plain onClick={() => go("home")}>
+          <span className="logo-mark" aria-hidden="true"><i /><b /></span><span>U-Estate</span>
+        </button>
+        <div className="tablet-links"><button onClick={() => go("browse")}>Browse</button><button onClick={() => go("match")}>Smart Match</button></div>
+        <nav className={open ? "nav-links open" : "nav-links"} aria-label="Primary navigation">
+          <button className={screen === "browse" ? "active" : ""} onClick={() => { go("browse"); setOpen(false); }}>Browse</button>
+          <button className={screen === "match" ? "active" : ""} onClick={() => { go("match"); setOpen(false); }}>Smart Match</button>
+          <button className={screen === "ai" ? "active" : ""} onClick={() => { go("ai"); setOpen(false); }}>How our AI works</button>
+          <button className={screen === "saved" ? "active" : ""} onClick={() => go("saved")}>Saved <span className="count">3</span></button>
+          <button className="ask-ai-nav" onClick={openVoice}><Icon name="mic" size={16} /> Ask AI</button>
+          <button className="sign-in">Sign in</button>
+          <GlobalControls />
+        </nav>
+        <button className="mobile-mic" aria-label="Ask AI" onClick={openVoice}><Icon name="mic" /></button>
+        <button className="menu-button" aria-label="Toggle menu" onClick={() => setOpen(!open)}><Icon name={open ? "close" : "menu"} /></button>
+      </div>
+    </header>
+  );
+}
+
+function Home({ go, openVoice }: { go: (s: Screen) => void; openVoice: () => void }) {
+  const { locale } = usePreferences();
+  const text = copy[locale as keyof typeof copy] || copy.EN;
+  const prompts = locale === "TH"
+    ? ["หาคอนโดใกล้ BTS งบไม่เกิน 5 ล้านบาท", "แสดงคอนโดความเสี่ยงต่ำในอารีย์", "ห้องหนึ่งนอนที่ไหนคุ้มค่าที่สุด"]
+    : locale === "ZH"
+      ? ["查找 BTS 附近五百万泰铢以下的公寓", "显示 Ari 的低风险公寓", "哪套一居室最值得购买？"]
+      : ["Find a condo near BTS under ฿5 million", "Show low-risk condos in Ari", "Which one-bedroom has the best value?"];
+  const extra = locale === "TH" ? {
+    stats: ["วิเคราะห์โครงการคอนโดกว่า 18,000 แห่ง", "ทดสอบกับอสังหาริมทรัพย์ที่ AI ไม่เคยเห็น", "ตรวจสอบสัญญาณมิจฉาชีพในทุกประกาศ"],
+    market: ["เลือกตลาด", "ประสบการณ์ที่เชื่อถือได้ในทุกประเทศ", "เปิดให้บริการ · คอนโดกรุงเทพฯ", "เร็ว ๆ นี้"],
+    how: ["ขั้นตอนการใช้งาน", "เปลี่ยนความไม่แน่ใจให้เป็นการตัดสินใจที่ชัดเจน"],
+    features: [["mic","บอกเราว่าคุณต้องการอะไร","ค้นหาด้วยเสียงอย่างเป็นธรรมชาติ หรือตอบคำถามง่าย ๆ สามข้อ"],["spark","ดูราคาและความเสี่ยงจาก AI","เปรียบเทียบราคาที่เหมาะสม สัญญาณราคา และความเสี่ยงด้วยภาษาที่เข้าใจง่าย"],["shield","ตัดสินใจอย่างมั่นใจ","บันทึกรายการ ถามคำถาม และยื่นข้อเสนอเมื่อคุณพร้อม"]],
+    featured: ["คอนโดแนะนำ","รายการที่ควรพิจารณา","ดูประกาศทั้งหมด"],
+    trust: ["ทำไมจึงเชื่อถือ AI ของเราได้","เราเปิดเผยแหล่งข้อมูล วิธีทดสอบ ความแม่นยำ และข้อจำกัดของทุกการประเมิน","อ่านข้อมูลโมเดล"],
+  } : locale === "ZH" ? {
+    stats: ["已分析 18,000+ 个公寓项目", "在模型从未见过的房产上进行测试", "每套房源均提供诈骗预警"],
+    market: ["选择市场", "跨越国界，始终值得信赖", "已上线 · 曼谷公寓", "即将推出"],
+    how: ["使用方式", "从不确定，到更清晰的决定"],
+    features: [["mic","告诉我们您的需求","使用语音自然搜索，或回答三个简单问题。"],["spark","查看 AI 估价与风险","用清晰易懂的方式比较合理估价、价格信号和实际风险。"],["shield","更有信心地决定","收藏房源、提出问题，并在准备好后提交报价。"]],
+    featured: ["精选公寓","值得进一步了解","查看全部房源"],
+    trust: ["为什么可以信任我们的 AI？","我们公开每项估价的数据来源、测试方法、准确率和局限性。","阅读模型说明"],
+  } : {
+    stats: ["18,000+ condo projects analysed", "Tested on properties it never saw", "Scam alerts on every listing"],
+    market: ["Choose a market", "One trusted experience, across borders.", "Live · Bangkok condos", "Coming soon"],
+    how: ["How it works", "From uncertainty to a clearer decision."],
+    features: [["mic","Tell us what you need","Search naturally by voice or answer three simple questions about your goals."],["spark","See AI value and risk","Compare fair value, pricing signals and practical risks in plain English."],["shield","Decide with confidence","Shortlist, ask questions and make an offer when you are ready."]],
+    featured: ["Featured condos", "Worth a closer look.", "See all listings"],
+    trust: ["Why trust our AI?", "We publish the data sources, test method, accuracy and limitations behind every estimate.", "Read the model card"],
+  };
+  const [prompt, setPrompt] = useState(0);
+  return (
+    <main>
+      <section className="hero">
+        <div className="hero-copy">
+          <div className="eyebrow"><span /> {text.eyebrow}</div>
+          <h1>{text.hero}</h1>
+          <p>{text.sub}</p>
+          <button className="voice-search" onClick={openVoice}>
+            <span><small>{text.try}</small>{prompts[prompt]}</span>
+            <span className="mic-button"><Icon name="mic" /></span>
+          </button>
+          <div className="prompt-dots" aria-label="Example search prompts">{prompts.map((_, i) => <button aria-label={`Show example ${i + 1}`} className={prompt === i ? "active" : ""} key={i} onClick={() => setPrompt(i)} />)}</div>
+          <div className="hero-actions">
+            <Button icon="arrow" onClick={() => go("match")}>{text.quiz}</Button>
+            <Button kind="secondary" onClick={() => go("browse")}>{text.browse}</Button>
+          </div>
+        </div>
+        <div className="hero-visual">
+          <img src={photos.dusk} alt="Modern Bangkok condominium in natural daylight" />
+          <div className="value-float">
+            <div><AiLabel /><span className="good-dot">Good value</span></div>
+            <strong>฿4.7M – ฿5.1M</strong>
+            <small>Fair-value range</small>
+          </div>
+        </div>
+      </section>
+      <section className="trust-stats">
+        <div><strong>18,000+</strong><span>{extra.stats[0]}</span></div>
+        <div><Icon name="shield" /><span>{extra.stats[1]}</span></div>
+        <div><Icon name="warning" /><span>{extra.stats[2]}</span></div>
+      </section>
+      <section className="market-picker">
+        <div className="section-intro"><div><span className="kicker">{extra.market[0]}</span><h2>{extra.market[1]}</h2></div></div>
+        <div className="market-cards">
+          <button className="market-card live"><span className="flag">TH</span><span><strong>{locale === "ZH" ? "泰国" : locale === "TH" ? "ประเทศไทย" : "Thailand"}</strong><small><i /> {extra.market[2]}</small></span><Icon name="check" /></button>
+          {[["VN","Vietnam"],["MY","Malaysia"],["JP","Japan"],["AU","Australia"]].map(([code,name]) => <button className="market-card" key={code}><span className="flag">{code}</span><span><strong>{name}</strong><small>{extra.market[3]}</small></span></button>)}
+        </div>
+      </section>
+      <section className="feature-section">
+        <div className="section-intro">
+          <span className="kicker">{extra.how[0]}</span>
+          <h2>{extra.how[1]}</h2>
+        </div>
+        <div className="feature-grid">
+          {extra.features.map(([icon, title, text], i) => (
+            <article className="feature-card" key={title}>
+              <span className="feature-number">0{i + 1}</span>
+              <span className="icon-box"><Icon name={icon as IconName} /></span>
+              <h3>{title}</h3><p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="featured-section">
+        <div className="section-intro"><div><span className="kicker">{extra.featured[0]}</span><h2>{extra.featured[1]}</h2></div><Button kind="secondary" icon="arrow" onClick={() => go("browse")}>{extra.featured[2]}</Button></div>
+        <div className="featured-track">{listings.slice(0, 4).map(item => <PropertyCard item={item} go={go} key={item.name} />)}</div>
+      </section>
+      <section className="ai-trust-callout">
+        <div><AiLabel /><h2>{extra.trust[0]}</h2><p>{extra.trust[1]}</p></div>
+        <Button kind="secondary" icon="arrow" onClick={() => go("ai")}>{extra.trust[2]}</Button>
+      </section>
+      <section className="ecosystem">
+        <div><span className="kicker light">Part of U-topia</span><h2>Property, with a wider financial view.</h2></div>
+        <p>U-Estate connects property intelligence with the U-topia ecosystem—a borderless finance platform built for more accessible investments.</p>
+        <Icon name="arrow" size={32} />
+      </section>
+    </main>
+  );
+}
+
+function SmartMatch({ go }: { go: (s: Screen) => void }) {
+  const [step, setStep] = useState(1);
+  const [choices, setChoices] = useState<Record<number, string>>({});
+  const questions = [
+    { title: "What are you looking for?", sub: "Choose the option closest to your goal.", options: [["building", "A home to live in", "A calm place that feels like yours"], ["trend", "An investment property", "Rental income or long-term growth"], ["map", "A place to rent", "Flexible living without buying"]] },
+    { title: "What is your budget?", sub: "We’ll only show realistic matches.", options: [["spark", "Up to ฿3 million", "Accessible city living"], ["spark", "฿3–5 million", "The widest range of matches"], ["spark", "Above ฿5 million", "More space or prime locations"]] },
+    { title: "What matters most?", sub: "This will carry the most weight in your ranking.", options: [["train", "Transportation and convenience", "Shorter walks and easier journeys"], ["trend", "Investment returns", "Yield and long-term price potential"], ["shield", "Safety and environmental risks", "A lower-risk, more resilient choice"]] },
+  ];
+  const q = questions[step - 1];
+  const select = (value: string) => {
+    setChoices({ ...choices, [step]: value });
+  };
+  if (step === 4) {
+    return (
+      <main className="page-shell match-results">
+        <button className="back-link" onClick={() => setStep(1)}>← Retake quiz</button>
+        <div className="result-head">
+          <div><span className="kicker">Smart Match complete</span><h1>Your matching profile</h1><p>Ranked for your priorities, not paid placement.</p></div>
+          <div className="match-score"><span>94%</span><small>match confidence</small></div>
+        </div>
+        <section className="profile-card">
+          <div><small>GOAL</small><strong>{choices[1]}</strong></div>
+          <div><small>BUDGET</small><strong>{choices[2]}</strong></div>
+          <div><small>TOP PRIORITY</small><strong>{choices[3]}</strong></div>
+          <Button kind="secondary" onClick={() => setStep(1)}>Refine matches</Button>
+        </section>
+        <div className="results-title"><h2>Your top matches</h2><span>12 condos fit your profile</span></div>
+        <div className="ranked-list">
+          {listings.slice(0, 4).map((item, index) => (
+            <article className="ranked-card" key={item.name}>
+              <span className="rank">0{index + 1}</span>
+              <img src={item.image} alt={item.name} />
+              <div className="ranked-info">
+                <div><span className={`badge ${item.tone}`}><Icon name={item.tone === "danger" ? "warning" : "spark"} size={13} /> {item.badge}</span><span className="district">{item.district}</span></div>
+                <h3>{item.name}</h3><strong>{item.price}</strong><small>{item.size} · {item.ppm}</small>
+                <p><Icon name="spark" size={16} /><span><b>{92 - index * 3}% match</b> · {item.station} · {item.delta.toLowerCase()}</span></p>
+              </div>
+              <Button kind="ghost" icon="chevron" onClick={() => go("detail")}>View</Button>
+            </article>
+          ))}
+        </div>
+      </main>
+    );
+  }
+  return (
+    <main className="quiz-layout">
+      <aside className="quiz-aside">
+        <Logo inverse />
+        <div><span className="kicker light">Smart Match</span><h2>Three answers.<br />A clearer shortlist.</h2><p>Tell us what matters. We’ll explain why every property matches.</p></div>
+        <div className="aside-trust"><Icon name="shield" /> Your answers stay private.</div>
+      </aside>
+      <section className="quiz-panel">
+        <button className="close-quiz" aria-label="Close quiz" onClick={() => go("home")}><Icon name="close" /></button>
+        <div className="progress-meta"><span>Step {step} of 3</span><span>{Math.round((step / 3) * 100)}% complete</span></div>
+        <div className="progress"><i style={{ width: `${(step / 3) * 100}%` }} /></div>
+        <div className="question">
+          <span className="kicker">A little about you</span><h1>{q.title}</h1><p>{q.sub}</p>
+          <div className="answer-grid">
+            {q.options.map(([icon, title, sub]) => (
+              <button className={choices[step] === title ? "answer selected" : "answer"} key={title} onClick={() => select(title)}>
+                <span className="answer-icon"><Icon name={icon as IconName} /></span>
+                <span><strong>{title}</strong><small>{sub}</small></span>{choices[step] === title && <Icon name="check" />}
+              </button>
+            ))}
+          </div>
+          <div className="quiz-actions">
+            {step > 1 ? <Button kind="secondary" onClick={() => setStep(step - 1)}>Back</Button> : <span />}
+            <Button icon="arrow" onClick={() => choices[step] && setStep(step < 3 ? step + 1 : 4)}>{step === 3 ? "See my matches" : "Next"}</Button>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PropertyCard({ item, go }: { item: typeof listings[number]; go: (s: Screen) => void }) {
+  const { locale, currency, area } = usePreferences();
+  const [saved, setSaved] = useState(false);
+  const [why, setWhy] = useState(false);
+  const converted = displayPrice(item.price, currency, locale);
+  const sqm = Number(item.size.replace(/[^\d]/g, ""));
+  const shownArea = area === "m²" ? item.size : `${Math.round(sqm * 10.764).toLocaleString(localeTags[locale])} sq ft`;
+  const foreignEligible = item.tone !== "danger";
+  return (
+    <article className={`property-card ${item.tone === "danger" ? "scam" : ""}`}>
+      {item.tone === "danger" && <div className="scam-alert"><div><Icon name="warning" size={17} /><span><strong>Too good to be true</strong><small>Priced 35% below its AI fair value.</small></span><button onClick={() => setWhy(!why)}>Why?</button></div>{why && <ul><li>Price is far below similar units</li><li>Seller identity is not yet verified</li><li>Deposit requested before viewing</li></ul>}</div>}
+      <div className="property-image">
+        <img src={item.image} alt={item.name} />
+        <button className={saved ? "save saved" : "save"} aria-label="Save property" onClick={() => setSaved(!saved)}><Icon name="heart" /></button>
+        <span className={`badge ${item.tone}`}><Icon name={item.tone === "danger" ? "warning" : "spark"} size={13} /> {item.tone === "danger" ? item.badge : `${item.badge} · ${item.delta}`}</span>
+        {foreignEligible && <span className="foreign-badge" tabIndex={0}><Icon name="globe" size={12} /> Foreign-quota eligible<span>Foreigners may own condo units while the building remains within Thailand’s 49% foreign ownership quota.</span></span>}
+      </div>
+      <button className="property-body" data-plain onClick={() => go("detail")}>
+        <span className="district">{item.district}</span><h3>{item.name}</h3><strong>{item.price}</strong>
+        {converted && <small className="converted-price" title="Converted at today’s rate. For reference only.">{converted} <Icon name="info" size={12} /></small>}
+        <div><span>{shownArea}</span><span>{item.ppm}</span></div>
+        <div className="property-meta"><span><Icon name="train" size={14} /> {item.station}</span><span className={`risk-dot ${item.risk.toLowerCase().replace(" risk", "")}`}><i /> {item.risk}</span></div>
+      </button>
+    </article>
+  );
+}
+
+function Browse({ go }: { go: (s: Screen) => void }) {
+  const [filters, setFilters] = useState(false);
+  const [district, setDistrict] = useState("All districts");
+  const [hideFlagged, setHideFlagged] = useState(false);
+  const [foreignOnly, setForeignOnly] = useState(true);
+  const [view, setView] = useState("grid");
+  const [resultState, setResultState] = useState<"results" | "loading" | "empty" | "error">("results");
+  const visible = useMemo(() => {
+    const byDistrict = district === "All districts" ? listings : listings.filter((l) => l.district === district);
+    const safe = hideFlagged ? byDistrict.filter((l) => l.tone !== "danger") : byDistrict;
+    return foreignOnly ? safe.filter((l) => l.tone !== "danger") : safe;
+  }, [district, hideFlagged, foreignOnly]);
+  return (
+    <main className="page-shell browse-page">
+      <div className="browse-header">
+        <div><span className="kicker">Active market</span><div className="market-title"><h1>Bangkok, Thailand</h1><button>Change market</button></div><p>Every listing comes with an AI value check.</p></div>
+        <button className="mobile-filter btn btn-secondary" onClick={() => setFilters(!filters)}><Icon name="filter" /> Filters</button>
+      </div>
+      <div className="mobile-market-toolbar"><button className="mobile-search"><Icon name="spark" size={16} /> Search Bangkok condos</button><button onClick={() => setFilters(true)}><Icon name="filter" size={16} /> Filters <span>3</span></button><button><Icon name="chevron" size={16} /> Sort</button></div>
+      <div className="market-layout">
+        {filters && <button className="filter-scrim" aria-label="Close filters" onClick={() => setFilters(false)} />}
+        <aside className={`filters ${filters ? "show" : ""}`}>
+          <span className="sheet-handle" aria-hidden="true" />
+          <div className="filter-title"><h2>Filters <small>3 active</small></h2><button>Clear all</button><button className="filter-close" aria-label="Close filters" onClick={() => setFilters(false)}><Icon name="close" /></button></div>
+          <label>District<div className="district-options">{["All districts", "Sukhumvit", "Thonglor", "Ari", "Silom", "Sathorn", "Bang Na", "Ratchada", "On Nut", "Phaya Thai"].map(x => <button className={district === x ? "selected" : ""} onClick={() => setDistrict(x)} key={x}><span>{district === x && <Icon name="check" size={12} />}</span>{x}</button>)}</div></label>
+          <label>Price range<div className="dual-input"><input value="฿1M" readOnly /><span>—</span><input value="฿15M" readOnly /></div><input aria-label="Maximum price" type="range" /></label>
+          <label>Size (m²)<div className="chip-row"><button>Any</button><button>30+</button><button>40+</button></div></label>
+          <label>Bedrooms<div className="chip-row"><button>Studio</button><button className="selected">1</button><button>2+</button></div></label>
+          <label>Distance to transit<select><option>Under 800 m</option><option>Under 400 m</option><option>Any distance</option></select></label>
+          <label>Building age<select><option>Any age</option><option>Under 5 years</option><option>Under 10 years</option></select></label>
+          <label className="toggle-row"><span>Hide flagged listings</span><button className={hideFlagged ? "toggle on" : "toggle"} aria-pressed={hideFlagged} onClick={() => setHideFlagged(!hideFlagged)}><i /></button></label>
+          <label className="toggle-row"><span>Foreign buyers: eligible units only</span><button className={foreignOnly ? "toggle on" : "toggle"} aria-pressed={foreignOnly} onClick={() => setForeignOnly(!foreignOnly)}><i /></button></label>
+          <Button className="apply-filter" onClick={() => setFilters(false)}>Show {visible.length} condos</Button>
+        </aside>
+        <section className="market-results">
+          <div className="result-tools"><span><strong>{resultState === "results" ? visible.length : 0}</strong> verified condos</span><div><select aria-label="Preview listing state" value={resultState} onChange={e => setResultState(e.target.value as typeof resultState)}><option value="results">Results</option><option value="loading">Loading state</option><option value="empty">Empty state</option><option value="error">Error state</option></select><select><option>Best value</option><option>Lowest price</option><option>Newest</option><option>Lowest risk</option></select><span className="view-toggle"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")}>Grid</button><button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>Map</button></span></div></div>
+          {resultState === "loading" && <div className="property-grid skeleton-grid">{[1,2,3,4,5,6].map(x => <div className="listing-skeleton" key={x}><i /><span /><span /><b /></div>)}</div>}
+          {resultState === "empty" && <div className="state-card"><span className="state-icon"><Icon name="building" /></span><h2>No exact matches yet</h2><p>Try increasing your price range or choosing another district.</p><Button kind="secondary" onClick={() => setResultState("results")}>Clear filters</Button></div>}
+          {resultState === "error" && <div className="state-card error"><span className="state-icon"><Icon name="warning" /></span><h2>We couldn’t load listings</h2><p>Your filters are safe. Check your connection and try again.</p><Button kind="secondary" onClick={() => setResultState("results")}>Try again</Button></div>}
+          {resultState === "results" && (view === "grid" ? <div className="property-grid">{visible.map(item => <PropertyCard item={item} go={go} key={item.name} />)}</div> : <div className="market-map"><div className="map-roads" /><span className="map-pin p1">฿4.8M</span><span className="map-pin p2">฿6.2M</span><span className="map-pin p3">฿3.4M</span><span className="map-pin p4">฿9.8M</span><div className="map-card"><PropertyCard item={visible[0] || listings[0]} go={go} /></div></div>)}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function ForecastChart() {
+  return (
+    <div className="chart">
+      <div className="chart-labels"><span>฿7.0M</span><span>฿6.0M</span><span>฿5.0M</span><span>฿4.0M</span></div>
+      <svg viewBox="0 0 600 190" preserveAspectRatio="none" aria-label="Five year price forecast chart">
+        <path className="chart-area" d="M0 140 C90 132 130 126 205 117 S325 92 400 70 S510 40 600 20 L600 95 C510 100 475 115 400 120 S300 142 205 148 S90 158 0 160Z" />
+        <path className="chart-upper" d="M0 140 C90 132 130 126 205 117 S325 92 400 70 S510 40 600 20" />
+        <path className="chart-central" d="M0 150 C90 145 130 140 205 133 S325 117 400 98 S510 77 600 58" />
+        <path className="chart-lower" d="M0 160 C90 158 130 154 205 148 S325 130 400 120 S510 100 600 95" />
+        <circle cx="600" cy="58" r="5" />
+      </svg>
+      <div className="chart-years"><span>Now</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span></div>
+    </div>
+  );
+}
+
+function PropertyDetail({ openInvest }: { openInvest: () => void }) {
+  const { locale, currency, area } = usePreferences();
+  const text = copy[locale as keyof typeof copy] || copy.EN;
+  const converted = displayPrice("฿4,850,000", currency, locale);
+  const [chat, setChat] = useState<string[]>([]);
+  const [period, setPeriod] = useState("5Y");
+  const [listening, setListening] = useState(false);
+  const [riskOpen, setRiskOpen] = useState("");
+  const [original, setOriginal] = useState(false);
+  const risks = locale === "ZH" ? [
+    ["财务", "low", "价格历史稳定，本地需求健康。", "确认贷款利率和每月公共管理费。"],
+    ["社区", "low", "交通便利，空置率较低。", "建议在高峰时段和夜间各实地考察一次。"],
+    ["楼宇", "medium", "公共区域费用去年上涨了 12%。", "查看最新的物业法人账目和业主会议记录。"],
+    ["环境", "unknown", "暂无数据——请查询洪水历史和建筑地面高度。", "索取洪水记录并确认首层标高。"],
+  ] : locale === "TH" ? [
+    ["การเงิน", "low", "ประวัติราคามีเสถียรภาพและความต้องการในพื้นที่อยู่ในระดับดี", "ตรวจสอบอัตราดอกเบี้ยเงินกู้และค่าส่วนกลางรายเดือน"],
+    ["ย่านที่ตั้ง", "low", "เดินทางสะดวกและมีอัตราห้องว่างต่ำ", "ควรไปดูพื้นที่ทั้งช่วงเวลาเร่งด่วนและตอนกลางคืน"],
+    ["อาคาร", "medium", "ค่าส่วนกลางเพิ่มขึ้น 12% ในปีที่ผ่านมา", "ตรวจสอบงบการเงินและรายงานการประชุมของนิติบุคคลล่าสุด"],
+    ["สิ่งแวดล้อม", "unknown", "ยังไม่มีข้อมูล โปรดตรวจสอบประวัติน้ำท่วมและระดับความสูงของอาคาร", "ขอข้อมูลน้ำท่วมและยืนยันระดับพื้นชั้นล่าง"],
+  ] : [
+    ["Financial", "low", "Stable price history and healthy local demand.", "Confirm your loan rate and monthly common fees."],
+    ["Neighborhood", "low", "Well-connected area with low vacancy.", "Visit once during rush hour and once at night."],
+    ["Building", "medium", "Common-area fees rose 12% last year.", "Review the latest juristic-person accounts and meeting minutes."],
+    ["Environmental", "unknown", "Data not available yet — check flood history and building elevation.", "Request flood records and confirm the ground-floor elevation."],
+  ];
+  return (
+    <main className="detail-page">
+      <div className="detail-gallery">
+        <img className="gallery-main" src={photos.dusk} alt="The Line Sukhumvit 101 exterior" />
+        <img src={photos.interior} alt="Condo living room" /><img src={photos.city} alt="Bangkok skyline view" /><img src={photos.white} alt="Building facade" /><img src={photos.river} alt="Neighborhood and river view" />
+        <button><Icon name="building" /> View all 18 photos</button>
+        <div className="gallery-mobile-meta"><span>1 / 5</span><div>{[1,2,3,4,5].map((x) => <i className={x === 1 ? "active" : ""} key={x} />)}</div></div>
+      </div>
+      <div className="detail-shell">
+        <div className="detail-content">
+          <section className="property-heading">
+            <div><span className="district">{text.detailDistrict}</span><h1>The Line Sukhumvit 101</h1><div className="property-facts"><span>{area === "m²" ? "35 m²" : "377 sq ft"}</span><span>{locale === "ZH" ? "1 间卧室" : locale === "TH" ? "1 ห้องนอน" : "1 bedroom"}</span><span>{locale === "ZH" ? "18 楼" : locale === "TH" ? "ชั้น 18" : "18th floor"}</span><span>{locale === "ZH" ? "2020年建成" : locale === "TH" ? "สร้างปี 2020" : "Built 2020"}</span><span>฿138,571 / {area}</span></div></div>
+          </section>
+          <section className="translation-banner"><Icon name="spark" size={15} /><span>{locale === "ZH" ? "由 AI 从泰语翻译" : locale === "TH" ? "ต้นฉบับภาษาไทย" : "Translated from Thai by AI"} · <button onClick={() => setOriginal(!original)}>{original ? "Show translation" : "Show original"}</button></span><small>AI translation — may contain errors.</small></section>
+          <p className="owner-description">{original ? "ห้องมุมชั้นสูง วิวเมือง ไม่มีตึกบัง เฟอร์นิเจอร์ครบ พร้อมเข้าอยู่ ใกล้ BTS ปุณณวิถีและทรูดิจิทัลพาร์ค" : locale === "ZH" ? "高层转角单位，城市景观无遮挡，家具齐全，可立即入住。步行即可到达 BTS Punnawithi 站和 True Digital Park。" : "High-floor corner unit with an open city view. Fully furnished and ready to move in, within walking distance of BTS Punnawithi and True Digital Park."}</p>
+          <section className="amenity-row">
+            {[["train", "BTS Punnawithi", "8 min walk"], ["building", "Kluaynamthai Hospital", "12 min walk"], ["map", "Anglo Singapore School", "14 min walk"], ["building", "True Digital Park", "10 min walk"]].map(([icon, a, b]) => <div key={a}><Icon name={icon as IconName} /><span><strong>{a}</strong><small>{b}</small></span></div>)}
+          </section>
+          <section className="intel-card fair-value">
+            <div className="card-head"><div><AiLabel /><h2>{text.fair}</h2><p>{locale === "ZH" ? "基于 2,418 套相似曼谷公寓的成交数据。" : locale === "TH" ? "อ้างอิงข้อมูลการขายคอนโดที่คล้ายกัน 2,418 รายการ" : "Based on 2,418 similar Bangkok condo sales."}</p></div><span className="badge good"><Icon name="spark" size={14} /> {locale === "ZH" ? "价格合理 · 低于合理估价 3.4%" : locale === "TH" ? "คุ้มค่า · ต่ำกว่าราคาประเมิน 3.4%" : "Good value · 3.4% below fair value"}</span></div>
+            <div className="value-comparison"><div><small>ASKING PRICE</small><strong>฿4.85M</strong></div><div><small>LIKELY VALUE</small><strong>฿5.02M</strong></div><div><small>DIFFERENCE</small><strong className="positive">3.4% below</strong></div></div>
+            <div className="range-labels"><span>Low<br /><b>฿4.68M</b></span><span>Likely<br /><b>฿5.02M</b></span><span>High<br /><b>฿5.26M</b></span></div>
+            <div className="value-bar"><i /><span className="asking-marker"><b>Asking</b></span><span className="likely-marker" /></div>
+          </section>
+          <section className="intel-card">
+            <div className="card-head"><div><AiLabel /><h2>Price forecast</h2><p>Estimated future value based on local market signals.</p></div><div className="tabs">{["1Y", "3Y", "5Y"].map(x => <button className={period === x ? "active" : ""} onClick={() => setPeriod(x)} key={x}>{x}</button>)}</div></div>
+            <ForecastChart />
+            <div className="forecast-summary"><div><small>CENTRAL ESTIMATE</small><strong>{period === "1Y" ? "฿5.08M" : period === "3Y" ? "฿5.58M" : "฿6.14M"}</strong></div><div><small>ESTIMATED RANGE</small><strong>{period === "1Y" ? "฿4.86M–฿5.31M" : period === "3Y" ? "฿5.03M–฿6.02M" : "฿5.42M–฿6.81M"}</strong></div><span><Icon name="info" size={14} /> Based on historical district changes. Not a guarantee.</span></div>
+          </section>
+          <section className="intel-card risk-card">
+            <div className="card-head"><div><AiLabel /><h2>{text.risk}</h2><p>{locale === "ZH" ? "用清晰易懂的方式说明需要关注的事项。" : locale === "TH" ? "สรุปสิ่งที่ควรพิจารณาด้วยภาษาที่เข้าใจง่าย" : "A plain-language look at what deserves attention."}</p></div><Button kind="secondary" icon="speaker" onClick={() => setListening(!listening)}>{listening ? (locale === "ZH" ? "正在播放中文摘要…" : locale === "TH" ? "กำลังเล่นสรุปภาษาไทย…" : "Playing English summary…") : (locale === "ZH" ? "收听中文摘要" : locale === "TH" ? "ฟังสรุปภาษาไทย" : "Listen in English")}</Button></div>
+            <div className="risk-overall"><div><small>OVERALL RISK</small><strong>Medium</strong></div><div className="risk-segments"><i className="on" /><i className="on" /><i /><span>Some items deserve a closer look</span></div></div>
+            {listening && <div className="audio-progress"><Icon name="speaker" size={15} /><span><i /></span><small>0:18 / 0:46</small></div>}
+            <div className="risk-list">{risks.map(([name, tone, text, next]) => <div className={riskOpen === name ? "open" : ""} key={name}><button onClick={() => setRiskOpen(riskOpen === name ? "" : name)}><span className={`severity ${tone}`} /><strong>{name}</strong><span className={`severity-label ${tone}`}><Icon name={tone === "medium" ? "warning" : tone === "low" ? "check" : "info"} size={12} />{tone === "unknown" ? "Data unavailable" : `${tone} risk`}</span><Icon name="chevron" size={17} /></button>{riskOpen === name && <div className="risk-evidence"><p>{text}</p><span><b>What to check next</b>{next}</span></div>}</div>)}</div>
+          </section>
+          <section className="intel-card neighborhood-card">
+            <div className="card-head"><div><span className="kicker">Neighborhood</span><h2>Everything close enough to use.</h2><p>Walking times are approximate and should be verified.</p></div></div>
+            <div className="neighborhood-layout"><div className="mini-map"><div className="map-roads" /><span className="place-pin home"><Icon name="building" size={15} /></span><span className="place-pin station"><Icon name="train" size={15} /></span><span className="place-pin mall"><Icon name="map" size={15} /></span></div><div className="nearby-list">{[["train","BTS Punnawithi","8 min walk"],["building","Kluaynamthai Hospital","12 min"],["map","Anglo Singapore School","14 min"],["building","True Digital Park","10 min"]].map(([icon,name,time]) => <div key={name}><Icon name={icon as IconName} /><span><strong>{name}</strong><small>{time}</small></span></div>)}</div></div>
+          </section>
+          <section className="intel-card price-factors">
+            <div className="card-head"><div><AiLabel /><h2>Why this price?</h2><p>The strongest factors moving this estimate up or down.</p></div></div>
+            <div>{[["Near BTS","+12%",82,"up"],["High floor and open view","+7%",58,"up"],["Building age","−5%",38,"down"]].map(([name,value,width,tone]) => <div className="factor-row" key={name}><span>{name}</span><div><i className={tone} style={{width:`${width}%`}} /></div><strong>{value}</strong></div>)}</div>
+          </section>
+          <section className="intel-card abroad-card">
+            <div className="card-head"><div><span className="kicker">International buyer guide</span><h2>{text.abroad}</h2><p>{locale === "ZH" ? "外国买家在泰国购买公寓时需要了解的主要事项。" : locale === "TH" ? "ข้อมูลสำคัญสำหรับผู้ซื้อชาวต่างชาติในประเทศไทย" : "Key points for foreign buyers purchasing a condo in Thailand."}</p></div><span className="foreign-badge static"><Icon name="globe" size={13} /> Foreign-quota eligible</span></div>
+            <div className="abroad-grid">
+              <div><Icon name="check" /><span><strong>What you can own</strong><p>Foreigners can own a condominium unit freehold if the building remains within its 49% foreign ownership quota.</p></span></div>
+              <div><Icon name="warning" /><span><strong>What you cannot own directly</strong><p>Foreigners generally cannot directly own land in Thailand. Different rules apply to leasehold and structures.</p></span></div>
+              <div><Icon name="trend" /><span><strong>Transfer funds from overseas</strong><p>Purchase funds should arrive in Thailand from abroad in foreign currency, with bank evidence retained for transfer.</p></span></div>
+              <div><Icon name="info" /><span><strong>Estimated buying costs</strong><p>Plan for transfer fees, taxes, legal review and ongoing common-area fees. Exact responsibility depends on the contract.</p></span></div>
+            </div>
+            <div className="lawyer-note"><Icon name="shield" /><span><strong>Talk to a licensed lawyer</strong>Independent legal advice can confirm quota, title, contract terms and transfer requirements.</span><Button kind="secondary">Find legal guidance</Button></div>
+          </section>
+        </div>
+        <aside className="detail-aside">
+          <section className="ask-card">
+            <div className="ask-title"><span className="ask-icon"><Icon name="spark" /></span><div><h2>Ask U-Estate AI</h2><p>About this property</p></div></div>
+            <div className="ai-message">I can explain this condo’s value, forecast, rental potential or risks.</div>
+            {chat.map((message, i) => <div className={i % 2 ? "ai-message" : "user-message"} key={`${message}-${i}`}>{message}</div>)}
+            <div className="suggestions">{["Is this good to rent out?", "Why is the risk medium?"].map(q => <button key={q} onClick={() => setChat([...chat, q, q.includes("rent") ? "Similar one-bedroom units nearby have an estimated gross yield range of 4.6–5.1%." : "The main reason is a recent rise in common-area fees. Other risk areas are currently low."])}>{q}<Icon name="arrow" size={14} /></button>)}</div>
+            <div className="translated-chat"><small>OWNER MESSAGE · AUTO-TRANSLATED</small><p>{locale === "ZH" ? "房间下周可以看房。我可以提供最新的公共管理费收据。" : locale === "TH" ? "สามารถเข้าชมห้องได้ในสัปดาห์หน้า และฉันมีใบเสร็จค่าส่วนกลางล่าสุด" : "The room is available to view next week. I can provide the latest common-fee receipt."}</p><button>See original Thai</button><span>AI translation — may contain errors.</span></div>
+            <div className="chat-input"><input placeholder="Ask about this condo…" /><button aria-label="Use microphone"><Icon name="mic" /></button></div>
+            <small className="ai-note"><Icon name="info" size={12} /> AI estimate, not financial advice.</small>
+          </section>
+          <div className="sticky-actions">
+            <small>ASKING PRICE</small><strong className="sticky-price">฿4,850,000</strong>
+            {converted && <small className="converted-price">{converted} <Icon name="info" size={12} /><span>Converted at today’s rate. For reference only.</span></small>}
+            <span className="badge good"><Icon name="spark" size={13} /> Good value · 3.4% below</span>
+            <Button icon="arrow">Make an offer</Button>
+            <Button kind="secondary" onClick={openInvest}>Invest from ฿10,000 — simulation</Button>
+            <span>TESTNET DEMO · NO REAL MONEY</span>
+            <Button kind="ghost" icon="heart">Save property</Button>
+            <Button kind="ghost" icon="spark">Ask AI about this property</Button>
+          </div>
+        </aside>
+      </div>
+      <div className="mobile-detail-actions"><span><small>ASKING PRICE</small><strong>฿4,850,000</strong></span><Button>Make an offer</Button><button aria-label="Ask AI"><Icon name="spark" /></button></div>
+    </main>
+  );
+}
+
+function Offers() {
+  const { locale } = usePreferences();
+  const [action, setAction] = useState("");
+  const [sealed, setSealed] = useState(true);
+  const offers = [
+    ["Narin S.", "฿4,700,000", "−3.1%", "Yes", "21 days", "Inspection only", "Yes"],
+    ["Maya K.", "฿4,760,000", "−1.9%", "Cash", "14 days", "None", "Yes"],
+    ["Daniel W.", "฿4,850,000", "Asking", "Yes", "45 days", "Loan approval", "Pending"],
+  ];
+  return (
+    <main className="page-shell offers-page">
+      <div className="seller-tag">SELLER WORKSPACE</div>
+      <div className="offers-head"><div><span className="kicker">FairOffer workspace</span><h1>3 offers on Ashton Ari 1BR</h1><p>Compare the details—not just the highest number.</p></div><div className="mini-property"><img src={photos.dusk} alt="" /><div><strong>Listed at ฿4,850,000</strong><span>35 m² · Ari</span></div></div></div>
+      <div className="bidding-toggle"><span>Bidding mode</span><button className={sealed ? "active" : ""} onClick={() => setSealed(true)}>Sealed offers</button><button className={!sealed ? "active" : ""} onClick={() => setSealed(false)}>Transparent bidding</button></div>
+      <section className="offer-table">
+        <div className="offer-row labels"><span>BUYER</span><span>OFFERED PRICE</span><span>FINANCING READY</span><span>CLOSING</span><span>CONDITIONS</span><span>ELIGIBILITY</span></div>
+        {offers.map((offer, i) => <div className={`offer-row ${i === 1 ? "recommended" : ""}`} key={offer[0]}>{i === 1 && <b className="recommended-tag"><Icon name="spark" size={12} /> AI PICK</b>}<span><i className="avatar">{offer[0][0]}</i><strong>{offer[0]}</strong></span><strong>{offer[1]} <small>{offer[2]}</small></strong><span className={offer[3] === "Yes" || offer[3] === "Cash" ? "yes" : ""}><Icon name="check" size={14} />{offer[3]}</span><span>{offer[4]}</span><span>{offer[5]}</span><span className={offer[6] === "Yes" ? "yes" : ""}>{offer[6]}</span></div>)}
+      </section>
+      <section className="recommend-card">
+        <div className="recommend-icon"><Icon name="spark" /></div>
+        <div><AiLabel /><h2>{locale === "ZH" ? "最有力的报价不一定是最高价。" : locale === "TH" ? "ข้อเสนอที่ดีที่สุดอาจไม่ใช่ราคาสูงสุด" : "The strongest offer may not be the highest."}</h2><p>{locale === "ZH" ? "Maya K. 的 476 万泰铢现金报价附加条件最少，并可在 14 天内完成交易。虽然比最高报价低 9 万泰铢，但融资风险明显更低。" : locale === "TH" ? "ข้อเสนอเงินสด 4.76 ล้านบาทของ Maya K. มีเงื่อนไขน้อยที่สุดและปิดการขายได้ภายใน 14 วัน แม้ต่ำกว่าข้อเสนอสูงสุด 90,000 บาท แต่มีความเสี่ยงด้านสินเชื่อน้อยกว่าอย่างชัดเจน" : <><strong>Maya K.’s ฿4.76M cash offer</strong> has the fewest conditions and can close in 14 days. It is ฿90,000 below the highest offer, but carries meaningfully less financing risk.</>}</p><div className="decide-note"><Icon name="info" size={15} /> {locale === "ZH" ? "AI 提供建议，决定权在您。" : locale === "TH" ? "AI ให้คำแนะนำ คุณเป็นผู้ตัดสินใจ" : "AI recommends; you decide."}</div><small className="translation-note">AI translation — may contain errors.</small></div>
+        <div className="offer-actions"><Button onClick={() => setAction("Offer accepted")}>Accept</Button><Button kind="secondary" onClick={() => setAction("Counter offer started")}>Counter</Button><Button kind="ghost" onClick={() => setAction("Offer declined")}>Decline</Button>{action && <span className="action-toast"><Icon name="check" size={14} /> {action}</span>}</div>
+      </section>
+    </main>
+  );
+}
+
+function AiModelCard() {
+  const { locale } = usePreferences();
+  const updated = new Intl.DateTimeFormat(localeTags[locale], { day: "numeric", month: "short", year: "numeric" }).format(new Date("2026-10-15"));
+  return (
+    <main className="model-page">
+      <section className="model-hero">
+        <div><span className="kicker light">AI, explained</span><h1>Clear answers should come with <em>clear evidence.</em></h1><p>See what our model learns from, how we test it, and where its limits are.</p></div>
+        <div className="model-stamp"><Icon name="shield" size={34} /><span>MODEL CARD</span><strong>Bangkok Condo Valuation v2.4</strong><small>Last reviewed {updated}</small></div>
+      </section>
+      <div className="page-shell model-content">
+        <section className="model-metrics">
+          <div><small>MEDIAN ERROR</small><strong>6.8%</strong><span>On unseen properties</span></div>
+          <div><small>WITHIN ±10%</small><strong>81%</strong><span>Of held-out transactions</span></div>
+          <div><small>RANGE COVERAGE</small><strong>89%</strong><span>Actual price inside predicted range</span></div>
+        </section>
+        <section className="model-data-note"><span><b>186,420</b> Bangkok condo records</span><span><b>May 2026</b> last data update</span><span><b>Quarterly</b> model refresh</span></section>
+        <section className="model-flow">{[["building","Data"],["spark","Model"],["info","Explanation"],["speaker","Voice"]].map(([icon,label],i) => <div key={label}><span><Icon name={icon as IconName} /></span><strong>{label}</strong>{i < 3 && <Icon name="arrow" />}</div>)}</section>
+        <section className="model-grid">
+          <article><span className="step-index">01</span><h2>What data we use</h2><p>Verified listing histories, registered transfers, building attributes, neighborhood signals and transport access.</p><ul><li><Icon name="check" /> Property location, size and floor</li><li><Icon name="check" /> Building age and facilities</li><li><Icon name="check" /> Historical prices nearby</li><li><Icon name="check" /> Distance to transport and amenities</li></ul></article>
+          <article><span className="step-index">02</span><h2>What the AI does</h2><p>It finds patterns across comparable properties, then estimates a likely range rather than a single “perfect” number.</p><ul><li><Icon name="check" /> Estimates current fair value</li><li><Icon name="check" /> Flags unusual pricing patterns</li><li><Icon name="check" /> Models a range of future values</li></ul></article>
+          <article><span className="step-index">03</span><h2>What it does not do</h2><p>It does not inspect a unit, verify legal ownership, approve financing or guarantee a future return.</p><div className="caution"><Icon name="warning" /> Always review official documents and use qualified legal and property professionals.</div></article>
+        </section>
+        <section className="test-explain"><div><AiLabel /><h2>Tested on properties it never saw.</h2></div><p>Before release, we separate a group of real properties from training. We then compare the AI’s estimates with their known transaction prices. This gives a more honest view of likely real-world performance.</p></section>
+        <section className="disclaimer"><Icon name="info" /><div><h3>Plain-language disclaimer</h3><p>U-Estate’s AI provides decision support, not financial, legal or investment advice. Estimates can be wrong or incomplete. Property values and risks change over time. Always verify listing details, ownership, building records and financing terms independently before making a decision.</p></div></section>
+      </div>
+    </main>
+  );
+}
+
+function VoiceOverlay({ close, go }: { close: () => void; go: (s: Screen) => void }) {
+  const { locale, setLocale } = usePreferences();
+  const [state, setState] = useState<"idle" | "listening" | "thinking" | "answer">("idle");
+  const start = () => {
+    setState("listening");
+    setTimeout(() => setState("thinking"), 900);
+    setTimeout(() => setState("answer"), 1600);
+  };
+  return (
+    <div className="overlay voice-overlay" role="dialog" aria-modal="true" aria-label="Voice assistant">
+      <button className="overlay-close" aria-label="Close" onClick={close}><Icon name="close" /></button>
+      <div className="voice-inner">
+        <div className="voice-brand"><Logo inverse /><span>ASK AI</span></div>
+        <label className="speaking-chip"><Icon name="globe" size={14} /> Speaking:<select value={locale} onChange={e => setLocale(e.target.value as Locale)}>{languages.map(item => <option value={item.code} key={item.code}>{item.label}</option>)}</select></label>
+        {state === "idle" && <div className="voice-idle"><span className="ask-icon"><Icon name="spark" /></span><h2>What would you like to know?</h2><p>Ask naturally about value, risk, neighborhoods or matching condos.</p><div className="voice-chips">{["Find condos under ฿5M", "Is Ari good for renting?", "Explain fair value"].map(x => <button onClick={start} key={x}>{x}</button>)}</div><Button icon="mic" onClick={start}>Start listening</Button></div>}
+        {(state === "listening" || state === "thinking") && <><div className="wave">{[1,2,3,4,5,6,7,8,9].map(n => <i key={n} />)}</div><span className="listening">{state === "listening" ? "Listening…" : "Reviewing value and risk signals…"}</span><h2>“Find me a one-bedroom condo near the BTS under five million baht.”</h2></>}
+        {state === "answer" && <><div className="answer-heading"><span className="ask-icon"><Icon name="spark" /></span><div><small>ANSWER · {languages.find(x => x.code === locale)?.label}</small><h2>{locale === "JA" ? "条件に合う物件が3件見つかりました。" : locale === "ZH" ? "找到了 3 套符合条件的房源。" : locale === "TH" ? "พบคอนโดที่ตรงเงื่อนไข 3 รายการ" : "I found 3 relevant matches."}</h2></div><button aria-label="Replay answer"><Icon name="speaker" /></button></div><p className="voice-reply">{locale === "JA" ? "最も条件に合うのは The Line Sukhumvit 101 です。BTSプンナウィティ駅から徒歩8分で、AI適正価格を6％下回っています。" : locale === "ZH" ? "最符合条件的是 The Line Sukhumvit 101。步行 8 分钟可到 BTS Punnawithi，价格比 AI 合理估价低 6%。" : locale === "TH" ? "ตัวเลือกที่ตรงที่สุดคือ The Line Sukhumvit 101 เดิน 8 นาทีถึง BTS ปุณณวิถี และราคาต่ำกว่าราคาที่ AI ประเมิน 6%" : "The strongest match is The Line Sukhumvit 101. It is 8 minutes from BTS Punnawithi and priced 6% below its AI fair value."}</p><div className="voice-results">{listings.slice(0,3).map((x,i) => <button key={x.name} onClick={() => { close(); go("detail"); }}><img src={x.image} alt="" /><span><small>0{i+1} · {x.district}</small><strong>{x.name}</strong><b>{x.price}</b></span><Icon name="chevron" /></button>)}</div><small className="voice-disclaimer"><Icon name="info" size={12} /> AI translation — may contain errors. AI estimate, not financial advice.</small></>}
+      </div>
+    </div>
+  );
+}
+
+function InvestModal({ close }: { close: () => void }) {
+  const [amount, setAmount] = useState(50000);
+  const [step, setStep] = useState<"review" | "confirm" | "success">("review");
+  return (
+    <div className="overlay modal-overlay" role="dialog" aria-modal="true" aria-label="Investment simulation">
+      <section className="invest-modal">
+        <span className="sheet-handle" aria-hidden="true" />
+        <button className="modal-close" aria-label="Close" onClick={close}><Icon name="close" /></button>
+        {step !== "success" ? <><div className="modal-steps"><span className="active">1 Review</span><i /><span className={step === "confirm" ? "active" : ""}>2 Confirm</span><i /><span>3 Success</span></div><span className="demo-label">TESTNET DEMO</span><h2>{step === "review" ? "Simulate an investment" : "Confirm simulation"}</h2><p>See how fractional property investing could work in the U-topia ecosystem.</p>
+          <div className="simulation-warning"><Icon name="info" /><span><strong>Simulation only</strong>No real money or ownership.</span></div>
+          <label className="amount-input">AMOUNT (THB)<span>฿<input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} /></span></label>
+          <div className="quick-amounts">{[10000,50000,100000].map(x => <button className={amount === x ? "active" : ""} onClick={() => setAmount(x)} key={x}>฿{x.toLocaleString()}</button>)}</div>
+          <div className="share-summary"><div><span>Property value</span><strong>฿4,850,000</strong></div><div><span>Your simulated share</span><strong>{((amount / 4850000) * 100).toFixed(2)}%</strong></div><div><span>Illustrative 5-year value range</span><strong>฿{Math.round(amount*1.08).toLocaleString()}–฿{Math.round(amount*1.32).toLocaleString()}</strong></div></div>
+          <Button icon="arrow" onClick={() => setStep(step === "review" ? "confirm" : "success")}>{step === "review" ? "Review simulation" : "Confirm on testnet"}</Button>
+        </> : <div className="success-state"><span className="success-check"><Icon name="check" size={34} /></span><span className="demo-label">SIMULATION COMPLETE</span><h2>Recorded on Avalanche testnet</h2><p>Your simulated investment has been recorded. No money was transferred.</p><div className="transaction"><span>TRANSACTION ID</span><code>0x8a4f...2c91</code></div><Button icon="arrow">View on explorer</Button><button className="text-button" onClick={close}>Done</button></div>}
+      </section>
+    </div>
+  );
+}
+
+function SavedDashboard({ go }: { go: (s: Screen) => void }) {
+  return (
+    <main className="page-shell saved-page">
+      <div className="dashboard-head"><div><span className="kicker">Your dashboard</span><h1>Saved, checked and easy to compare.</h1><p>Keep your shortlist and recent AI activity in one calm workspace.</p></div><Button icon="arrow" onClick={() => go("browse")}>Browse more condos</Button></div>
+      <section className="dashboard-section"><div className="results-title"><h2>Saved properties</h2><span>3 properties</span></div><div className="saved-grid">{listings.slice(0,3).map(item => <PropertyCard item={item} go={go} key={item.name} />)}</div></section>
+      <div className="dashboard-columns">
+        <section className="dashboard-card"><div className="card-head"><div><span className="kicker">Recent activity</span><h2>AI checks</h2></div></div>{[["The Line Sukhumvit 101","Fair value refreshed","2 hours ago"],["Noble Around Ari","Risk report reviewed","Yesterday"],["Life Asoke Rama 9","5-year forecast opened","3 days ago"]].map(([name,activity,time]) => <button className="activity-row" key={name} onClick={() => go("detail")}><span className="activity-icon"><Icon name="spark" /></span><span><strong>{name}</strong><small>{activity} · {time}</small></span><Icon name="chevron" /></button>)}</section>
+        <section className="dashboard-card"><div className="card-head"><div><span className="kicker">Testnet only</span><h2>Simulated investments</h2></div></div><div className="investment-row"><span><strong>The Line Sukhumvit 101</strong><small>Recorded on Avalanche testnet</small></span><strong>฿50,000</strong></div><div className="investment-summary"><div><small>TOTAL SIMULATED</small><strong>฿50,000</strong></div><div><small>PROPERTIES</small><strong>1</strong></div></div><p className="dashboard-note"><Icon name="info" size={14} /> Simulations use no real money and create no ownership.</p></section>
+      </div>
+    </main>
+  );
+}
+
+function Footer({ go }: { go: (s: Screen) => void }) {
+  return <footer><Logo inverse /><p>U-Estate is a technology marketplace. AI results are estimates, not financial or legal advice. Investment features are testnet simulations.</p><div><button onClick={() => go("ai")}>Our AI</button><button onClick={() => go("offers")}>Seller demo</button><button onClick={() => go("saved")}>Saved</button><button>Privacy</button></div><GlobalControls footer /><span>Part of the U-topia ecosystem</span></footer>;
+}
+
+function BottomTabs({ screen, go, openVoice }: { screen: Screen; go: (screen: Screen) => void; openVoice: () => void }) {
+  return (
+    <nav className="bottom-tabs" aria-label="Mobile navigation">
+      <button className={screen === "home" ? "active" : ""} onClick={() => go("home")}><Icon name="building" /><span>Home</span></button>
+      <button className={screen === "browse" ? "active" : ""} onClick={() => go("browse")}><Icon name="map" /><span>Browse</span></button>
+      <button className="tab-ai" onClick={openVoice}><span><Icon name="mic" /></span><b>Ask AI</b></button>
+      <button className={screen === "saved" ? "active" : ""} onClick={() => go("saved")}><Icon name="heart" /><span>Saved</span></button>
+      <button><Icon name="menu" /><span>Profile</span></button>
+    </nav>
+  );
+}
+
+export default function App() {
+  const initial = (location.hash.replace("#", "") as Screen) || "home";
+  const [screen, setScreen] = useState<Screen>(["home", "match", "browse", "detail", "offers", "ai", "saved"].includes(initial) ? initial : "home");
+  const [voice, setVoice] = useState(false);
+  const [invest, setInvest] = useState(false);
+  const [locale, setLocale] = useState<Locale>("EN");
+  const [currency, setCurrency] = useState<Currency>("USD");
+  const [area, setArea] = useState<"m²" | "sq ft">("m²");
+  const go = (next: Screen) => { setScreen(next); location.hash = next; scrollTo({ top: 0, behavior: "smooth" }); };
+  return (
+    <PreferencesContext.Provider value={{ locale, setLocale, currency, setCurrency, area, setArea }}>
+    <div className={`app locale-${locale.toLowerCase()}`} lang={localeTags[locale]}>
+      {screen !== "match" && <Header screen={screen} go={go} openVoice={() => setVoice(true)} />}
+      {screen === "home" && <Home go={go} openVoice={() => setVoice(true)} />}
+      {screen === "match" && <SmartMatch go={go} />}
+      {screen === "browse" && <Browse go={go} />}
+      {screen === "detail" && <PropertyDetail openInvest={() => setInvest(true)} />}
+      {screen === "offers" && <Offers />}
+      {screen === "ai" && <AiModelCard />}
+      {screen === "saved" && <SavedDashboard go={go} />}
+      {screen !== "match" && <Footer go={go} />}
+      {screen !== "match" && <BottomTabs screen={screen} go={go} openVoice={() => setVoice(true)} />}
+      {voice && <VoiceOverlay close={() => setVoice(false)} go={go} />}
+      {invest && <InvestModal close={() => setInvest(false)} />}
+    </div>
+    </PreferencesContext.Provider>
+  );
+}

@@ -1,0 +1,3 @@
+Source: local official marketplace (claude-plugins-official/plugins/frontend-design/skills/frontend-design)
+Installed: 2026-10-15 for the U-Estate UI overhaul. Licence: see LICENSE.txt.
+Note: the requested 'agent_skills' folder does not exist on this machine.

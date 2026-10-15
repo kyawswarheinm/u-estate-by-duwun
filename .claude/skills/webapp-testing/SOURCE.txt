@@ -1,0 +1,2 @@
+Source: user-level skill ~/.claude/skills/webapp-testing (Anthropic skills).
+Installed: 2026-10-15 to smoke-test sign-in/sign-up, wallet and partner flows. Licence: see LICENSE.txt.

@@ -1,0 +1,77 @@
+import Link from "next/link";
+import { readDb } from "@/lib/store";
+import { aiConfigured } from "@/lib/ai";
+import { currentUser } from "@/lib/session";
+import { DeedCheckForm } from "@/components/DeedCheckForm";
+import { ListingForm } from "@/components/ListingForm";
+import { MyProperties } from "@/components/MyProperties";
+
+export const metadata = { title: "Sell a property | U-Estate" };
+
+export default async function SellPage({ searchParams }: { searchParams: Promise<{ listing?: string }> }) {
+  const { listing: selected } = await searchParams;
+  const [db, me] = await Promise.all([readDb(), currentUser()]);
+
+  if (!me) {
+    return (
+      <div className="grid gap-6">
+        <header className="max-w-2xl">
+          <h1 className="font-display text-5xl font-semibold">Sell with the same facts as your buyer</h1>
+          <p className="mt-3 text-lg text-deep">List your property, check your deed, and compare offers by rules you publish before any offer arrives. Your fee: 1.5% (0.75% for U-topia members), against a typical 3%.</p>
+        </header>
+        <div className="panel flex flex-wrap items-center gap-4 p-6">
+          <p className="flex-1 font-semibold">Create a free account to list a property. Any made-up email works in this demo.</p>
+          <Link href="/signup?next=/sell" className="btn btn-primary">Create account</Link>
+          <Link href="/signin?next=/sell" className="btn btn-secondary">Sign in</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const mine = db.listings
+    .filter((l) => l.sellerId === me.id)
+    .map((l) => ({ id: l.id, title: db.properties.find((p) => p.id === l.propertyId)!.title }));
+
+  return (
+    <div className="grid gap-8">
+      <header className="max-w-2xl">
+        <h1 className="font-display text-5xl font-semibold">List a property</h1>
+        <p className="mt-2 text-lg text-deep">Publish your listing, then check the deed so buyers see a verified badge.</p>
+      </header>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section aria-labelledby="new-title" className="panel p-6">
+          <h2 id="new-title" className="mb-4 text-xl font-bold">Property details</h2>
+          <ListingForm />
+        </section>
+        <aside className="grid content-start gap-3" aria-labelledby="mine-title">
+          <h2 id="mine-title" className="text-xl font-bold">Your listings</h2>
+          <MyProperties db={db} userId={me.id} compact />
+        </aside>
+      </div>
+
+      <section id="deed" aria-labelledby="deed-title" className="panel grid gap-4 p-6">
+        <div>
+          <h2 id="deed-title" className="text-xl font-bold">Check a title deed</h2>
+          <p className="mt-1 max-w-3xl text-deep">
+            AI reads the deed type, owner name and warning signs. Code then checks the name against your account and applies Thai deed rules.
+            AI flags are indicators, not proof. Ownership is only confirmed at the Land Office.
+          </p>
+        </div>
+        {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber">AI is not connected on this server yet (ANTHROPIC_API_KEY). The check will show an error.</p>}
+        <p className="text-sm">
+          Sample deeds to try: <a className="underline" href="/samples/deed-chanote-malee.png" download>clean Chanote (house)</a>,{" "}
+          <a className="underline" href="/samples/deed-condo-malee.png" download>condo title</a>,{" "}
+          <a className="underline" href="/samples/deed-landreform.png" download>land-reform certificate</a>,{" "}
+          <a className="underline" href="/samples/deed-name-mismatch.png" download>name mismatch</a>.
+          The samples are in Khun Malee&apos;s name, so on your own listing they show a name mismatch, as they should.
+        </p>
+        {mine.length ? (
+          <DeedCheckForm listings={mine} defaultListingId={selected} />
+        ) : (
+          <p className="text-deep">Publish a listing first, then check its deed here.</p>
+        )}
+      </section>
+    </div>
+  );
+}

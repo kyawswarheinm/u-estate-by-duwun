@@ -39,3 +39,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local demo data store (password hashes, sessions, QA notes) - never commit
+/.data
+!.env.example
+
+# secrets and local-only files (also enforced by scripts/check-secrets.mjs)
+*.key
+*.p12
+*.pfx
+*.local.txt
+*.local.md
+*.local.json
+.claude/settings.local.json
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
+# render / scratch output
+/tmp/
