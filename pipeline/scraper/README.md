@@ -42,6 +42,29 @@ Network-free engineering verification, **generated test fixtures only**:
 
 The smoke test runs the actual Scrapy engine against in-memory responses, with permission mocked only in the test. It verifies exactly 50 generated rows and the item cap; no network or real permission file is used. These rows stay in `out/tests/` and never enter `src/data/market/listings.json`. Real-source settings retain the two-second delay, robots obedience, caching and AutoThrottle.
 
+## P1T03 clean and export real listings
+
+After P1T02 has collected eligible **real** items, supply the audited source metadata as `out/source-sites.json`: an array with exactly `name` (matching each row's site slug), `url` (the approved HTTPS host), and `robots_checked_at` (the actual YYYY-MM-DD audit date). The existing licensed-source adapter's human permission record must already exist; this command creates neither permission nor audit evidence. Synthetic/test site names and reserved example domains are rejected.
+
+```sh
+.venv/bin/python export.py listings --input out/listings.json \
+  --sites out/source-sites.json
+```
+
+This writes the frozen `ListingsFile` shape to `src/data/market/listings.json` with `meta.source="scrape"` and `is_sample=false` **only after every check passes**. Default minimum: **200 rows after cleaning**, with no automatic reduction. `--min-items` is explicit for smaller source smoke tests; use `--output out/cleaned-smoke.json` for those. No real source items currently exist, so the app's labelled synthetic snapshot remains intact.
+
+Cleaning rules:
+
+- Normalize known type/kind aliases, Bangkok/vicinity province names and U-Estate's district spellings (including Sathon → Sathorn, case/whitespace variants and known Thai district names). Unmapped Thai district names are dropped rather than guessed into English.
+- Normalize explicit area values: square metres, **1 rai = 1,600 m²**, **1 square wa = 4 m²**. P1T02 already emits scalar square metres; the same conversion also accepts explicit value/unit objects at the cleaning boundary. Output is always a number. Ranges, unknown units and missing/nonpositive/nonfinite price or area are dropped.
+- Recompute IDs as `ext-<site>-<sha1(source_url)[:10]>` and price/m² from price/area. Keep collection timestamps; never turn export time into a collection date.
+- Deduplicate source URLs, keeping the latest collection. Equal-time conflicting facts abort; equivalent source aliases resolve deterministically. For known projects, also dedupe project + area + price within province/district/type/kind. Null projects use URL identity, preserving unrelated properties with the same price and size.
+- Remove values strictly outside the **1st–99th percentile per type**, with sale and monthly rent in separate cohorts. Percentiles use linear interpolation at `(n-1)*p`; boundary ties remain. A single value survives, but a tiny distinct cohort can become empty. Thresholds are never weakened automatically.
+- Round valid Thai coordinates to three decimals and retain their precision label. Incomplete/invalid coordinates become null/`none`; no location is invented here. Optional unknown bedrooms/dates remain null.
+- Reject extra fields, contact-bearing text/URLs, missing/unapproved provenance, source-host mismatches and timezone-free collection timestamps. Privacy violations abort the export instead of silently copying unsafe data.
+
+Counters and per-cohort thresholds are written to ignored `out/listing-cleaning-report.json` (`--report` overrides the path). Re-running on the same original raw items is deterministic. Always use the original raw items, not a previously trimmed snapshot. Input, metadata, report and snapshot paths must differ. Validation and the minimum-count check finish before writing; each output is replaced atomically. Empty/undersized/invalid input preserves the previous snapshot. No new npm dependency/script or frozen-contract field was added.
+
 ## OSM via Overpass
 
 ```sh
