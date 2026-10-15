@@ -1,0 +1,7 @@
+# Normalise line endings so scripts and hooks work on macOS, Linux and Windows
+* text=auto
+.githooks/* text eol=lf
+*.sh text eol=lf
+*.mjs text eol=lf
+*.png binary
+*.pptx binary
