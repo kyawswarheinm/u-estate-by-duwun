@@ -1,6 +1,6 @@
 # HANDOFF: status, who does what, what to do next
 
-**Updated:** Fri 16 Oct 2026, Person 1 Supabase wiring pass. **Update this file when you finish a task** (status table + "Last changes").
+**Updated:** Fri 16 Oct 2026, ~06:00 ICT (all three branches merged into `main`). **Update this file when you finish a task** (status table + "Last changes").
 
 **Event:** U-Hackathon 2026, AI track (Bangkok).
 
@@ -65,7 +65,7 @@ npm run check          # typecheck + lint + 35 unit tests + 75 database checks +
 **In progress now (core team):**
 - T28–T31: ElevenLabs key + voice agent, Tokenomist key, Avalanche wallet
 - T33: restyle partner components
-- T18: i18n
+- T18 implemented on `Joanna`; native review of machine-translated dictionaries pending (Thai first). Partner copy remains T33. See [I18N.md](I18N.md).
 - Demo rehearsal and the judge deck
 
 ## 5. What to do next: partner developer (in this order)
@@ -106,6 +106,12 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
 
 ## 8. Last changes
 
+- 16 Oct ~06:00, **merge into `main`**:
+  - Person 1 backend (`codex/person-1-backend-qa`)
+  - Meena (T07 valuation, T14 scam rules, Person 2 tests and fixes)
+  - Joanna (T18 five-language UI and Arabic RTL)
+  - Conflicts resolved by keeping both sides: Supabase logic + translated text. The deed upload hint now says JPG/PNG/WebP (GIF dropped to match the server).
+  - The three branches were deleted after merging. **Start new work from `main` on a new branch.**
 - 16 Oct ~05:30, Person 1 (Claude, continuing Codex): **backend acceptance**. 165 hosted checks pass: auth lifecycle, authorization, FairOffer privacy, concurrency, retries/boundaries, storage, realtime. Browser two-context flow passed 3 runs in a row.
   - **Fixed:** browser realtime joined as anonymous, so live chat didn't arrive.
   - **Fixed:** anyone could one-click the Reviewer persona (private deeds + reset). Use `npm run db:make-reviewer -- --email …` for a real reviewer.
@@ -116,6 +122,8 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
 
 - 16 Oct (Meena, branch `Meena`): **T14 scam rules engine** (`src/lib/market/scam.ts`): price far below estimate, duplicate photo, deed mismatch, new-seller velocity, off-platform payment/ID phrases in EN/TH/AR/ZH/ES, urgency pressure; `scanMessage()` for the chat banner; `scamCheckForListing()` for pages. UI and DB writes still to do.
 - 16 Oct (Meena, branch `Meena`): **T07 valuation engine** (hedonic ridge OLS + conformal range, factors, forecast, synthetic dataset, eval → Model Card JSON; measured on the 2026 test split: median error 4.8%, 81.3% within ±10%, range coverage 76.8%). Person 2 test scripts in `tests/` with results in `tests/PERSON2_RESULTS.md`; fixed `/api/explain` 400, voice dock Esc/focus, Land Office label, 44 px select.
+- 16 Oct 04:06 (Codex / Joanna), T18: five typed UI dictionaries, locale cookie + profile persistence, language/currency controls, THB-first dated reference FX, Arabic RTL and script fonts. Shared layout/header/CSS touched for integration. 46 unit tests + 62 DB checks, build and Chromium desktop/360px smoke pass; security review has no blockers. Native translation review pending; T33 partner copy remains separate.
+
 - 16 Oct 00:45:
   - real-time database (migrations, RLS, RPCs, realtime, storage) + `db:verify` (62/62)
   - repo safety (secret scan, hooks, CI)

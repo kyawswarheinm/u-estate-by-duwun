@@ -1,4 +1,9 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
+
+import { Label, Text } from "@/i18n/Text";
+
+import { Money } from "@/components/Money";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -30,8 +35,6 @@ const ACCOUNT_LINKS = [
   { href: "/account/settings", label: "Account settings" },
 ];
 
-const thb = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
-
 /** Brand mark (U with a keyhole) + wordmark. Assets come from /logo via scripts/brand-assets.mjs. */
 export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
@@ -49,6 +52,7 @@ export function Logo({ inverse = false }: { inverse?: boolean }) {
 }
 
 export function SiteHeader({ user, demoMode, signOutAction, notifications }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void> }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false); // account menu
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -79,15 +83,15 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
   return (
     <header className="sticky top-0 z-40 border-b border-silver bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
       <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" aria-label="U-Estate home" className="rounded-md no-underline">
+        <Link href="/" aria-label={t("U-Estate home")} className="rounded-md no-underline">
           <Logo />
         </Link>
 
-        <nav aria-label="Main" className="hidden md:block">
+        <nav aria-label={t("Main")} className="hidden md:block">
           <ul className="flex items-center gap-6">
             {NAV.map((n) => (
               <li key={n.href}>
-                <Link href={n.href} className="nav-link" aria-current={n.match(pathname) ? "page" : undefined}>{n.label}</Link>
+                <Link href={n.href} className="nav-link" aria-current={n.match(pathname) ? "page" : undefined}><Label>{n.label}</Label></Link>
               </li>
             ))}
           </ul>
@@ -102,49 +106,49 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
                 onClick={() => setMenuOpen((o) => !o)}
                 aria-expanded={menuOpen}
                 aria-controls="account-menu"
-                aria-label={`Account menu: ${user.name}`}
+                aria-label={`${t("Account menu")}: ${user.name}`}
                 className="flex min-h-11 items-center gap-2 rounded-full border border-silver bg-white py-1 ps-1 pe-3 hover:border-deep"
               >
                 <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-midnight text-sm font-bold text-ice">{user.initials}</span>
                 <span className="hidden text-start leading-tight sm:block">
                   <span className="block text-sm font-semibold">{user.name}</span>
-                  <span className="block text-xs text-muted">{thb(user.availableThb)} test money</span>
+                  <span className="block text-xs text-muted"><Money amount={user.availableThb} /> <Text message="test money" /></span>
                 </span>
               </button>
               {menuOpen && (
                 <div id="account-menu" className="absolute end-0 top-[calc(100%+8px)] w-72 rounded-[14px] border border-silver bg-white p-2 shadow-[var(--shadow)]">
                   <div className="border-b border-silver px-3 pb-3 pt-2">
                     <p className="font-semibold">{user.name}</p>
-                    <p className="text-sm text-muted">{user.isDemoPersona ? "Demo persona" : user.email}</p>
-                    <p className="mt-1 text-sm">{user.utopiaMember ? "U-topia member" : "Not a U-topia member"}</p>
+                    <p className="text-sm text-muted">{user.isDemoPersona ? <Text message="Demo persona" /> : user.email}</p>
+                    <p className="mt-1 text-sm">{user.utopiaMember ? <Text message="U-topia member" /> : <Text message="Not a U-topia member" />}</p>
                   </div>
                   <ul className="py-1">
                     {ACCOUNT_LINKS.map((l) => (
                       <li key={l.href}>
                         <Link href={l.href} className="flex min-h-11 items-center rounded-lg px-3 font-medium no-underline hover:bg-ice" aria-current={pathname === l.href ? "page" : undefined}>
-                          {l.label}
+                          <Label>{l.label}</Label>
                         </Link>
                       </li>
                     ))}
                     <li>
-                      <Link href="/sell" className="flex min-h-11 items-center rounded-lg px-3 font-medium no-underline hover:bg-ice">List a property</Link>
+                      <Link href="/sell" className="flex min-h-11 items-center rounded-lg px-3 font-medium no-underline hover:bg-ice"><Text message="List a property" /></Link>
                     </li>
                     {demoMode && (
                       <li>
-                        <Link href={`/signin?next=${next}#personas`} className="flex min-h-11 items-center rounded-lg px-3 font-medium no-underline hover:bg-ice">Switch demo persona</Link>
+                        <Link href={`/signin?next=${next}#personas`} className="flex min-h-11 items-center rounded-lg px-3 font-medium no-underline hover:bg-ice"><Text message="Switch demo persona" /></Link>
                       </li>
                     )}
                   </ul>
                   <form action={signOutAction} className="border-t border-silver pt-1">
-                    <button type="submit" className="flex min-h-11 w-full items-center rounded-lg px-3 text-start font-medium text-red hover:bg-red-soft">Sign out</button>
+                    <button type="submit" className="flex min-h-11 w-full items-center rounded-lg px-3 text-start font-medium text-red hover:bg-red-soft"><Text message="Sign out" /></button>
                   </form>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <Link href={`/signin?next=${next}`} className="btn btn-secondary hidden sm:inline-flex">Sign in</Link>
-              <Link href={`/signup?next=${next}`} className="btn btn-primary">Create account</Link>
+              <Link href={`/signin?next=${next}`} className="btn btn-secondary hidden sm:inline-flex"><Text message="Sign in" /></Link>
+              <Link href={`/signup?next=${next}`} className="btn btn-primary"><Text message="Create account" /></Link>
             </>
           )}
 
@@ -156,24 +160,24 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
             onClick={() => setMobileOpen((o) => !o)}
           >
             <span aria-hidden="true">☰</span>
-            <span className="sr-only">Menu</span>
+            <span className="sr-only"><Text message="Menu" /></span>
           </button>
         </div>
       </div>
 
       {mobileOpen && (
-        <nav id="mobile-nav" aria-label="Main" className="border-t border-silver bg-white px-4 pb-4 md:hidden">
+        <nav id="mobile-nav" aria-label={t("Main")} className="border-t border-silver bg-white px-4 pb-4 md:hidden">
           <ul className="grid">
             {NAV.map((n) => (
               <li key={n.href}>
                 <Link href={n.href} className="flex min-h-12 items-center border-b border-ice font-semibold no-underline" aria-current={n.match(pathname) ? "page" : undefined}>
-                  {n.label}
+                  <Label>{n.label}</Label>
                 </Link>
               </li>
             ))}
             {!user && (
               <li>
-                <Link href={`/signin?next=${next}`} className="flex min-h-12 items-center font-semibold no-underline">Sign in</Link>
+                <Link href={`/signin?next=${next}`} className="flex min-h-12 items-center font-semibold no-underline"><Text message="Sign in" /></Link>
               </li>
             )}
           </ul>

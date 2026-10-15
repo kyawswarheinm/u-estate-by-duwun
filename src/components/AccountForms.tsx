@@ -1,4 +1,5 @@
 "use client";
+import { Label, Text } from "@/i18n/Text";
 
 import { useActionState } from "react";
 import { changePassword, updateProfile, updateWalletSettings } from "@/app/account/actions";
@@ -36,7 +37,7 @@ export function ProfileForm({ name, nationality, locale, fixedNationality }: { n
         </Field>
       </div>
       <FormMessage state={state} />
-      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start">{pending ? "Saving…" : "Save profile"}</button>
+      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start"><Label>{pending ? "Saving…" : "Save profile"}</Label></button>
     </form>
   );
 }
@@ -58,7 +59,7 @@ export function ChangePasswordForm() {
         </Field>
       </div>
       <FormMessage state={state} />
-      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start">{pending ? "Changing…" : "Change password"}</button>
+      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start"><Label>{pending ? "Changing…" : "Change password"}</Label></button>
     </form>
   );
 }
@@ -69,14 +70,14 @@ export function WalletSettingsForm({ payoutMethod, maxCommitThb }: { payoutMetho
   return (
     <form action={action} className="grid gap-5">
       <fieldset className="grid gap-2">
-        <legend className="mb-1 font-semibold">When you sell or receive loan repayments, pay me through</legend>
+        <legend className="mb-1 font-semibold"><Text message="When you sell or receive loan repayments, pay me through" /></legend>
         <label className="panel flex cursor-pointer items-start gap-3 p-4 has-[:checked]:border-blue">
           <input type="radio" name="payoutMethod" value="escrow_bank_transfer" defaultChecked={payoutMethod !== "utopia_wallet"} className="mt-1 size-5" />
-          <span><strong className="block">Bank transfer through the escrow partner</strong><span className="text-sm text-deep">Bank details are collected by the licensed escrow partner at closing. U-Estate never stores them.</span></span>
+          <span><strong className="block"><Text message="Bank transfer through the escrow partner" /></strong><span className="text-sm text-deep"><Text message="Bank details are collected by the licensed escrow partner at closing. U-Estate never stores them." /></span></span>
         </label>
         <label className="panel flex cursor-pointer items-start gap-3 p-4 has-[:checked]:border-blue">
           <input type="radio" name="payoutMethod" value="utopia_wallet" defaultChecked={payoutMethod === "utopia_wallet"} className="mt-1 size-5" />
-          <span><strong className="block">My U-topia wallet (THB)</strong><span className="text-sm text-deep">Available when U-topia connects its wallet to U-Estate. Fiat only: U-Estate never accepts or pays out crypto.</span></span>
+          <span><strong className="block"><Text message="My U-topia wallet (THB)" /></strong><span className="text-sm text-deep"><Text message="Available when U-topia connects its wallet to U-Estate. Fiat only: U-Estate never accepts or pays out crypto." /></span></span>
         </label>
         {fe.payoutMethod && <p className="error-text">{fe.payoutMethod}</p>}
       </fieldset>
@@ -84,7 +85,7 @@ export function WalletSettingsForm({ payoutMethod, maxCommitThb }: { payoutMetho
         <input {...describe("maxCommitThb", fe.maxCommitThb, true)} inputMode="numeric" defaultValue={maxCommitThb ?? ""} placeholder="e.g. 1,000,000" className="input max-w-xs" />
       </Field>
       <FormMessage state={state} />
-      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start">{pending ? "Saving…" : "Save wallet settings"}</button>
+      <button type="submit" disabled={pending} className="btn btn-primary justify-self-start"><Label>{pending ? "Saving…" : "Save wallet settings"}</Label></button>
     </form>
   );
 }

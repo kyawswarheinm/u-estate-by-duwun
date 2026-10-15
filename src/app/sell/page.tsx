@@ -1,5 +1,6 @@
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { usesSupabase } from "@/lib/db/runtime";
+import { Text } from "@/i18n/Text";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { aiConfigured } from "@/lib/ai";
@@ -18,13 +19,13 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
     return (
       <div className="grid gap-6">
         <header className="max-w-2xl">
-          <h1 className="font-display text-5xl font-semibold">Sell with the same facts as your buyer</h1>
-          <p className="mt-3 text-lg text-deep">List your property, check your deed, and compare offers by rules you publish before any offer arrives. Your fee: 1.5% (0.75% for U-topia members), against a typical 3%.</p>
+          <h1 className="font-display text-5xl font-semibold"><Text message="Sell with the same facts as your buyer" /></h1>
+          <p className="mt-3 text-lg text-deep"><Text message="List your property, check your deed, and compare offers by rules you publish before any offer arrives. Your fee: 1.5% (0.75% for U-topia members), against a typical 3%." /></p>
         </header>
         <div className="panel flex flex-wrap items-center gap-4 p-6">
-          <p className="flex-1 font-semibold">Create a free account to list a property. Any made-up email works in this demo.</p>
-          <Link href="/signup?next=/sell" className="btn btn-primary">Create account</Link>
-          <Link href="/signin?next=/sell" className="btn btn-secondary">Sign in</Link>
+          <p className="flex-1 font-semibold"><Text message="Create a free account to list a property. Any made-up email works in this demo." /></p>
+          <Link href="/signup?next=/sell" className="btn btn-primary"><Text message="Create account" /></Link>
+          <Link href="/signin?next=/sell" className="btn btn-secondary"><Text message="Sign in" /></Link>
         </div>
       </div>
     );
@@ -37,17 +38,17 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
   return (
     <div className="grid gap-8">
       <header className="max-w-2xl">
-        <h1 className="font-display text-5xl font-semibold">List a property</h1>
-        <p className="mt-2 text-lg text-deep">Publish your listing, then check the deed so buyers see a verified badge.</p>
+        <h1 className="font-display text-5xl font-semibold"><Text message="List a property" /></h1>
+        <p className="mt-2 text-lg text-deep"><Text message="Publish your listing, then check the deed so buyers see a verified badge." /></p>
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section aria-labelledby="new-title" className="panel p-6">
-          <h2 id="new-title" className="mb-4 text-xl font-bold">Property details</h2>
+          <h2 id="new-title" className="mb-4 text-xl font-bold"><Text message="Property details" /></h2>
           <ListingForm />
         </section>
         <aside className="grid content-start gap-3" aria-labelledby="mine-title">
-          <h2 id="mine-title" className="text-xl font-bold">Your listings</h2>
+          <h2 id="mine-title" className="text-xl font-bold"><Text message="Your listings" /></h2>
           <MyProperties db={db} userId={me.id} compact />
         </aside>
       </div>
@@ -55,10 +56,9 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
       {usesSupabase() && mine.length > 0 && <PhotoUploader listings={mine} selected={selected} locale={me.locale}/>}
       <section id="deed" aria-labelledby="deed-title" className="panel grid gap-4 p-6">
         <div>
-          <h2 id="deed-title" className="text-xl font-bold">Check a title deed</h2>
+          <h2 id="deed-title" className="text-xl font-bold"><Text message="Check a title deed" /></h2>
           <p className="mt-1 max-w-3xl text-deep">
-            AI reads the deed type, owner name and warning signs. Code then checks the name against your account and applies Thai deed rules.
-            AI flags are indicators, not proof. Ownership is only confirmed at the Land Office.
+            <Text message="AI reads the deed type, owner name and warning signs. Code then checks the name against your account and applies Thai deed rules. AI flags are indicators, not proof. Ownership is only confirmed at the Land Office." />
           </p>
         </div>
         {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber">AI is not connected on this server yet (ANTHROPIC_API_KEY). The check will show an error.</p>}
@@ -72,7 +72,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         {mine.length ? (
           <DeedCheckForm listings={mine} defaultListingId={selected} />
         ) : (
-          <p className="text-deep">Publish a listing first, then check its deed here.</p>
+          <p className="text-deep"><Text message="Publish a listing first, then check its deed here." /></p>
         )}
       </section>
     </div>

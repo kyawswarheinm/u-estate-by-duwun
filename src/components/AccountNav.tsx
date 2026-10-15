@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
+import { Label } from "@/i18n/Text";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,9 +13,10 @@ const LINKS = [
 ];
 
 export function AccountNav() {
+  const { t } = useI18n();
   const pathname = usePathname();
   return (
-    <nav aria-label="Account">
+    <nav aria-label={t("Account")}>
       <ul className="flex gap-1 overflow-x-auto lg:grid">
         {LINKS.map((l) => {
           const active = pathname === l.href;
@@ -24,7 +27,7 @@ export function AccountNav() {
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-11 items-center rounded-[10px] px-3 font-semibold no-underline ${active ? "bg-white text-midnight shadow-sm ring-1 ring-silver" : "text-deep hover:bg-white/70"}`}
               >
-                {l.label}
+                <Label>{l.label}</Label>
               </Link>
             </li>
           );

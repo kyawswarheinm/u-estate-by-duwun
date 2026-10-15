@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -13,8 +14,9 @@ type SpeechRecognitionLike = { lang: string; onresult: ((e: { results: ArrayLike
 
 // E2: speak (ElevenLabs Scribe) or type a request → filters → listings → spoken answer (E1).
 export function VoiceSearch() {
+  const { locale: uiLocale } = useI18n();
   const [query, setQuery] = useState("");
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>(uiLocale);
   const [state, setState] = useState<"idle" | "recording" | "transcribing" | "searching">("idle");
   const [status, setStatus] = useState("");
   const [result, setResult] = useState<Result | null>(null);

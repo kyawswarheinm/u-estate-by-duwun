@@ -1,4 +1,4 @@
-// The five UI languages (D-23). Full UI translation arrives with T18; partner features use this now.
+// The five UI languages (D-23), shared by UI dictionaries and AI/voice controls.
 export const LOCALES = ["en", "th", "ar", "zh-Hant", "es"] as const;
 export type Locale = (typeof LOCALES)[number];
 

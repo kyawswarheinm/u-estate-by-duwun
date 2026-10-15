@@ -1,5 +1,6 @@
+import { Text } from "@/i18n/Text";
+import { Money } from "@/components/Money";
 import Link from "next/link";
-import { thb } from "@/lib/rules";
 import { openOfferRound } from "@/app/sell/actions";
 import { VerificationBadge } from "./ui";
 import type { DB } from "@/lib/types";
@@ -22,9 +23,9 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
   if (mine.length === 0) {
     return (
       <div className="panel grid justify-items-start gap-3 p-6">
-        <h3 className="text-lg font-bold">You haven&apos;t listed a property yet</h3>
-        <p className="text-deep">List a condo, house, townhouse or land in about two minutes. Buyers see the same facts and fees you do.</p>
-        <Link href="/sell" className="btn btn-primary">List a property</Link>
+        <h3 className="text-lg font-bold"><Text message={"You haven't listed a property yet"} /></h3>
+        <p className="text-deep"><Text message="List a condo, house, townhouse or land in about two minutes. Buyers see the same facts and fees you do." /></p>
+        <Link href="/sell" className="btn btn-primary"><Text message="List a property" /></Link>
       </div>
     );
   }
@@ -36,10 +37,10 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
           <div className="min-w-0">
             <p className="text-sm text-deep">{p.type} in {p.district}, {p.province} · {p.areaSqm} m² · for {l.kind}</p>
             <h3 className="truncate text-lg font-bold">
-              <Link href={`/listing/${l.id}`} className="hover:underline">{p.title}</Link>
+              <Link href={`/listing/${l.id}`} className="hover:underline"><bdi>{p.title}</bdi></Link>
             </h3>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-xl font-bold">{thb(l.askingPriceThb)}{l.kind === "rent" && <span className="text-sm font-normal"> / month</span>}</span>
+              <span className="text-xl font-bold"><Money amount={l.askingPriceThb} />{l.kind === "rent" && <span className="text-sm font-normal"><Text message=" / month" /></span>}</span>
               <span className="pill bg-ice text-midnight">{STATUS[l.status]}</span>
               <VerificationBadge status={l.verificationStatus} />
             </div>
@@ -51,15 +52,15 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
             )}
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Link href={`/listing/${l.id}`} className="btn btn-secondary">View</Link>
-            {l.verificationStatus !== "verified_sample" && <Link href={`/sell?listing=${l.id}#deed`} className="btn btn-secondary">Check deed</Link>}
+            <Link href={`/listing/${l.id}`} className="btn btn-secondary"><Text message="View" /></Link>
+            {l.verificationStatus !== "verified_sample" && <Link href={`/sell?listing=${l.id}#deed`} className="btn btn-secondary"><Text message="Check deed" /></Link>}
             {l.kind === "sale" &&
               (round ? (
                 <Link href={`/listing/${l.id}/offers`} className="btn btn-primary">Offers ({offers})</Link>
               ) : (
                 <form action={openOfferRound}>
                   <input type="hidden" name="listingId" value={l.id} />
-                  <button type="submit" className="btn btn-primary">Open offer room</button>
+                  <button type="submit" className="btn btn-primary"><Text message="Open offer room" /></button>
                 </form>
               ))}
           </div>
