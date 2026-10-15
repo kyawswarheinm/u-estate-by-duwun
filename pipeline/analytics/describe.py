@@ -63,10 +63,13 @@ def main() -> None:
         "meta": {
             "source": "fixture" if is_fixture else "analysis",
             "is_sample": bool(meta.get("is_sample", True)) or is_fixture,
-            "based_on": f"listings.json ({meta.get('source')}) scraped_at {meta.get('scraped_at')}, {len(df)} listings from {sites}",
+            "based_on": f"listings.json ({meta.get('source')}) scraped_at {meta.get('scraped_at')}, {len(df)} listings from {sites}"
+                        + (f". Input note: {meta.get('note', '').split('. ')[0]}" if is_fixture else ""),
             "generated_at": datetime.now(ICT).isoformat(timespec="minutes"),
-            "method": f"Median and quartiles (linear interpolation) of asking price per m2 by district, type and kind, plus all districts together; "
-                      f"groups with fewer than {a.min_count} listings are left out. Asking prices on listing websites, not sale prices.",
+            "method": f"Median and quartiles (linear interpolation) of price per m2 by district, type and kind, plus all districts together; "
+                      f"groups with fewer than {a.min_count} listings are left out. "
+                      + ("Input is SAMPLE/SYNTHETIC demo data, not real listings or market prices." if is_fixture
+                         else "Asking prices on listing websites, not sale prices."),
             "min_count": a.min_count,
         },
         "by_area": rows,

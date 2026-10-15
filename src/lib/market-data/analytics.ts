@@ -4,6 +4,8 @@ import { z } from "zod";
 import { MARKET_FORECAST, MARKET_STATS, MarketKind, MarketType } from "./index";
 
 export const FORECAST_NOTE = "A forecast from past index movement, not a guarantee.";
+const SAMPLE_NOTE = "SAMPLE data: synthetic demo listings, not real listings or market prices.";
+const priceNote = (subject: string) => (MARKET_STATS.meta.is_sample ? SAMPLE_NOTE : `${subject} asking prices on listing websites, not sale prices.`);
 
 const pctChange = (from: number, to: number) => Math.round(((to - from) / from) * 1000) / 10;
 
@@ -35,7 +37,7 @@ export function getMarketStats(input: MarketStatsQuery) {
     is_sample: MARKET_STATS.meta.is_sample,
     based_on: MARKET_STATS.meta.based_on,
     method: MARKET_STATS.meta.method,
-    note: "Asking prices from listing websites, not sale prices.",
+    note: priceNote("Based on"),
   };
 }
 
@@ -88,6 +90,6 @@ export function compareToMarket(input: { priceThb: number; areaSqm: number; dist
     diff_pct: diffPct,
     position: pps < row.p25_price_per_sqm ? "below most" : pps > row.p75_price_per_sqm ? "above most" : "in the middle range",
     is_sample: stats.is_sample,
-    note: "Compared with asking prices on listing websites, not sale prices.",
+    note: priceNote("Compared with"),
   };
 }
