@@ -24,22 +24,28 @@ export class GeminiError extends Error {
 
 const key = () => process.env.GEMINI_API_KEY!.trim();
 
-let modelCache: string | null = null;
-/** GEMINI_MODEL if set, else the newest stable "flash" model this key can use (looked up once per server). */
-async function model() {
-  if (process.env.GEMINI_MODEL) return process.env.GEMINI_MODEL;
-  if (modelCache) return modelCache;
+let modelList: string[] | null = null;
+/**
+ * Models to try, best first: GEMINI_MODEL if set, then this key's "flash" models (stable before preview, full before lite,
+ * newest first). Free-tier quotas are per model, so when one is used up (429) or retired (404) the chat moves to the next.
+ */
+async function models() {
+  if (modelList) return modelList;
   const r = await fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": key() }, signal: AbortSignal.timeout(10_000) });
   if (!r.ok) throw new GeminiError(r.status);
-  const { models = [] } = (await r.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
-  const names = models
-    .filter((m) => m.supportedGenerationMethods?.includes("generateContent") && /flash/.test(m.name) && !/(lite|image|tts|live|audio|thinking|exp|preview)/.test(m.name))
-    .map((m) => m.name.replace(/^models\//, ""))
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-  if (!names[0]) throw new GeminiError(404);
-  modelCache = names[0];
-  return modelCache;
+  const { models: all = [] } = (await r.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+  const rank = (n: string) => (/preview|latest/.test(n) ? 2 : 0) + (/lite/.test(n) ? 1 : 0);
+  const names = all
+    .map((m) => ({ name: m.name.replace(/^models\//, ""), ok: m.supportedGenerationMethods?.includes("generateContent") }))
+    .filter((m) => m.ok && /^gemini-.*flash/.test(m.name) && !/(image|tts|live|audio|thinking|exp|omni|transcribe|computer)/.test(m.name))
+    .map((m) => m.name)
+    .sort((a, b) => rank(a) - rank(b) || b.localeCompare(a, undefined, { numeric: true }));
+  modelList = [...new Set([process.env.GEMINI_MODEL, ...names].filter((m): m is string => Boolean(m)))];
+  if (modelList.length === 0) throw new GeminiError(404);
+  return modelList;
 }
+/** A model that answered 429/404 is skipped until this server restarts (daily quotas reset at midnight Pacific). */
+const exhausted = new Set<string>();
 
 const declarations = TOOL_NAMES.map((name) => {
   const parametersJsonSchema = z.toJSONSchema(ToolInputs[name], { io: "input" }) as Record<string, unknown>;
@@ -50,19 +56,25 @@ const declarations = TOOL_NAMES.map((name) => {
 /** Runs the tool loop and reports text and tool use as they happen. Throws GeminiError on upstream failures. */
 export async function geminiChat(system: string, messages: { role: "user" | "assistant"; content: string }[], emit: (e: ChatEvent) => void) {
   const contents: Content[] = messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-  const m = await model();
+  const candidates = await models();
   for (let round = 0; round < MAX_ROUNDS; round++) {
-    const r = await fetch(`${API}/models/${m}:generateContent`, {
-      method: "POST",
-      headers: { "x-goog-api-key": key(), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        tools: [{ functionDeclarations: declarations }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
-      }),
-      signal: AbortSignal.timeout(20_000),
-    });
+    let r: Response | null = null;
+    for (const m of candidates.filter((x) => !exhausted.has(x))) {
+      r = await fetch(`${API}/models/${m}:generateContent`, {
+        method: "POST",
+        headers: { "x-goog-api-key": key(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          tools: [{ functionDeclarations: declarations }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (r.status !== 429 && r.status !== 404) break;
+      exhausted.add(m); // quota used up or model retired: try the next one
+    }
+    if (!r) throw new GeminiError(429);
     if (!r.ok) throw new GeminiError(r.status);
     const j = (await r.json()) as { candidates?: { content?: Content; finishReason?: string }[] };
     const content = j.candidates?.[0]?.content;
