@@ -49,3 +49,13 @@ describe("searchListings", () => {
     expect(spokenSummary(r, "en")).toContain("4 million baht");
   });
 });
+
+describe("budget implies sale", () => {
+  it("a budget of 500,000 THB or more never returns monthly rentals; a small budget still can", () => {
+    const db = seed();
+    const big = searchListings(db, { type: "condo", kind: null, maxPriceThb: 4_000_000, minSizeSqm: null, district: null, cobuy: null });
+    expect(big.every((r) => r.kind === "sale")).toBe(true);
+    const small = searchListings(db, { type: "condo", kind: null, maxPriceThb: 20_000, minSizeSqm: null, district: null, cobuy: null });
+    expect(small.map((r) => r.listingId)).toEqual(["l-rent"]);
+  });
+});
