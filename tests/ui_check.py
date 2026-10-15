@@ -100,6 +100,8 @@ with sync_playwright() as p:
         still_open = page.locator("section[aria-label='Talk to U-Estate']").is_visible() if opened else False
         rec("voice dock", "opens from the button", opened)
         rec("voice dock", "Esc closes the dock (UI_SPEC §6)", opened and not still_open)
+        back = page.evaluate("() => document.activeElement?.getAttribute('aria-controls')")
+        rec("voice dock", "focus returns to the Talk to U-Estate button", back == "voice-agent-panel", f"focused: {back}")
         if opened and still_open:
             page.get_by_role("button", name="Close").first.click()
         start = page.get_by_role("button", name="Start") if opened else None

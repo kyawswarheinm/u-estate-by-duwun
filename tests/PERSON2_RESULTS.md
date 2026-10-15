@@ -2,8 +2,8 @@
 
 **Run:** 16 Oct 2026, local dev server (JSON store), **no partner keys loaded** (ElevenLabs, Tokenomist, Avalanche and Anthropic all in fallback mode).
 **Scripts:**
-- `node tests/partner-api.check.mjs [baseUrl]`: API checks, **33/34**
-- `python -X utf8 tests/ui_check.py <baseUrl> <outDir>`: browser checks at 1280 px and 360 px, **144/152**
+- `node tests/partner-api.check.mjs [baseUrl]`: API checks, **34/34** after fixes (was 33/34)
+- `python -X utf8 tests/ui_check.py <baseUrl> <outDir>`: browser checks at 1280 px and 360 px, **152/153** after fixes (was 144/152); the one failure is Arabic RTL (T18)
 
 ## Status per test area
 
@@ -16,7 +16,7 @@
 | P0 | Tokenomist | ✅ Samples pass | `sample-cliff` High (฿400k/30 d → hold ฿600k; ฿1M/14 d → hold ฿1.5M), `sample-drip` Low/Medium, `sample-steady` Low, a real token → **Unknown** + "not connected". UI at 360 px as Daniel shows High + SAMPLE DATA + "never accepts crypto". Live tokens need a key |
 | P0 | Avalanche | 🟡 Partial | Unit tests: tamper detection, old anchors stay verifiable ✅. API: empty ledger → 409, no anchor → 404, rate limit → 429 ✅. Publish → explorer → verify needs a throwaway Fuji wallet |
 | P0 | Translation and RTL | ❌ Not built | No `src/i18n/` yet (T18). `<html lang="en">` is fixed; an `ar` locale cookie does not switch to `dir="rtl"` |
-| P0 | Mobile and accessibility | 🟡 Mostly pass | 9 pages: no console errors, no horizontal scroll at 360 px, landmarks, labelled inputs, named buttons, image alts, visible focus ✅. Failures below |
+| P0 | Mobile and accessibility | ✅ Pass (after fixes) | 9 pages: no console errors, no horizontal scroll at 360 px, landmarks, labelled inputs, named buttons, image alts, visible focus ✅. Failures below |
 | P0 when built | Valuation, stress test, scam rules | ⏳ Not built | T07, T13, T14 |
 
 ## Failures to fix (by demo impact)
@@ -24,10 +24,10 @@
 | # | Finding | Where | Owner |
 |---|---|---|---|
 | 1 | Arabic/RTL not implemented: no dictionaries, `lang`/`dir` never change | `src/app/layout.tsx`, `src/i18n/` (T18) | Core team |
-| 2 | Voice dock is a plain `<section>`: **Esc does not close it** and focus is not trapped or returned (UI_SPEC §6) | `src/components/VoiceAgentDock.tsx` (T33) | Core team |
-| 3 | Listing pages lack "Confirm ownership at the Land Office" (UI_SPEC §7). It appears only in tool output | `/listing/[id]` | Core team (UI) |
-| 4 | `/api/explain` returns **500** on malformed JSON (`await req.json()` without a catch); should be 400 | `src/app/api/explain/route.ts:13` | Core team |
-| 5 | Language `<select>` is 42 px tall at 360 px (target ≥ 44 px) on `/`, listings, `/assistant` | `LocaleSelect` / `ExplainVoice` / `VoiceSearch` | Core team |
+| 2 | ✅ **Fixed:** Esc closes the voice dock; focus moves into it on open and back to the button on close. No focus trap on purpose: the dock is non-modal (the call continues while you browse) | `src/components/VoiceAgentDock.tsx` (T33) | Core team |
+| 3 | ✅ **Fixed:** listing pages now say "Confirm ownership at the Land Office before any money moves." | `/listing/[id]` | Core team (UI) |
+| 4 | ✅ **Fixed:** `/api/explain` returns 400 `VALIDATION` on malformed JSON or a missing listingId | `src/app/api/explain/route.ts:13` | Core team |
+| 5 | ✅ **Fixed:** the language `<select>` is now at least 44 px tall | `LocaleSelect` / `ExplainVoice` / `VoiceSearch` | Core team |
 | 6 | Rate limiter keys on `x-forwarded-for`, so a client can reset its count by changing the header unless the host overwrites it. Check on Vercel; prefer a platform-provided IP | `src/lib/ratelimit.ts` | Core team (security) |
 
 ## Still to run when access exists
