@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { backendText } from "@/i18n/backend";
+import { NotificationBell } from "@/components/NotificationBell";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Cormorant_Garamond, Manrope, Noto_Sans_Thai } from "next/font/google";
@@ -10,6 +13,7 @@ import { resetDemo } from "./actions";
 import { signOut } from "./auth/actions";
 import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 import { VoiceAgentDock } from "@/components/VoiceAgentDock";
+import { usesSupabase } from "@/lib/db/runtime";
 
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 const cormorant = Cormorant_Garamond({ variable: "--font-cormorant", subsets: ["latin"], weight: ["500", "600"] });
@@ -39,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-3">
           Skip to content
         </a>
-        <SiteHeader user={headerUser} demoMode={demoMode()} signOutAction={signOut} />
+        <SiteHeader user={headerUser} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-8">{children}</main>
         <VoiceAgentDock userName={me?.name ?? "there"} />
         <footer className="bg-midnight text-silver">
@@ -62,10 +66,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
             <div>
               <p className="text-sm font-semibold text-ice">Demo controls</p>
-              <p className="mt-2 text-sm">Resets offers, co-buy groups and the ledger. Signed-up accounts and their listings stay.</p>
-              <form action={resetDemo} className="mt-3">
+              {!usesSupabase() && <p className="mt-2 text-sm">Resets offers, co-buy groups and the ledger. Signed-up accounts and their listings stay.</p>}
+              {usesSupabase() ? me?.isReviewer && demoMode() && <form action={resetDemo} className="mt-3">
+                <input type="hidden" name="requestId" value={randomUUID()} />
+                <p className="text-sm">{backendText(me.locale).resetNote}</p>
+                <button type="submit" className="btn btn-ghost-dark">{backendText(me.locale).reset}</button>
+              </form> : <form action={resetDemo} className="mt-3">
                 <button type="submit" className="btn btn-ghost-dark">Reset demo data</button>
-              </form>
+              </form>}
             </div>
           </div>
         </footer>

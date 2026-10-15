@@ -1,10 +1,12 @@
 # DATABASE: the real-time Supabase backend
 
-**Status (Fri 16 Oct, 00:30):**
-- The database is **written and verified**, but the app is **not wired to it yet**. The running prototype still uses the JSON file store (`src/lib/store.ts`).
-- **Wiring it in is the next job** (§5). Source of truth: `supabase/migrations/*.sql`. [DATA_MODEL.md](DATA_MODEL.md) explains the design history; where the two differ, the migrations win.
+**Status (Fri 16 Oct, Person 1 backend branch):**
+- Configured Supabase now serves existing app reads, authentication, account/wallet actions, listings, FairOffer and co-buy RPCs. Session refresh runs through `src/proxy.ts`. Reads use the signed-in client and RLS; credentials never enter the compatibility snapshot.
+- JSON remains the offline fallback when keys are absent or `DEMO_OFFLINE=true`. With Supabase active, JSON writes throw and database failures do not silently fall back.
+- Deed Storage/result write-back and anchor persistence are connected, but live partner calls remain unverified. Photo upload, messaging/notification UI, Realtime browser delivery, concurrency/retries, hosted reset and deployment acceptance remain outstanding. See [Person 1 evidence](PERSON1_BACKEND_QA.md).
+- Source of truth: `supabase/migrations/*.sql`. [DATA_MODEL.md](DATA_MODEL.md) explains the design history; where the two differ, the migrations win.
 
-**Verified without Supabase:** `npm run db:verify` runs every migration in PGlite (real Postgres compiled to WebAssembly), with stand-ins for Supabase's `auth`/`storage` schemas. It seeds the demo data, then runs **62 checks as real database roles** (guest / signed-in user):
+**Verified without Supabase:** `npm run db:verify` runs every migration in PGlite (real Postgres compiled to WebAssembly), with stand-ins for Supabase's `auth`/`storage` schemas. It seeds the demo data, then runs **75 checks as real database roles** (guest / signed-in user):
 - row-level security
 - sealed bids
 - co-buy legal rules and the wallet

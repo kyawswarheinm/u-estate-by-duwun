@@ -1,3 +1,4 @@
+import { usesSupabase } from "@/lib/db/runtime";
 import { readDb } from "@/lib/store";
 import { demoMode, requireUser } from "@/lib/session";
 import { toggleMembership } from "@/app/account/actions";
@@ -8,7 +9,7 @@ export const metadata = { title: "Account settings | U-Estate" };
 
 export default async function SettingsPage() {
   const [db, me] = await Promise.all([readDb(), requireUser("/account/settings")]);
-  const account = db.accounts.find((a) => a.userId === me.id);
+  const account = usesSupabase() && !me.isDemoPersona ? { email: me.email, createdAt: me.createdAt!, passwordChangedAt: undefined } : db.accounts.find((a) => a.userId === me.id);
 
   return (
     <div className="grid gap-6">

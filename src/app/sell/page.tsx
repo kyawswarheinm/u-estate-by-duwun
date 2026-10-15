@@ -1,3 +1,5 @@
+import { PhotoUploader } from "@/components/PhotoUploader";
+import { usesSupabase } from "@/lib/db/runtime";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { aiConfigured } from "@/lib/ai";
@@ -29,7 +31,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
   }
 
   const mine = db.listings
-    .filter((l) => l.sellerId === me.id)
+    .filter((l) => l.sellerId === me.id && !l.archivedAt)
     .map((l) => ({ id: l.id, title: db.properties.find((p) => p.id === l.propertyId)!.title }));
 
   return (
@@ -50,6 +52,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
         </aside>
       </div>
 
+      {usesSupabase() && mine.length > 0 && <PhotoUploader listings={mine} selected={selected} locale={me.locale}/>}
       <section id="deed" aria-labelledby="deed-title" className="panel grid gap-4 p-6">
         <div>
           <h2 id="deed-title" className="text-xl font-bold">Check a title deed</h2>

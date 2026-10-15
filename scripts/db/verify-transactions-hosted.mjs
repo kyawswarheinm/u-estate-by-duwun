@@ -1,0 +1,44 @@
+import {admin,check,must,person,listing,group,commit,parallel,randomUUID,finish} from './hosted-harness.mjs';
+try {
+ must(await admin.from('mutation_receipts').select('request_id').limit(0),'migration 005 required');
+ const seller=await person(),a=await person(),b=await person();
+ const g=await group(a,await listing(seller,3000000));
+ const overfund=await parallel([()=>commit(a,g,2000000),()=>commit(b,g,2000000)]);
+ check('simultaneous group commits allow exactly one winner',overfund.filter(r=>!r.error).length===1);
+ const rows=must(await admin.from('cobuy_participants').select('amount_thb').eq('group_id',g),'group total');
+ check('group never overfunds and failed request leaves no participant',rows.length===1 && rows.reduce((sum,r)=>sum+Number(r.amount_thb),0)===2000000);
+ check('rejected commit leaves no ledger entry',must(await admin.from('ledger_entries').select('id').eq('group_id',g).eq('entry_type','commit_test_funds'),'group ledger').length===1);
+ check('rejected commit leaves no notification',must(await admin.from('notifications').select('id').eq('user_id',seller.id).eq('kind','cobuy_joined').eq('link',`/cobuy/${g}`),'join notes').length===1);
+ const walletUser=await person();
+ const g1=await group(walletUser,await listing(seller,4000000));
+ const g2=await group(walletUser,await listing(seller,4000000));
+ const spend=await parallel([()=>commit(walletUser,g1,3000000),()=>commit(walletUser,g2,3000000)]);
+ check('one wallet across two groups cannot overspend',spend.filter(r=>!r.error).length===1 && spend.some(r=>r.error?.message==='WALLET_BALANCE'));
+ const balance=must(await walletUser.client.from('wallet_balances').select('*').single(),'wallet balance');
+ check('wallet state after concurrent commits is exact',Number(balance.available_thb)===2000000 && Number(balance.committed_thb)===3000000);
+ const retry=await person(),retryGroup=await group(retry,await listing(seller));
+ const request=randomUUID();
+ const repeated=await parallel([()=>commit(retry,retryGroup,1000000,request),()=>commit(retry,retryGroup,1000000,request)]);
+ check('parallel exact retries both return success',repeated.every(r=>!r.error && r.data.ok));
+ const ledger=must(await admin.from('ledger_entries').select('id').eq('request_id',request),'retry ledger');
+ check('parallel retries create one ledger entry',ledger.length===1);
+ check('changed retry is rejected',(await commit(retry,retryGroup,1000001,request)).error?.message==='REQUEST_MISMATCH');
+ check('foreign actor cannot replay receipt',(await commit(b,retryGroup,1000000,request)).error?.message==='REQUEST_MISMATCH');
+ const x=await person('Australian'),y=await person('Japanese');
+ const l1=await listing(seller,1000000,'condo'),l2=await listing(seller,1000000,'condo');
+ const listings=must(await admin.from('listings').select('id,property_id').in('id',[l1,l2]),'quota listings');
+ const p1=listings.find(l=>l.id===l1).property_id,p2=listings.find(l=>l.id===l2).property_id;
+ const building=must(await admin.from('properties').select('building_id').eq('id',p1).single(),'quota building').building_id;
+ must(await admin.from('properties').update({building_id:building}).eq('id',p2),'shared building fixture');
+ const q1=await group(x,l1),q2=await group(y,l2);
+ const quota=await parallel([()=>commit(x,q1,100000),()=>commit(y,q2,100000)]);
+ check('building-wide concurrent quota accepts exactly 49 percent, rejects excess',quota.filter(r=>!r.error).length===1 && quota.some(r=>r.error?.message==='FOREIGN_QUOTA'));
+ const quotaRows=must(await admin.from('cobuy_participants').select('area_sqm_attributed').in('group_id',[q1,q2]),'quota total');
+ check('only 10 square metres reserved across building groups',quotaRows.length===1 && Number(quotaRows[0].area_sqm_attributed)===10);
+ const top=await person();
+ // Isolated fixture at 19M; race two 1M topups.
+ must(await admin.from('wallet_transactions').insert({user_id:top.id,kind:'top_up',amount_thb:14000000,note:'QA cap fixture (test money)'}),'cap fixture');
+ const cap=await parallel([()=>top.client.rpc('wallet_top_up',{p_request:randomUUID()}),()=>top.client.rpc('wallet_top_up',{p_request:randomUUID()})]);
+ check('parallel topups cannot exceed 20M cap',cap.filter(r=>!r.error).length===1 && cap.some(r=>r.error?.message==='WALLET_CAP'));
+ check('stored wallet cap remains exactly 20M',Number(must(await top.client.from('wallet_balances').select('funded_thb').single(),'cap balance').funded_thb)===20000000);
+} catch(error) {check(`Hosted transactions completed (${error.message})`,false);} finally {await finish();}

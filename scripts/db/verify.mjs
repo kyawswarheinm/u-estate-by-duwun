@@ -101,8 +101,8 @@ await as(P.somchai, async () => {
 });
 
 await as(P.narin, async () => {
-  check("cannot make self a U-topia member", await fails(() => q("update profiles set utopia_member = true where id = $1", [P.narin]), "PROTECTED_FIELD"));
-  check("cannot make self a reviewer", await fails(() => q("update profiles set is_reviewer = true where id = $1", [P.narin]), "PROTECTED_FIELD"));
+  check("cannot make self a U-topia member", await fails(() => q("update profiles set utopia_member = true where id = $1", [P.narin]), "permission denied"));
+  check("cannot make self a reviewer", await fails(() => q("update profiles set is_reviewer = true where id = $1", [P.narin]), "permission denied"));
 });
 check("demo personas keep their nationality", await fails(() => as(P.daniel, () => q("update profiles set nationality = 'Thai' where id = $1", [P.daniel])), "PERSONA_FIXED"));
 
@@ -171,7 +171,7 @@ const myListing = (await as(newUser, () => one("select listing_create('sale', 't
 check("owner lists a property", Boolean(myListing));
 await as(null, async () => check("new listing is public", (await q("select id from listings where id = $1", [myListing])).length === 1));
 await as(P.somchai, async () => check("others cannot edit it", (await q("update listings set asking_price_thb = 1 where id = $1 returning id", [myListing])).length === 0));
-check("owner cannot self-verify the deed badge", await fails(() => as(newUser, () => q("update listings set verification_status = 'verified_sample' where id = $1", [myListing])), "PROTECTED_FIELD"));
+check("owner cannot self-verify the deed badge", await fails(() => as(newUser, () => q("update listings set verification_status = 'verified_sample' where id = $1", [myListing])), "permission denied"));
 await as(newUser, async () => {
   await q("insert into storage.objects (bucket_id, name, owner) values ('listing-photos', $1, $2)", [`${newUser}/${myListing}/front.jpg`, newUser]);
   await q("insert into listing_photos (listing_id, storage_path) values ($1, $2)", [myListing, `${newUser}/${myListing}/front.jpg`]);
@@ -185,6 +185,99 @@ check("demo membership link works for new accounts", (await as(newUser, () => on
 check("demo personas keep fixed membership", await fails(() => as(P.somchai, () => q("select demo_toggle_membership()")), "NOT_ALLOWED"));
 await as(newUser, () => q("select wallet_top_up()"));
 check("test-money top-up", Number((await as(newUser, () => one("select funded_thb from wallet_balances"))).funded_thb) === 6000000);
+
+// ---------- Person 1: rejection paths and transaction rollback ----------
+check("guest cannot call co-buy RPC", await fails(() => as(null, () => q("select cobuy_commit($1, 'co_owner', 10000)", [houseGroup]))));
+check("funded group rejects further commitments", await fails(() => as(P.layla, () => q("select cobuy_commit($1, 'co_owner', 10000)", [condoGroup])), "GROUP_CLOSED"));
+check("zero lender interest rejected", await fails(() => as(P.aiko, () => q("select cobuy_commit($1, 'lender', 10000, 0)", [houseGroup])), "RATE_INVALID"));
+check("negative commitment rejected", await fails(() => as(P.aiko, () => q("select cobuy_commit($1, 'lender', -1, 7)", [houseGroup])), "AMOUNT_INVALID"));
+check("exactly 15 percent lender interest accepted", (await as(P.aiko, () => one("select cobuy_commit($1, 'lender', 10000, 15) as r", [houseGroup]))).r.ok === true);
+check("closed offer round rejects submissions", await fails(() => as(P.narin, () => q("select offer_submit($1, 4000000, 'cash', 30, '')", [ROUND])), "ROUND_CLOSED"));
+check("unrelated user cannot accept an offer", await fails(() => as(P.narin, () => q("select offer_accept($1)", [id(602)])), "NOT_OWNER"));
+
+// Force a ledger uniqueness failure after participant insertion; the whole RPC must roll back.
+const usedRequest = id(950);
+await as(P.layla, () => q("select cobuy_commit($1, 'lender', 10000, 7, $2)", [houseGroup, usedRequest]));
+const snapshot = async () => one(`select
+  (select count(*)::int from cobuy_participants) participants,
+  (select count(*)::int from ledger_entries) ledger,
+  (select count(*)::int from notifications) notifications`);
+const beforeRollback = await snapshot();
+check("reused request id rejects different actor", await fails(() => as(P.somchai, () => q("select cobuy_commit($1, 'co_owner', 10000, null, $2)", [houseGroup, usedRequest]))));
+check("failed commit leaves no partial rows or notifications", JSON.stringify(await snapshot()) === JSON.stringify(beforeRollback));
+
+await as(newUser, async () => {
+  for (let i = 0; i < 14; i++) await q("select wallet_top_up()");
+  check("wallet reaches exactly 20M cap", Number((await one("select funded_thb from wallet_balances")).funded_thb) === 20000000);
+  check("wallet rejects top-up above cap", await fails(() => q("select wallet_top_up()"), "WALLET_CAP"));
+});
+await as(P.somchai, async () => {
+  check("cannot modify another user's wallet settings", (await q("update profile_settings set max_commit_thb = 10000 where user_id = $1 returning user_id", [newUser])).length === 0);
+  check("cannot mark another user's notifications read", (await q("update notifications set read_at = now() where user_id = $1 returning id", [P.malee])).length === 0);
+});
+
+// ---------- Exact retries and boundary regressions ----------
+const receiptBefore = await snapshot();
+const replay = await as(P.layla, () => one("select cobuy_commit($1,'lender',10000,7,$2) r", [houseGroup,usedRequest]));
+check("exact co-buy retry returns original success without writes", replay.r.ok && JSON.stringify(await snapshot()) === JSON.stringify(receiptBefore));
+check("same actor cannot reuse request with changed amount", await fails(() => as(P.layla, () => q("select cobuy_commit($1,'lender',11000,7,$2)", [houseGroup,usedRequest])), "REQUEST_MISMATCH"));
+check("receipts cannot expose sealed payloads", await fails(() => as(P.layla, () => q("select * from mutation_receipts")), "permission denied"));
+check("private receipt helper cannot be called directly", await fails(() => as(P.layla, () => q("select begin_mutation(gen_random_uuid(),'x','{}')")), "permission denied"));
+check("users cannot grant themselves roles", await fails(() => as(newUser, () => q("update profiles set roles=ARRAY['reviewer'] where id=$1",[newUser])), "permission denied"));
+check("clients cannot insert a forged verified listing", await fails(() => as(newUser, () => q("insert into listings(property_id,seller_id,kind,asking_price_thb,verification_status) select property_id,$1,'sale',100000,'verified_sample' from listings where id=$2",[newUser,myListing])), "permission denied"));
+check("clients cannot forge deed extraction results", await fails(() => as(newUser, () => q("insert into documents(owner_id,storage_path,outcome) values($1,$2,'verified_sample')",[newUser,`${newUser}/fake.png`])), "permission denied"));
+const retryUser=id(960);
+await q("insert into auth.users(id,email) values($1,'retries@example.com')",[retryUser]);
+await q("update profiles set utopia_member=true where id=$1",[retryUser]);
+const topupRequest=id(961);
+await as(retryUser,()=>q("select wallet_top_up($1)",[topupRequest]));
+await as(retryUser,()=>q("select wallet_top_up($1)",[topupRequest]));
+check("top-up retry gives test money only once", Number((await as(retryUser,()=>one("select funded_thb from wallet_balances"))).funded_thb)===6000000);
+const boundaryListing=(await as(newUser,()=>one("select listing_create('sale','house','Boundary house','Bang Yai','Nonthaburi',100,100000,null,null,null,true) l"))).l;
+const boundaryGroup=(await as(retryUser,()=>one("select cobuy_create_group($1) g",[boundaryListing]))).g;
+check("one participant cannot fill entire group", await fails(()=>as(retryUser,()=>q("select cobuy_commit($1,'co_owner',100000)",[boundaryGroup])),"MIN_PARTICIPANTS"));
+const boundaryRound=(await as(newUser,()=>one("select offer_open_round($1) r",[boundaryListing]))).r;
+const offerRequest=id(962);
+const offerArgs=[boundaryRound,offerRequest];
+const offerId=(await as(retryUser,()=>one("select offer_submit($1,90000,'cash',30,'',$2) o",offerArgs))).o;
+const offerSnapshot=await snapshot();
+await as(retryUser,()=>q("select offer_submit($1,90000,'cash',30,'',$2)",offerArgs));
+check("offer retry creates no extra ledger or notification",JSON.stringify(await snapshot())===JSON.stringify(offerSnapshot));
+check("changed offer payload cannot reuse request",await fails(()=>as(retryUser,()=>q("select offer_submit($1,90001,'cash',30,'',$2)",offerArgs)),"REQUEST_MISMATCH"));
+await as(newUser,()=>q("select offer_close_round($1)",[boundaryRound]));
+const acceptRequest=id(963);
+await as(newUser,()=>q("select offer_accept($1,$2)",[offerId,acceptRequest]));
+const acceptedSnapshot=await snapshot();
+await as(newUser,()=>q("select offer_accept($1,$2)",[offerId,acceptRequest]));
+check("accept retry creates no extra ledger or notification",JSON.stringify(await snapshot())===JSON.stringify(acceptedSnapshot));
+await q("update cobuy_groups set deadline=now()-interval '1 second' where id=$1",[boundaryGroup]);
+check("expired group rejects commitments",await fails(()=>as(retryUser,()=>q("select cobuy_commit($1,'co_owner',10000)",[boundaryGroup])),"GROUP_CLOSED"));
+
+// ---------- Atomic deed write-back and archive-preserving reset ----------
+const deedPath=`${newUser}/${myListing}/deed.png`;
+check("ordinary users cannot call privileged deed write-back",await fails(()=>as(newUser,()=>q("select save_document_check($1,$2,$3,'{}','[]','verified_sample')",[newUser,myListing,deedPath])),"permission denied"));
+const beforeDeed=await snapshot();
+check("failed deed write-back rolls back completely",await fails(()=>q("select save_document_check($1,$2,$3,'{}','[]','invalid')",[newUser,myListing,deedPath]),"VALIDATION")&&JSON.stringify(await snapshot())===JSON.stringify(beforeDeed));
+await q("select save_document_check($1,$2,$3,'{}','[]','needs_review')",[newUser,myListing,deedPath]);
+check("deed result, listing badge and ledger saved together",(await one("select count(*)::int n from documents where listing_id=$1",[myListing])).n===1&&(await one("select verification_status s from listings where id=$1",[myListing])).s==='needs_review');
+const history=JSON.stringify(await q("select * from ledger_entries order by id"));
+const ownListing=JSON.stringify(await q("select * from listings where id=$1",[myListing]));
+const accountsBefore=(await one("select count(*)::int n from auth.users")).n;
+check("ordinary users cannot reset hosted demo",await fails(()=>as(newUser,()=>q("select demo_reset(gen_random_uuid())")),"NOT_ALLOWED"));
+check("reviewer can inspect reset scope without mutation",(await as(P.reviewer,()=>one("select demo_reset(gen_random_uuid(),true) r"))).r.eligible===true);
+const resetRequest=id(970);
+const reset=(await as(P.reviewer,()=>one("select demo_reset($1) r",[resetRequest]))).r;
+check("reset replaces exactly three designated demo listings",reset.reset_listings===3&&(await one("select count(*)::int n from listings where archived_at is not null")).n===3);
+check("reset preserves signed-up accounts and listings",(await one("select count(*)::int n from auth.users")).n===accountsBefore&&JSON.stringify(await q("select * from listings where id=$1",[myListing]))===ownListing);
+check("reset preserves every ledger entry byte-for-byte",JSON.stringify(await q("select * from ledger_entries order by id"))===history);
+check("reset releases old demo commitments",(await one("select count(*)::int n from cobuy_groups where listing_id in ($1,$2) and status<>'cancelled'",[CONDO,HOUSE])).n===0);
+const freshCondo=(await one("select id from listings where code='l-condo'")).id;
+const freshRound=(await one("select id from offer_rounds where listing_id=$1",[freshCondo])).id;
+check("reset restores open demo round with two offers",(await one("select status from offer_rounds where id=$1",[freshRound])).status==='open'&&(await one("select offer_count($1) n",[freshRound])).n===2);
+check("reset offer amounts stay sealed from seller",(await as(P.malee,()=>q("select id from offers where round_id=$1",[freshRound]))).length===0);
+await as(P.reviewer,()=>q("select demo_reset($1)",[resetRequest]));
+check("reset retry cannot create another demo generation",(await one("select id from listings where code='l-condo'")).id===freshCondo);
+check("archived listings cannot open co-buy",await fails(()=>as(P.somchai,()=>q("select cobuy_create_group($1)",[CONDO])),"NOT_ENABLED"));
 
 // ---------- realtime ----------
 const pub = (await q("select tablename from pg_publication_tables where pubname = 'supabase_realtime'")).map((r) => r.tablename);

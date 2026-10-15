@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readDb } from "@/lib/store";
@@ -8,13 +9,13 @@ import { OfferForm } from "@/components/OfferForm";
 import { TokenCheck } from "@/components/TokenCheck";
 import { acceptOffer, closeRound } from "@/app/actions";
 
-const FUNDING_LABEL = { pre_approved: "Bank pre-approval", proof_uploaded: "Proof of funds", declared: "Declared only" } as const;
+const FUNDING_LABEL = { cash: "Cash", pre_approved: "Bank pre-approval", proof_uploaded: "Proof of funds", declared: "Declared only" } as const;
 
 export default async function OffersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const listing = db.listings.find((l) => l.id === id);
-  const round = db.offerRounds.find((r) => r.listingId === id);
+  const listing = db.listings.find((l) => (l.id === id || l.code === id));
+  const round = db.offerRounds.find((r) => r.listingId === listing?.id);
   if (!listing || !round) notFound();
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const isSeller = me?.id === listing.sellerId;
@@ -58,13 +59,13 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
             <Card>
               <h2 className="text-xl font-bold">{mine ? "Update your sealed offer" : "Make a sealed offer"}</h2>
               {mine && <p className="text-sm text-ink-soft">Your current offer: {thb(mine.priceThb)}. Other buyers cannot see it.</p>}
-              <div className="mt-3"><OfferForm roundId={round.id} listingId={id} /></div>
+              <div className="mt-3"><OfferForm requestId={randomUUID()} roundId={round.id} listingId={id} /></div>
               <div className="mt-4"><TokenCheck defaultDepositThb={Math.round(listing.askingPriceThb * 0.1)} payWithinDays={30} context="your deposit" /></div>
             </Card>
           )}
           <Card>
             <h2 className="text-xl font-bold">Offers received</h2>
-            <p className="mt-2 text-4xl font-bold">{offers.length}</p>
+            <p className="mt-2 text-4xl font-bold">{round.offerCount ?? offers.length}</p>
             <p className="text-ink-soft">Amounts stay sealed until the round closes, including from the seller.</p>
             {isSeller ? (
               <form action={closeRound} className="mt-3">
@@ -99,6 +100,7 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
                   <td>
                     {round.status === "closed" && isSeller ? (
                       <form action={acceptOffer}>
+                        <input type="hidden" name="requestId" value={randomUUID()} />
                         <input type="hidden" name="offerId" value={r.offer.id} />
                         <input type="hidden" name="listingId" value={id} />
                         <button type="submit" className="rounded bg-blue-ink px-3 py-2 font-semibold text-paper">Accept</button>

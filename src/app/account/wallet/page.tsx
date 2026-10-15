@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { requireUser } from "@/lib/session";
@@ -38,6 +39,7 @@ export default async function WalletPage() {
             <p className="text-4xl font-bold tracking-tight sm:text-5xl">{thb(w.availableThb)}</p>
           </div>
           <form action={topUpWallet}>
+            <input type="hidden" name="requestId" value={randomUUID()} />
             <button type="submit" disabled={!canTopUp(w.fundedThb)} className="btn btn-on-dark">Add {thb(WALLET.topUpThb)} test money</button>
             {!canTopUp(w.fundedThb) && <p className="mt-2 text-sm text-silver">Demo limit of {thb(WALLET.maxTotalThb)} reached.</p>}
           </form>

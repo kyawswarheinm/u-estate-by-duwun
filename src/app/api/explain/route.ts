@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const listingId = body.listingId;
   const lang = asLocale(body.lang);
   const db = await readDb();
-  const listing = db.listings.find((l) => l.id === listingId);
+  const listing = db.listings.find((l) => (l.id === listingId || l.code === listingId));
   if (!listing) return Response.json({ error: "Listing not found" }, { status: 404 });
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const p = pricePanel(listing, property, []);

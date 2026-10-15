@@ -1,9 +1,15 @@
+import { imageExtension } from "@/lib/upload";
 import { aiConfigured, checkDeed, type DeedResult } from "@/lib/ai";
 import { newId, nextLedgerId, readDb, updateDb } from "@/lib/store";
 import { currentUser } from "@/lib/session";
 import type { DeedFlag, VerificationStatus } from "@/lib/types";
+import { usesSupabase } from "@/lib/db/runtime";
+import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/ratelimit";
+import { randomUUID } from "node:crypto";
 
-const TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 5 * 1024 * 1024;
 const WEAK = new Set(["nor_sor_3"]);
 const NOT_ACCEPTABLE = new Set(["sor_por_kor_4_01", "sor_kor_1", "por_bor_tor_5", "unknown"]);
@@ -13,6 +19,8 @@ function normalise(s: string) {
 }
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "check-document", 6);
+  if (limited) return limited;
   const me = await currentUser();
   if (!me) return Response.json({ error: "Sign in to check a deed." }, { status: 401 });
   if (!aiConfigured()) {
@@ -22,17 +30,19 @@ export async function POST(req: Request) {
   const file = form.get("deed");
   const listingId = String(form.get("listingId") ?? "");
   if (!(file instanceof File)) return Response.json({ error: "Attach a deed image." }, { status: 400 });
-  if (!TYPES.includes(file.type as (typeof TYPES)[number])) return Response.json({ error: "Use a JPG, PNG, WebP or GIF image." }, { status: 400 });
+  if (!TYPES.includes(file.type as (typeof TYPES)[number])) return Response.json({ error: "Use a JPG, PNG or WebP image." }, { status: 400 });
   if (file.size > MAX_BYTES) return Response.json({ error: "Image must be 5 MB or smaller." }, { status: 400 });
 
   const db = await readDb();
   const listing = db.listings.find((l) => l.id === listingId);
   if (!listing || listing.sellerId !== me.id) return Response.json({ error: "You can only check deeds for your own listings." }, { status: 403 });
   const seller = me;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!imageExtension(bytes, file.type)) return Response.json({ error: "Invalid image content." }, { status: 400 });
 
   let result: DeedResult | null;
   try {
-    result = await checkDeed(Buffer.from(await file.arrayBuffer()).toString("base64"), file.type as (typeof TYPES)[number]);
+    result = await checkDeed(Buffer.from(bytes).toString("base64"), file.type as (typeof TYPES)[number]);
   } catch (e) {
     return Response.json({ error: `AI check failed: ${(e as Error).message}` }, { status: 502 });
   }
@@ -50,7 +60,21 @@ export async function POST(req: Request) {
 
   const outcome: VerificationStatus = flags.some((f) => f.severity === "critical" || f.severity === "warning") ? "needs_review" : "verified_sample";
 
-  await updateDb((d) => {
+  if (usesSupabase()) {
+    const client = await supabaseServer();
+    // Re-check ownership using the authenticated session before privileged write-back.
+    const owned = await client.from("listings").select("id").eq("id", listing.id).eq("seller_id", me.id).single();
+    if (owned.error) return Response.json({ error: "Listing ownership changed. Please refresh." }, { status: 403 });
+    const storagePath = `${me.id}/${listing.id}/${randomUUID()}.${file.type.split("/")[1]}`;
+    const upload = await client.storage.from("deeds").upload(storagePath, file, { contentType: file.type });
+    if (upload.error) return Response.json({ error: "Private deed upload failed. Please try again." }, { status: 502 });
+    const admin = supabaseAdmin();
+    const saved = await admin.rpc("save_document_check", { p_owner: me.id, p_listing: listing.id, p_path: storagePath, p_extraction: result, p_flags: flags, p_outcome: outcome });
+    if (saved.error) {
+      await admin.storage.from("deeds").remove([storagePath]);
+      return Response.json({ error: "Could not save the deed check. No verification status was changed; please retry." }, { status: 502 });
+    }
+  } else await updateDb((d) => {
     d.documentChecks.push({
       id: newId("dc"), listingId: listing?.id, fileName: file.name, createdAt: new Date().toISOString(),
       extraction: result as unknown as Record<string, unknown>, flags, outcome, humanReview: "pending",

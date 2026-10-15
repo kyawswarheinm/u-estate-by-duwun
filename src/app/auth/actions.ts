@@ -6,6 +6,12 @@ import { fieldErrors, hashPassword, safeNext, SignInSchema, SignUpSchema, verify
 import { demoMode, endSession, startSession } from "@/lib/session";
 import { newId, readDb, updateDb } from "@/lib/store";
 import { WALLET } from "@/lib/wallet";
+import { usesSupabase } from "@/lib/db/runtime";
+import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { z } from "zod";
+import { headers } from "next/headers";
+import { rateLimit } from "@/lib/ratelimit";
 
 export type AuthState = { ok: boolean; message: string; fieldErrors?: Record<string, string>; values?: Record<string, string> } | null;
 
@@ -24,6 +30,29 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const parsed = SignUpSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, message: "Please fix the highlighted fields.", fieldErrors: fieldErrors(parsed.error.issues), values };
   const { name, email, password, nationality, locale } = parsed.data;
+
+  if (usesSupabase()) {
+    const client = await supabaseServer();
+    const limited = rateLimit(new Request("http://localhost/signup", { headers: await headers() }), "signup", 5);
+    if (limited) return { ok: false, message: "Too many sign-up attempts. Please wait a minute.", values };
+    // Only reserved example domains may bypass email confirmation in the demo.
+    // The public Auth endpoint rejects these addresses; no email is sent.
+    const reserved = /^example\.(com|org|net)$/.test(email.split("@")[1]);
+    const { data: enabled } = demoMode() && reserved ? await client.rpc("demo_mode") : { data: false };
+    if (enabled) {
+      const created = await supabaseAdmin().auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { name, nationality, locale } });
+      if (created.error) return { ok: false, message: "Could not create this account. Check your details or try signing in.", values };
+      const signedIn = await client.auth.signInWithPassword({ email, password });
+      if (signedIn.error) return { ok: false, message: "Account created. Please try signing in.", values };
+      revalidatePath("/", "layout");
+      redirect(safeNext(formData.get("next"), "/account?welcome=1"));
+    }
+    const { data, error } = await client.auth.signUp({ email, password, options: { data: { name, nationality, locale } } });
+    if (error) return { ok: false, message: "Could not create this account. Check your details or try signing in.", values };
+    if (!data.session) return { ok: false, message: "Email confirmation is required by this project's Auth settings. The demo uses made-up emails; ask the project owner to configure demo sign-up.", values };
+    revalidatePath("/", "layout");
+    redirect(safeNext(formData.get("next"), "/account?welcome=1"));
+  }
 
   const db = await readDb();
   if (db.accounts.some((a) => a.email === email)) {
@@ -53,6 +82,17 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   const { email, password } = parsed.data;
   if (tooManyFailures(email)) return { ok: false, message: "Too many tries. Wait 5 minutes, then try again.", values };
 
+  if (usesSupabase()) {
+    const { error } = await (await supabaseServer()).auth.signInWithPassword({ email, password });
+    if (error) {
+      failures.get(email)!.push(Date.now());
+      return { ok: false, message: "Email or password is incorrect.", values };
+    }
+    failures.delete(email);
+    revalidatePath("/", "layout");
+    redirect(safeNext(formData.get("next"), "/account"));
+  }
+
   const db = await readDb();
   const account = db.accounts.find((a) => a.email === email);
   // Same message whether the email or the password is wrong, so emails can't be discovered.
@@ -76,8 +116,26 @@ export async function signOut() {
 export async function signInAsPersona(formData: FormData) {
   if (!demoMode()) redirect("/signin");
   const id = String(formData.get("userId") ?? "");
+  if (usesSupabase()) {
+    if (!z.uuid().safeParse(id).success) redirect("/signin");
+    const client = await supabaseServer();
+    const { data: enabled } = await client.rpc("demo_mode");
+    if (!enabled) redirect("/signin");
+    // Reviewer personas are never one-click: reviewers can read every private deed and reset the shared demo.
+    const { data: persona } = await client.from("profiles").select("id").eq("id", id).eq("is_demo_persona", true).eq("is_reviewer", false).single();
+    if (!persona) redirect("/signin");
+    const admin = supabaseAdmin();
+    const account = await admin.auth.admin.getUserById(id);
+    if (account.error || !account.data.user.email) throw new Error("Demo persona unavailable.");
+    const link = await admin.auth.admin.generateLink({ type: "magiclink", email: account.data.user.email });
+    if (link.error) throw new Error("Demo sign-in unavailable.");
+    const { error } = await client.auth.verifyOtp({ type: "email", token_hash: link.data.properties.hashed_token });
+    if (error) throw new Error("Demo sign-in failed. Please try again.");
+    revalidatePath("/", "layout");
+    redirect(safeNext(formData.get("next"), "/"));
+  }
   const db = await readDb();
-  const persona = db.profiles.find((p) => p.id === id && p.isDemoPersona);
+  const persona = db.profiles.find((p) => p.id === id && p.isDemoPersona && !p.isReviewer);
   if (!persona) redirect("/signin");
   await startSession(persona.id);
   revalidatePath("/", "layout");

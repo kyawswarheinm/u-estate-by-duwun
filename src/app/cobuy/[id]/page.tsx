@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readDb } from "@/lib/store";
@@ -110,7 +111,7 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
               </p>
               {group.status === "forming" ? (
                 <div className="mt-3">
-                  <JoinCobuyForm groupId={group.id} isCondo={isCondo} isThai={me.isThai} remainingThb={remaining} maxRate={COBUY.maxInterestPct} defaultRate={COBUY.defaultInterestPct} />
+                  <JoinCobuyForm requestId={randomUUID()} groupId={group.id} isCondo={isCondo} isThai={me.isThai} remainingThb={remaining} maxRate={COBUY.maxInterestPct} defaultRate={COBUY.defaultInterestPct} />
                   <div className="mt-4">
                     <TokenCheck
                       defaultDepositThb={Math.min(remaining, 1_000_000)}

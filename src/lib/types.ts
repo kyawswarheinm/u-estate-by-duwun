@@ -1,6 +1,7 @@
 export type PropertyType = "condo" | "house" | "land" | "townhouse" | "building";
 
 export interface Profile {
+  isReviewer?: boolean;
   id: string;
   name: string;
   nationality: string;
@@ -72,6 +73,8 @@ export interface Property {
 export type VerificationStatus = "unverified" | "verified_sample" | "needs_review";
 
 export interface Listing {
+  archivedAt?: string;
+  code?: string;
   id: string;
   propertyId: string;
   sellerId: string;
@@ -107,6 +110,7 @@ export interface OfferCriterion {
 }
 
 export interface OfferRound {
+  offerCount?: number;
   id: string;
   listingId: string;
   criteria: OfferCriterion[];
@@ -117,7 +121,7 @@ export interface OfferRound {
   aiSummary?: string;
 }
 
-export type FundingReadiness = "pre_approved" | "proof_uploaded" | "declared";
+export type FundingReadiness = "pre_approved" | "proof_uploaded" | "declared" | "cash";
 
 export interface Offer {
   id: string;

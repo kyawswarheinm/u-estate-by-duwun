@@ -3,8 +3,8 @@
 import { useActionState, useState } from "react";
 import { joinCobuy, type FormState } from "@/app/actions";
 
-export function JoinCobuyForm({ groupId, isCondo, isThai, remainingThb, maxRate, defaultRate }: {
-  groupId: string; isCondo: boolean; isThai: boolean; remainingThb: number; maxRate: number; defaultRate: number;
+export function JoinCobuyForm({ requestId, groupId, isCondo, isThai, remainingThb, maxRate, defaultRate }: {
+  requestId: string; groupId: string; isCondo: boolean; isThai: boolean; remainingThb: number; maxRate: number; defaultRate: number;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(joinCobuy, null);
   const defaultLane = !isCondo && !isThai ? "lender" : "co_owner";
@@ -12,6 +12,7 @@ export function JoinCobuyForm({ groupId, isCondo, isThai, remainingThb, maxRate,
 
   return (
     <form action={action} className="grid gap-4" noValidate={false}>
+      <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="groupId" value={groupId} />
       <fieldset className="grid gap-2">
         <legend className="mb-1 font-semibold">How do you want to join?</legend>

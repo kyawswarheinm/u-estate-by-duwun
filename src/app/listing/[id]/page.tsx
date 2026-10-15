@@ -1,3 +1,7 @@
+import { ListingPhotos } from "@/components/ListingPhotos";
+import { startConversation } from "@/app/messages/actions";
+import { usesSupabase } from "@/lib/db/runtime";
+import { backendText } from "@/i18n/backend";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readDb } from "@/lib/store";
@@ -15,12 +19,12 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { cobuyError, created } = await searchParams;
   const [db, me] = await Promise.all([readDb(), currentUser()]);
-  const listing = db.listings.find((l) => l.id === id);
+  const listing = db.listings.find((l) => (l.id === id || l.code === id));
   if (!listing) notFound();
   const property = db.properties.find((p) => p.id === listing.propertyId)!;
   const seller = db.profiles.find((p) => p.id === listing.sellerId)!;
   const comparables = db.listings
-    .filter((l) => l.id !== listing.id)
+    .filter((l) => l.id !== listing.id && !l.archivedAt)
     .map((l) => ({ l, p: db.properties.find((x) => x.id === l.propertyId)! }))
     .filter(({ p }) => p.type === property.type)
     .map(({ l, p }) => ({ pricePerSqm: l.askingPriceThb / p.areaSqm }));
@@ -28,7 +32,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const group = db.cobuyGroups.find((g) => g.listingId === listing.id && g.status !== "cancelled");
   const round = db.offerRounds.find((r) => r.listingId === listing.id);
   const isOwner = me?.id === listing.sellerId;
-  const offerCount = round ? db.offers.filter((o) => o.roundId === round.id).length : 0;
+  const offerCount = round ? round.offerCount ?? db.offers.filter((o) => o.roundId === round.id).length : 0;
 
   return (
     <article className="grid gap-5">
@@ -52,6 +56,9 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
           </div>
         </section>
       )}
+      {me && me.id !== listing.sellerId && !listing.archivedAt && usesSupabase() && <form action={startConversation}><input type="hidden" name="listingId" value={listing.id}/><button className="btn btn-secondary">{backendText(me.locale).contact}</button></form>}
+      {listing.archivedAt && <p role="status">{backendText(me?.locale).archived}</p>}
+      <ListingPhotos id={listing.id} locale={me?.locale}/>
       <header>
         <p className="text-sm text-deep">{property.type} in {property.district}, {property.province} · {property.areaSqm} m² · for {listing.kind}</p>
         <h1 className="font-display text-4xl font-semibold sm:text-5xl">{property.title}</h1>
@@ -143,7 +150,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             <Link href={`/listing/${listing.id}/offers`} className="mt-3 inline-block rounded-lg bg-blue-ink px-4 py-3 font-semibold text-paper">Open offer room</Link>
           </Card>
         )}
-        {listing.cobuyEnabled && (
+        {listing.cobuyEnabled && !listing.archivedAt && (
           <Card>
             <h2 className="text-xl font-bold">Co-buy with other U-topia members</h2>
             <p className="mt-1">

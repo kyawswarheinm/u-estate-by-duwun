@@ -1,12 +1,15 @@
 import "server-only";
+import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { seed } from "./seed";
 import type { DB } from "./types";
+import { usesSupabase } from "./db/runtime";
+import { readSupabaseDb } from "./db/snapshot";
 
-// Simple JSON-file store for the hackathon demo.
+// Offline JSON-file store; configured Supabase is the default runtime backend.
 // Local: .data/db.json. On Vercel the project dir is read-only, so /tmp is used (resets on cold start).
-// Replace with Supabase (see supabase/schema.sql) for a persistent deployment.
+// Set DEMO_OFFLINE=true only when explicitly exercising the offline prototype.
 const FILE = process.env.VERCEL
   ? "/tmp/u-estate-db.json"
   : path.join(process.cwd(), ".data", "db.json");
@@ -55,12 +58,14 @@ async function persist(db: DB) {
   await fs.rename(tmp, FILE);
 }
 
-export async function readDb(): Promise<DB> {
+export const readDb = cache(async (): Promise<DB> => {
+  if (usesSupabase()) return readSupabaseDb();
   return load();
-}
+});
 
 /** Serialised read-modify-write so concurrent requests don't overwrite each other. */
 export function updateDb<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
+  if (usesSupabase()) throw new Error("JSON writes are disabled while Supabase is active. Use an authorized database action.");
   const run = queue.then(async () => {
     const db = await load();
     const result = await fn(db);

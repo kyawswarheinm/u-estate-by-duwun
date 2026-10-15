@@ -8,6 +8,8 @@ import { requireUser } from "@/lib/session";
 import { newId, readDb, updateDb } from "@/lib/store";
 import type { AuthState } from "@/app/auth/actions";
 import { DEED_TYPES } from "@/lib/listing-options";
+import { usesSupabase } from "@/lib/db/runtime";
+import { rpc, listingUuid } from "@/lib/db/rpc";
 
 
 const clean = (v: string) => v.replace(/[,฿\s]/g, "");
@@ -53,6 +55,21 @@ export async function createListing(_prev: AuthState, formData: FormData): Promi
     return { ok: false, message: "For rent, enter the monthly rent.", fieldErrors: { askingPriceThb: "Monthly rent looks too high." }, values: raw };
   }
 
+  if (usesSupabase()) {
+    let created: string;
+    try {
+      created = await rpc("listing_create", {
+        p_kind: v.kind, p_type: v.type, p_title: v.title, p_district: v.district, p_province: v.province,
+        p_area_sqm: v.areaSqm, p_price_thb: v.askingPriceThb, p_build_year: v.buildYear === "" ? null : v.buildYear,
+        p_deed_type: v.deedType, p_appraisal_thb: v.appraisalThb === "" ? null : v.appraisalThb,
+        p_cobuy: v.cobuyEnabled === "on", p_building_name: v.buildingName || null,
+        p_building_total_sqm: v.buildingTotalSqm === "" ? null : v.buildingTotalSqm,
+        p_building_foreign_sqm: v.buildingForeignSqm === "" ? null : v.buildingForeignSqm,
+      });
+    } catch (error) { return { ok: false, message: (error as Error).message, values: raw }; }
+    revalidatePath("/", "layout");
+    redirect(`/listing/${created}?created=1`);
+  }
   const now = new Date().toISOString();
   const listingId = newId("l");
   await updateDb((db) => {
@@ -103,6 +120,12 @@ export async function createListing(_prev: AuthState, formData: FormData): Promi
 export async function openOfferRound(formData: FormData) {
   const listingId = String(formData.get("listingId") ?? "");
   const me = await requireUser(`/listing/${listingId}`);
+  if (usesSupabase()) {
+    const uuid = await listingUuid(listingId);
+    await rpc("offer_open_round", { p_listing: uuid });
+    revalidatePath("/", "layout");
+    redirect(`/listing/${uuid}/offers`);
+  }
   const db = await readDb();
   const listing = db.listings.find((l) => l.id === listingId);
   if (!listing || listing.sellerId !== me.id || listing.kind !== "sale") redirect(`/listing/${listingId}`);

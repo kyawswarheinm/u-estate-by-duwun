@@ -9,11 +9,11 @@ const STATUS = { active: "Live", under_offer: "Under offer", sold: "Sold" } as c
 /** The signed-in owner's listings with what is happening on each one. */
 export function MyProperties({ db, userId, compact = false }: { db: DB; userId: string; compact?: boolean }) {
   const mine = db.listings
-    .filter((l) => l.sellerId === userId)
+    .filter((l) => l.sellerId === userId && !l.archivedAt)
     .map((l) => {
       const p = db.properties.find((x) => x.id === l.propertyId)!;
       const round = db.offerRounds.find((r) => r.listingId === l.id);
-      const offers = round ? db.offers.filter((o) => o.roundId === round.id).length : 0;
+      const offers = round ? round.offerCount ?? db.offers.filter((o) => o.roundId === round.id).length : 0;
       const group = db.cobuyGroups.find((g) => g.listingId === l.id && g.status !== "cancelled");
       return { l, p, round, offers, group };
     })
