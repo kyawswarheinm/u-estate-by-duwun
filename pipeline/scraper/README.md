@@ -14,6 +14,34 @@ cd pipeline/scraper
 
 Dependencies are `scrapy==2.19.0` and `osmium==4.2.0` for the explicitly labelled OSM regional-extract fallback. The venv, `.scrapy/` HTTP cache, `raw/` and `out/` are already git-ignored. Do not change `.gitignore` or add npm scripts.
 
+## P1T02 property-listing adapter
+
+The original acceptance target remains **50 real, clean sale listings**. The OSM place snapshot and generated tests do not meet that target. Time cut lines no longer close this task (latest human instruction). No eligible listing source is currently bound to this adapter.
+
+`licensed_listings` implements the human-permission option previously requested. It fails before any request unless a human has supplied a nonempty `permissions/<site>.md` record of written permission. **The agent has not created a permission record.** The record must describe the approved domains/paths, automated facts-only collection and public redistribution rights; source robots/terms/access still need checking and recording in SOURCES. The four explicitly off-limits portals stay blocked even if such a file exists.
+
+After a source is approved, inspect its JSON-LD and supply its actual URLs and link selector. For example (replace the reserved example domain with the approved source):
+
+```sh
+.venv/bin/python run.py licensed_listings --site approved-site \
+  --start-url https://example.org/approved-sale-path \
+  --link-css 'a.listing-link::attr(href)' --limit 50 --min-items 50
+# Equivalent native Scrapy smoke-test setting:
+.venv/bin/scrapy crawl licensed_listings -a site=approved-site \
+  -a start_urls=https://example.org/approved-sale-path -s CLOSESPIDER_ITEMCOUNT=50
+```
+
+Output is ignored `out/listings.json`, with only frozen contract fields. The adapter accepts explicit in-stock THB sale offers for apartments/houses in Bangkok and the five surrounding provinces, with a scalar floor area and verified unit. It drops ranges, aggregates, unknown sale/rental intent, missing price/area and contact-bearing locations/URLs. Never multiply starting prices by arbitrary minimum unit sizes. Page coordinates are rounded, optional facts stay null when unknown, IDs hash the source URL, and cached identical bodies retain collection time. Link discovery is opt-in and restricted to approved hosts, with no credential/query-bearing links. Requests that fail or present a challenge stop the spider. The runner requires the requested minimum count and rejects spider exceptions. Successful raw items still need P1T03 cleaning/export before replacing the application snapshot.
+
+Network-free engineering verification, **generated test fixtures only**:
+
+```sh
+.venv/bin/python -m tests.smoke_listings
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+The smoke test runs the actual Scrapy engine against in-memory responses, with permission mocked only in the test. It verifies exactly 50 generated rows and the item cap; no network or real permission file is used. These rows stay in `out/tests/` and never enter `src/data/market/listings.json`. Real-source settings retain the two-second delay, robots obedience, caching and AutoThrottle.
+
 ## OSM via Overpass
 
 ```sh
