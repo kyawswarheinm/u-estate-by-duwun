@@ -1,3 +1,4 @@
+import { Text } from "@/i18n/Text";
 import { trendLine } from "@/lib/price";
 
 /** Server-rendered SVG: index history (solid) + 12-month trend line (dashed, "trend, not a prediction"). */
@@ -15,7 +16,7 @@ export function IndexChart({ series, isSample, title }: { series: { month: strin
   const last = hist[hist.length - 1];
 
   return (
-    <figure>
+    <figure dir="ltr">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="chart-title chart-desc" className="h-auto w-full">
         <title id="chart-title">{title}</title>
         <desc id="chart-desc">
@@ -25,18 +26,18 @@ export function IndexChart({ series, isSample, title }: { series: { month: strin
         <line x1={P} x2={W - P} y1={H - P} y2={H - P} stroke="var(--line)" />
         <text x={P} y={H - 10} fontSize="12" fill="var(--ink-soft)">{hist[0].month}</text>
         <text x={x(hist.length - 1)} y={H - 10} fontSize="12" fill="var(--ink-soft)" textAnchor="middle">{last.month}</text>
-        <text x={W - P} y={H - 10} fontSize="12" fill="var(--ink-soft)" textAnchor="end">+12 months</text>
+        <text x={W - P} y={H - 10} fontSize="12" fill="var(--ink-soft)" textAnchor="end"><Text message="+12 months" /></text>
         <text x={P - 6} y={y(max - 2)} fontSize="12" fill="var(--ink-soft)" textAnchor="end">{max - 2}</text>
         <text x={P - 6} y={y(min + 2)} fontSize="12" fill="var(--ink-soft)" textAnchor="end">{min + 2}</text>
         <path d={histPath} fill="none" stroke="var(--teal)" strokeWidth="3" />
         <path d={trendPath} fill="none" stroke="var(--ink-soft)" strokeWidth="2" strokeDasharray="6 6" />
         <circle cx={x(hist.length - 1)} cy={y(last.value)} r="5" fill="var(--teal)" />
         {isSample && (
-          <text x={W / 2} y={P} fontSize="16" fontWeight="700" fill="var(--amber)" textAnchor="middle">SAMPLE INDEX DATA</text>
+          <text x={W / 2} y={P} fontSize="16" fontWeight="700" fill="var(--amber)" textAnchor="middle"><Text message="SAMPLE INDEX DATA" /></text>
         )}
       </svg>
       <figcaption className="mt-1 text-sm text-ink-soft">
-        Solid: price index history. Dashed: 12-month trend line (<strong>a trend, not a prediction</strong>).
+        Solid: price index history. Dashed: 12-month trend line (<strong><Text message="a trend, not a prediction" /></strong>).
       </figcaption>
     </figure>
   );

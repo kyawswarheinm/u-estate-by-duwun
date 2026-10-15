@@ -46,7 +46,7 @@
   --color-silver: var(--silver);
   --color-blue: var(--blue);
   --color-blue-ink: var(--blue-ink);
-  --font-sans: var(--font-manrope), var(--font-noto-thai), "Noto Sans Arabic", "Noto Sans TC", system-ui, sans-serif;
+  --font-sans: var(--font-manrope), var(--font-noto-thai), var(--font-noto-arabic), var(--font-noto-tc), system-ui, sans-serif;
   --font-display: var(--font-cormorant), Georgia, serif;
 }
 
@@ -98,7 +98,8 @@ progress, meter {
 }
 
 main table :is(th, td) {
-  padding: 0.5rem 0.75rem 0.5rem 0;
+  padding-block: 0.5rem;
+  padding-inline: 0 0.75rem;
   vertical-align: top;
 }
 
@@ -153,9 +154,17 @@ main table :is(th, td) {
   .nav-link { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 0.25rem; font-weight: 600; color: var(--deep); text-decoration: none; }
   .nav-link:hover { color: var(--midnight); }
   .nav-link[aria-current="page"] { color: var(--midnight); }
-  .nav-link[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 2px; background: var(--blue); border-radius: 2px; }
+  .nav-link[aria-current="page"]::after { content: ""; position: absolute; inset-inline: 0; bottom: 6px; height: 2px; background: var(--blue); border-radius: 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* Use readable script fonts and avoid Latin display letter spacing in RTL. */
+html[dir="rtl"] :is(h1, h2, h3) { letter-spacing: normal; }
+html[dir="rtl"] .font-display { font-family: var(--font-sans); }
+
+/* Grid children must shrink before their tables scroll, including in RTL. */
+main .grid > * { min-inline-size: 0; }
+.btn { max-inline-size: 100%; flex-wrap: wrap; }

@@ -1,4 +1,5 @@
 "use client";
+import { Label, Text } from "@/i18n/Text";
 
 import { useState } from "react";
 
@@ -46,18 +47,18 @@ export function DeedCheckForm({ listings, defaultListingId }: { listings: { id: 
     <div className="grid gap-5">
       <form onSubmit={onSubmit} method="post" encType="multipart/form-data" className="grid gap-4">
         <div className="grid gap-1">
-          <label htmlFor="listingId" className="font-semibold">Listing</label>
+          <label htmlFor="listingId" className="font-semibold"><Text message="Listing" /></label>
           <select id="listingId" name="listingId" required defaultValue={defaultListingId} className="input">
             {listings.map((l) => <option key={l.id} value={l.id}>{l.title}</option>)}
           </select>
         </div>
         <div className="grid gap-1">
-          <label htmlFor="deed" className="font-semibold">Title deed photo (SAMPLE documents only)</label>
+          <label htmlFor="deed" className="font-semibold"><Text message="Title deed photo (SAMPLE documents only)" /></label>
           <input id="deed" name="deed" type="file" required accept="image/jpeg,image/png,image/webp,image/gif" aria-describedby="deed-help" className="input" />
-          <p id="deed-help" className="text-sm text-ink-soft">JPG, PNG, WebP or GIF, up to 5 MB. Never upload a real person&apos;s deed in this demo.</p>
+          <p id="deed-help" className="text-sm text-ink-soft"><Text message={"JPG, PNG, WebP or GIF, up to 5 MB. Never upload a real person's deed in this demo."} /></p>
         </div>
         <button type="submit" disabled={busy} className="justify-self-start rounded-lg bg-blue-ink px-5 py-3 font-semibold text-paper disabled:opacity-60">
-          {busy ? "Checking…" : "Check this deed"}
+          <Label>{busy ? "Checking…" : "Check this deed"}</Label>
         </button>
         <p role="status" aria-live="polite" className="text-sm text-ink-soft">{status}</p>
         {error && <p role="alert" className="rounded-lg bg-red-soft p-3 font-semibold text-red">{error}</p>}
@@ -70,17 +71,17 @@ export function DeedCheckForm({ listings, defaultListingId }: { listings: { id: 
           </h2>
           <p className="mt-1">{data.result.summary}</p>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="text-ink-soft">Deed type</dt><dd>{data.result.deed_type_label}</dd>
-            <dt className="text-ink-soft">Owner name</dt><dd>{data.result.owner_name ?? "Not readable"}</dd>
-            <dt className="text-ink-soft">Area</dt><dd>{data.result.area_text ?? "Not readable"}</dd>
-            <dt className="text-ink-soft">Parcel / unit no.</dt><dd>{data.result.parcel_or_unit_number ?? "Not readable"}</dd>
-            <dt className="text-ink-soft">AI confidence</dt><dd>{data.result.confidence}</dd>
+            <dt className="text-ink-soft"><Text message="Deed type" /></dt><dd>{data.result.deed_type_label}</dd>
+            <dt className="text-ink-soft"><Text message="Owner name" /></dt><dd>{data.result.owner_name ?? "Not readable"}</dd>
+            <dt className="text-ink-soft"><Text message="Area" /></dt><dd>{data.result.area_text ?? "Not readable"}</dd>
+            <dt className="text-ink-soft"><Text message="Parcel / unit no." /></dt><dd>{data.result.parcel_or_unit_number ?? "Not readable"}</dd>
+            <dt className="text-ink-soft"><Text message="AI confidence" /></dt><dd>{data.result.confidence}</dd>
           </dl>
-          <h3 className="mt-4 font-semibold">Why</h3>
+          <h3 className="mt-4 font-semibold"><Text message="Why" /></h3>
           <ul className="mt-2 grid gap-2">
             {data.flags.map((f) => (
               <li key={f.message} className={`rounded-lg p-3 text-sm ${sev[f.severity]}`}>
-                <span aria-hidden="true" className="mr-2 font-bold">{icon[f.severity]}</span>
+                <span aria-hidden="true" className="me-2 font-bold">{icon[f.severity]}</span>
                 <span className="sr-only">{f.severity}: </span>{f.message}
               </li>
             ))}

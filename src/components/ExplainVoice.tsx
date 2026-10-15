@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
 
 import { useRef, useState } from "react";
 import { LOCALE_INFO, type Locale } from "@/lib/locale";
@@ -7,9 +8,10 @@ import { speak, VOICE_SOURCE_NOTE } from "./speak";
 
 // E1: "Explain this price" in five languages, read aloud by ElevenLabs (browser voice as fallback).
 export function ExplainVoice({ listingId }: { listingId: string }) {
+  const { locale: uiLocale } = useI18n();
   const [text, setText] = useState("");
-  const [lang, setLang] = useState<Locale>("en");
-  const [shownLang, setShownLang] = useState<Locale>("en");
+  const [lang, setLang] = useState<Locale>(uiLocale);
+  const [shownLang, setShownLang] = useState<Locale>(uiLocale);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);

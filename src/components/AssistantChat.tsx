@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -31,7 +32,8 @@ function withLinks(text: string) {
 
 // Typed real-time chat (streams as Claude writes). Same read-only tools as the voice agent.
 export function AssistantChat() {
-  const [locale, setLocale] = useState<Locale>("en");
+  const { locale: uiLocale } = useI18n();
+  const [locale, setLocale] = useState<Locale>(uiLocale);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);

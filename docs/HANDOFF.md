@@ -1,6 +1,6 @@
 # HANDOFF: status, who does what, what to do next
 
-**Updated:** Fri 16 Oct 2026, 00:45 ICT. **Update this file when you finish a task** (status table + "Last changes").
+**Updated:** Fri 16 Oct 2026, 04:06 ICT. **Update this file when you finish a task** (status table + "Last changes").
 
 **Event:** U-Hackathon 2026, AI track (Bangkok).
 
@@ -65,7 +65,7 @@ npm run check          # typecheck + lint + 35 unit tests + 62 database checks +
 **In progress now (core team):**
 - T28–T31: ElevenLabs key + voice agent, Tokenomist key, Avalanche wallet
 - T33: restyle partner components
-- T18: i18n
+- T18 implemented on `Joanna`; native review of machine-translated dictionaries pending (Thai first). Partner copy remains T33. See [I18N.md](I18N.md).
 - Demo rehearsal and the judge deck
 
 ## 5. What to do next: partner developer (in this order)
@@ -105,6 +105,8 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
   - The Avalanche wallet must be a throwaway Fuji wallet with faucet AVAX.
 
 ## 8. Last changes
+
+- 16 Oct 04:06 (Codex / Joanna), T18: five typed UI dictionaries, locale cookie + profile persistence, language/currency controls, THB-first dated reference FX, Arabic RTL and script fonts. Shared layout/header/CSS touched for integration. 46 unit tests + 62 DB checks, build and Chromium desktop/360px smoke pass; security review has no blockers. Native translation review pending; T33 partner copy remains separate.
 
 - 16 Oct 00:45:
   - real-time database (migrations, RLS, RPCs, realtime, storage) + `db:verify` (62/62)

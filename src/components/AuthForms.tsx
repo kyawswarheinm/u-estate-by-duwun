@@ -1,4 +1,7 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
+
+import { Text } from "@/i18n/Text";
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
@@ -20,7 +23,7 @@ function PasswordInput({ id, error, hint, autoComplete }: { id: string; error?: 
     <div className="flex gap-2">
       <input {...describe(id, error, hint)} type={show ? "text" : "password"} required minLength={autoComplete === "new-password" ? 8 : undefined} maxLength={128} autoComplete={autoComplete} className="input" />
       <button type="button" onClick={() => setShow((s) => !s)} aria-pressed={show} className="btn btn-secondary shrink-0 px-3 text-sm">
-        {show ? "Hide" : "Show"}
+        {show ? <Text message="Hide" /> : <Text message="Show" />}
       </button>
     </div>
   );
@@ -39,15 +42,16 @@ export function SignInForm({ next }: { next: string }) {
         <PasswordInput id="password" error={fe.password} autoComplete="current-password" />
       </Field>
       <FormMessage state={state && !state.ok ? state : null} />
-      <button type="submit" disabled={pending} className="btn btn-primary w-full">{pending ? "Signing in…" : "Sign in"}</button>
+      <button type="submit" disabled={pending} className="btn btn-primary w-full">{pending ? <Text message="Signing in…" /> : <Text message="Sign in" />}</button>
       <p className="text-center text-sm">
-        New here? <Link href={`/signup?next=${encodeURIComponent(next)}`} className="font-semibold text-blue-ink underline">Create an account</Link>
+        <Text message="New here?" /> <Link href={`/signup?next=${encodeURIComponent(next)}`} className="font-semibold text-blue-ink underline"><Text message="Create an account" /></Link>
       </p>
     </form>
   );
 }
 
 export function SignUpForm({ next }: { next: string }) {
+  const { locale } = useI18n();
   const [state, action, pending] = useActionState<AuthState, FormData>(signUp, null);
   const fe = state?.fieldErrors ?? {};
   const v = state?.values ?? {};
@@ -70,15 +74,15 @@ export function SignUpForm({ next }: { next: string }) {
           </select>
         </Field>
         <Field id="locale" label="Preferred language" error={fe.locale}>
-          <select {...describe("locale", fe.locale)} defaultValue={v.locale || "en"} className="input">
+          <select {...describe("locale", fe.locale)} defaultValue={v.locale || locale} className="input">
             {LANGS.map((l) => <option key={l.v} value={l.v} lang={l.v}>{l.l}</option>)}
           </select>
         </Field>
       </div>
       <FormMessage state={state && !state.ok ? state : null} />
-      <button type="submit" disabled={pending} className="btn btn-primary w-full">{pending ? "Creating your account…" : "Create account"}</button>
+      <button type="submit" disabled={pending} className="btn btn-primary w-full">{pending ? <Text message="Creating your account…" /> : <Text message="Create account" />}</button>
       <p className="text-center text-sm">
-        Already have an account? <Link href={`/signin?next=${encodeURIComponent(next)}`} className="font-semibold text-blue-ink underline">Sign in</Link>
+        <Text message="Already have an account?" /> <Link href={`/signin?next=${encodeURIComponent(next)}`} className="font-semibold text-blue-ink underline"><Text message="Sign in" /></Link>
       </p>
     </form>
   );

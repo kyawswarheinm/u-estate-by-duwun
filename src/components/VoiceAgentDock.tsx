@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/i18n/provider";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,10 +42,11 @@ export function VoiceAgentDock({ userName }: { userName: string }) {
 }
 
 function Dock({ userName }: { userName: string }) {
+  const { locale: uiLocale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>(uiLocale);
   const [lines, setLines] = useState<Line[]>([]);
   const [error, setError] = useState("");
   const [typed, setTyped] = useState("");

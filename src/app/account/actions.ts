@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ChangePasswordSchema, fieldErrors, hashPassword, NATIONALITIES, verifyPassword } from "@/lib/auth-rules";
@@ -26,6 +27,7 @@ export async function updateProfile(_prev: AuthState, formData: FormData): Promi
     Object.assign(p, { name: parsed.data.name, nationality: parsed.data.nationality, isThai: parsed.data.nationality === "Thai", locale: parsed.data.locale });
   });
   revalidatePath("/", "layout");
+  (await cookies()).set("locale", parsed.data.locale, { path: "/", sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 365 * 86400 });
   return { ok: true, message: "Profile saved." };
 }
 

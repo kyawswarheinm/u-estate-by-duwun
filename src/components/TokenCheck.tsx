@@ -1,4 +1,5 @@
 "use client";
+import { Text } from "@/i18n/Text";
 
 import { useState } from "react";
 import type { TokenFundingResult } from "@/lib/token-risk";
@@ -87,16 +88,16 @@ export function TokenCheck({ defaultDepositThb, payWithinDays, context }: { defa
             <p className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-3 py-1 font-semibold ${lvl.cls}`}><span aria-hidden="true">{lvl.icon}</span> {lvl.text}</span>
               {t && <span>{t.name} ({t.symbol})</span>}
-              {t?.is_sample && <span className="rounded bg-amber-soft px-2 py-0.5 text-xs font-semibold text-amber">SAMPLE DATA</span>}
+              {t?.is_sample && <span className="rounded bg-amber-soft px-2 py-0.5 text-xs font-semibold text-amber"><Text message={"SAMPLE DATA"} /></span>}
             </p>
             <ul className="list-inside list-disc">{answer.result.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
             <p>
               <strong>Plan:</strong> hold at least {thb(answer.result.tokenValueToHoldThb)} worth of the token ({answer.result.bufferPct}% buffer, an assumption) or convert to THB now, so {thb(answer.result.depositThb)} is safe by {answer.result.windowEnd.slice(0, 10)}.
             </p>
             {answer.result.eventsInWindow.length > 0 && (
-              <table className="w-full text-left">
+              <table className="w-full text-start">
                 <caption className="sr-only">Unlocks before you pay</caption>
-                <thead><tr><th scope="col">Date</th><th scope="col">% of market cap</th><th scope="col">Who receives</th></tr></thead>
+                <thead><tr><th scope="col"><Text message={"Date"} /></th><th scope="col">% of market cap</th><th scope="col">Who receives</th></tr></thead>
                 <tbody>
                   {answer.result.eventsInWindow.map((e) => (
                     <tr key={e.date}><td>{e.date.slice(0, 10)}</td><td>{e.valueToMarketCapPct ?? "unknown"}{e.valueToMarketCapPct !== null && "%"}</td><td>{e.allocations.join(", ") || "—"}</td></tr>

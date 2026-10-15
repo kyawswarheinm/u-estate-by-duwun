@@ -1,14 +1,17 @@
+import { getPreferences } from "@/i18n/server";
+import { Text } from "@/i18n/Text";
+import { Money } from "@/components/Money";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { requireUser } from "@/lib/session";
 import { canTopUp, WALLET, walletSummary } from "@/lib/wallet";
-import { thb } from "@/lib/rules";
 import { topUpWallet } from "@/app/account/actions";
 import { WalletSettingsForm } from "@/components/AccountForms";
 
 export const metadata = { title: "Wallet | U-Estate" };
 
 export default async function WalletPage() {
+  const { locale } = await getPreferences();
   const [db, me] = await Promise.all([readDb(), requireUser("/account/wallet")]);
   const w = walletSummary(db, me.id);
   const profile = db.profiles.find((p) => p.id === me.id)!;
@@ -25,67 +28,67 @@ export default async function WalletPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="font-display text-4xl font-semibold">Wallet</h1>
+        <h1 className="font-display text-4xl font-semibold"><Text message="Wallet" /></h1>
         <p className="mt-1 max-w-2xl text-deep">
-          Test money for the demo: use it to commit to co-buy groups. <strong>No real money, bank account or crypto</strong> is connected.
+          <Text message="Test money for the demo: use it to commit to co-buy groups." /> <strong><Text message="No real money, bank account or crypto" /></strong> <Text message="is connected." />
         </p>
       </header>
 
       <section aria-label="Balance" className="rounded-[14px] bg-midnight p-6 text-ice">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-silver">Available test money</p>
-            <p className="text-4xl font-bold tracking-tight sm:text-5xl">{thb(w.availableThb)}</p>
+            <p className="text-sm text-silver"><Text message="Available test money" /></p>
+            <p className="text-4xl font-bold tracking-tight sm:text-5xl"><Money amount={w.availableThb} /></p>
           </div>
           <form action={topUpWallet}>
-            <button type="submit" disabled={!canTopUp(w.fundedThb)} className="btn btn-on-dark">Add {thb(WALLET.topUpThb)} test money</button>
-            {!canTopUp(w.fundedThb) && <p className="mt-2 text-sm text-silver">Demo limit of {thb(WALLET.maxTotalThb)} reached.</p>}
+            <button type="submit" disabled={!canTopUp(w.fundedThb)} className="btn btn-on-dark"><Text message="Add" /> <Money amount={WALLET.topUpThb} /> <Text message="test money" /></button>
+            {!canTopUp(w.fundedThb) && <p className="mt-2 text-sm text-silver"><Text message="Demo limit of" /> <Money amount={WALLET.maxTotalThb} /> <Text message="reached." /></p>}
           </form>
         </div>
         <dl className="mt-5 grid gap-4 border-t border-white/15 pt-4 sm:grid-cols-2">
           <div>
-            <dt className="text-sm text-silver">Committed to co-buy groups</dt>
-            <dd className="text-xl font-semibold">{thb(w.committedThb)}</dd>
+            <dt className="text-sm text-silver"><Text message="Committed to co-buy groups" /></dt>
+            <dd className="text-xl font-semibold"><Money amount={w.committedThb} /></dd>
           </div>
           <div>
-            <dt className="text-sm text-silver">Total test money received</dt>
-            <dd className="text-xl font-semibold">{thb(w.fundedThb)}</dd>
+            <dt className="text-sm text-silver"><Text message="Total test money received" /></dt>
+            <dd className="text-xl font-semibold"><Money amount={w.fundedThb} /></dd>
           </div>
         </dl>
       </section>
 
       <section aria-labelledby="activity-title" className="panel p-5">
-        <h2 id="activity-title" className="text-xl font-bold">Activity</h2>
+        <h2 id="activity-title" className="text-xl font-bold"><Text message="Activity" /></h2>
         {rows.length === 0 ? (
-          <p className="mt-2 text-deep">No activity yet.</p>
+          <p className="mt-2 text-deep"><Text message="No activity yet." /></p>
         ) : (
           <div className="overflow-x-auto">
             <table className="mt-3 w-full min-w-[520px] text-start text-sm">
-              <caption className="sr-only">Wallet activity, newest first</caption>
-              <thead><tr className="border-b border-silver text-deep"><th scope="col" className="py-2 text-start">Date</th><th scope="col" className="text-start">What</th><th scope="col" className="text-end">Amount</th></tr></thead>
+              <caption className="sr-only"><Text message="Wallet activity, newest first" /></caption>
+              <thead><tr className="border-b border-silver text-deep"><th scope="col" className="py-2 text-start"><Text message="Date" /></th><th scope="col" className="text-start"><Text message="What" /></th><th scope="col" className="text-end"><Text message="Amount" /></th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} className="border-b border-ice">
-                    <td className="py-2 whitespace-nowrap">{new Date(r.at).toLocaleDateString("en-GB")}</td>
+                    <td className="py-2 whitespace-nowrap">{new Date(r.at).toLocaleDateString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</td>
                     <td>{r.href ? <Link href={r.href} className="underline">{r.label}</Link> : r.label}</td>
-                    <td className={`text-end font-semibold ${r.amount < 0 ? "text-deep" : "text-teal"}`}>{r.amount < 0 ? "−" : "+"}{thb(Math.abs(r.amount))}</td>
+                    <td className={`text-end font-semibold ${r.amount < 0 ? "text-deep" : "text-teal"}`}>{r.amount < 0 ? "−" : "+"}<Money amount={Math.abs(r.amount)} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        <p className="mt-3 text-sm text-deep">Every commitment also appears on the public <Link href="/ledger" className="underline">transparency ledger</Link>.</p>
+        <p className="mt-3 text-sm text-deep"><Text message="Every commitment also appears on the public" /> <Link href="/ledger" className="underline"><Text message="transparency ledger" /></Link>.</p>
       </section>
 
       <section aria-labelledby="wallet-settings-title" className="panel p-5">
-        <h2 id="wallet-settings-title" className="text-xl font-bold">Wallet settings</h2>
+        <h2 id="wallet-settings-title" className="text-xl font-bold"><Text message="Wallet settings" /></h2>
         <div className="mt-4"><WalletSettingsForm payoutMethod={profile.payoutMethod ?? "escrow_bank_transfer"} maxCommitThb={profile.maxCommitThb} /></div>
       </section>
 
       <section aria-labelledby="crypto-title" className="rounded-[14px] border border-dashed border-silver p-5">
-        <h2 id="crypto-title" className="text-lg font-bold">Planning to sell crypto for a deposit?</h2>
-        <p className="mt-1 text-deep">U-Estate never accepts crypto. Before you sell, check upcoming token unlocks with the Tokenomist check in any co-buy group or offer room.</p>
+        <h2 id="crypto-title" className="text-lg font-bold"><Text message="Planning to sell crypto for a deposit?" /></h2>
+        <p className="mt-1 text-deep"><Text message="U-Estate never accepts crypto. Before you sell, check upcoming token unlocks with the Tokenomist check in any co-buy group or offer room." /></p>
       </section>
     </div>
   );

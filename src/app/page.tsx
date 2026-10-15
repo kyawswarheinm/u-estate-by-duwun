@@ -1,13 +1,19 @@
+import { getPreferences } from "@/i18n/server";
+import { formatMoney, translator } from "@/i18n";
+import { Label, Text } from "@/i18n/Text";
+import { Money } from "@/components/Money";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
 import { currentUser } from "@/lib/session";
-import { agentSaleFee, sellerFee, thb } from "@/lib/rules";
+import { agentSaleFee, sellerFee } from "@/lib/rules";
 import { VerificationBadge } from "@/components/ui";
 import { VoiceSearch } from "@/components/VoiceSearch";
 
 const EXAMPLE_PRICE = 4_000_000;
 
 export default async function Home() {
+  const { locale } = await getPreferences();
+  const t = translator(locale);
   const [db, me] = await Promise.all([readDb(), currentUser()]);
   const active = db.listings.filter((l) => l.status !== "sold");
 
@@ -25,29 +31,28 @@ export default async function Home() {
       <section className="-mt-8 mx-[calc(50%-50vw)] bg-midnight px-4 pb-24 pt-14 text-ice sm:pt-20">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.15fr_1fr] lg:items-center">
           <div>
-            <h1 className="font-display text-5xl font-semibold leading-[1.05] sm:text-6xl">Same facts. Same fees. For every party.</h1>
+            <h1 className="font-display text-5xl font-semibold leading-[1.05] sm:text-6xl"><Text message="Same facts. Same fees. For every party." /></h1>
             <p className="mt-5 max-w-xl text-lg leading-8 text-silver">
-              Every listing shows its deed check, an honest price range with sources, and exactly who pays what.
-              Offers are compared by rules the seller publishes first. U-topia members can co-buy, legally.
+              <Text message="homeDescription" />
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#homes" className="btn btn-on-dark">Find a home</a>
-              <Link href="/sell" className="btn btn-ghost-dark">Sell a property</Link>
-              {!me && <Link href="/signup" className="btn btn-ghost-dark">Create account</Link>}
+              <a href="#homes" className="btn btn-on-dark"><Text message="Find a home" /></a>
+              <Link href="/sell" className="btn btn-ghost-dark"><Text message="Sell a property" /></Link>
+              {!me && <Link href="/signup" className="btn btn-ghost-dark"><Text message="Create account" /></Link>}
             </div>
           </div>
 
           <figure className="rounded-[16px] bg-white p-6 text-midnight shadow-[0_25px_70px_rgba(0,0,0,.25)]">
             <figcaption>
-              <p className="font-semibold">Who pays what on a {thb(EXAMPLE_PRICE)} condo</p>
-              <p className="text-sm text-deep">The same rule is printed on every listing.</p>
+              <p className="font-semibold"><Text message="Who pays what on a {price} condo" values={{ price: formatMoney(EXAMPLE_PRICE, locale) }} /></p>
+              <p className="text-sm text-deep"><Text message="The same rule is printed on every listing." /></p>
             </figcaption>
             <ul className="mt-5 grid gap-4">
               {fees.map((f) => (
                 <li key={f.who}>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-sm">{f.who}</span>
-                    <span className="text-lg font-bold">{thb(f.thb)}</span>
+                    <span className="text-sm"><Label>{f.who}</Label></span>
+                    <span className="text-lg font-bold"><Money amount={f.thb} /></span>
                   </div>
                   <div className="mt-1.5 h-2.5 rounded-full bg-ice" aria-hidden="true">
                     <div className={`h-2.5 rounded-full ${f.tone}`} style={{ width: `${Math.max(1.5, (f.thb / max) * 100)}%` }} />
@@ -55,7 +60,7 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-xs text-deep">Excludes government transfer fees and taxes. Typical agent fee is common market practice, not a quote.</p>
+            <p className="mt-5 text-xs text-deep"><Text message="Excludes government transfer fees and taxes. Typical agent fee is common market practice, not a quote." /></p>
           </figure>
         </div>
       </section>
@@ -66,8 +71,8 @@ export default async function Home() {
 
       <section id="homes" aria-labelledby="homes-title" className="scroll-mt-24">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <h2 id="homes-title" className="text-2xl font-bold">Homes on U-Estate</h2>
-          <p className="text-sm text-deep">{active.length} listing{active.length === 1 ? "" : "s"} · demo data</p>
+          <h2 id="homes-title" className="text-2xl font-bold"><Text message="Homes on U-Estate" /></h2>
+          <p className="text-sm text-deep"><Text message="{count} listings · demo data" values={{ count: active.length }} /></p>
         </div>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {active.map((l) => {
@@ -76,27 +81,27 @@ export default async function Home() {
             return (
               <li key={l.id} className="panel relative flex flex-col p-5 transition-colors hover:border-deep">
                 <div className="flex items-center justify-between gap-2 text-sm text-deep">
-                  <span className="capitalize">{p.type} for {l.kind}</span>
-                  {mine && <span className="pill bg-ice text-midnight">Your listing</span>}
+                  <span className="capitalize"><Text message="{type} for {kind}" values={{ type: t(p.type), kind: t(l.kind) }} /></span>
+                  {mine && <span className="pill bg-ice text-midnight"><Text message="Your listing" /></span>}
                 </div>
                 <h3 className="mt-2 text-lg font-bold leading-snug">
-                  <Link href={`/listing/${l.id}`} className="after:absolute after:inset-0 hover:underline">{p.title}</Link>
+                  <Link href={`/listing/${l.id}`} className="after:absolute after:inset-0 hover:underline"><bdi>{p.title}</bdi></Link>
                 </h3>
                 <p className="text-sm text-deep">{p.district}, {p.province} · {p.areaSqm} m²</p>
                 <p className="mt-3 text-2xl font-bold">
-                  {thb(l.askingPriceThb)}{l.kind === "rent" && <span className="text-base font-normal"> / month</span>}
+                  <Money amount={l.askingPriceThb} />{l.kind === "rent" && <span className="text-base font-normal"><Text message=" / month" /></span>}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <VerificationBadge status={l.verificationStatus} />
-                  {l.cobuyEnabled && <span className="pill bg-[#eaf2ff] text-blue-ink">Co-buy open to members</span>}
+                  {l.cobuyEnabled && <span className="pill bg-[#eaf2ff] text-blue-ink"><Text message="Co-buy open to members" /></span>}
                 </div>
                 {l.kind === "sale" && (
                   <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-t border-ice pt-3 text-sm">
-                    <dt className="text-deep">Seller fee here</dt>
-                    <dd className="font-semibold">{thb(sellerFee(l.askingPriceThb, false))}</dd>
-                    <dt className="text-deep">Typical agent</dt>
-                    <dd>{thb(agentSaleFee(l.askingPriceThb))}</dd>
-                    <dt className="text-deep">Buyer pays us</dt>
+                    <dt className="text-deep"><Text message="Seller fee here" /></dt>
+                    <dd className="font-semibold"><Money amount={sellerFee(l.askingPriceThb, false)} /></dd>
+                    <dt className="text-deep"><Text message="Typical agent" /></dt>
+                    <dd><Money amount={agentSaleFee(l.askingPriceThb)} /></dd>
+                    <dt className="text-deep"><Text message="Buyer pays us" /></dt>
                     <dd className="font-semibold">฿0</dd>
                   </dl>
                 )}

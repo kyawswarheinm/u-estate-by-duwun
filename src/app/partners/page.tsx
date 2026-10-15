@@ -1,3 +1,4 @@
+import { Text } from "@/i18n/Text";
 import Link from "next/link";
 import { partnerStatus } from "@/lib/partners";
 import { anchorWalletAddress } from "@/lib/avalanche";
@@ -51,7 +52,7 @@ export default async function PartnersPage() {
   return (
     <article className="grid gap-5">
       <header>
-        <h1 className="text-3xl font-bold">Partners and your data</h1>
+        <h1 className="text-3xl font-bold"><Text message="Partners and your data" /></h1>
         <p className="mt-1 max-w-3xl text-ink-soft">
           U-Estate is built on transparency, so we show which partner services are live on this server and exactly what we send to each one.
           When a partner isn&apos;t connected, the app shows a clearly labelled fallback instead of pretending.
@@ -59,7 +60,7 @@ export default async function PartnersPage() {
       </header>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="w-full min-w-[760px] text-start text-sm">
           <caption className="sr-only">Partner integrations, status and data shared</caption>
           <thead><tr className="border-b border-line"><th scope="col" className="py-2">Partner</th><th scope="col">Feature</th><th scope="col">Status</th><th scope="col">Where</th><th scope="col">What we send</th></tr></thead>
           <tbody>
