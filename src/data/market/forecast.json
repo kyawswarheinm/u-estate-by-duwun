@@ -6,13 +6,13 @@
   "series_source": "Bank of Thailand, Residential Property Price Index (table EC_EI_008_S4), Bangkok and vicinities; BOT updated 30 Sep 2026 14:32",
   "series_url": "https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?reportID=993&language=ENG",
   "downloaded_at": "16 Oct 2026 05:27",
-  "generated_at": "2026-10-16T05:39+07:00",
+  "generated_at": "2026-10-16T05:41+07:00",
   "frequency": "monthly",
   "backtest": {
    "holdout_periods": 12,
    "mape_model_pct": 1.31,
    "mape_baseline_pct": 1.28,
-   "baseline": "log-linear trend over the last 60 months (src/lib/valuation/forecast.ts); MAPE averaged over 10 rolling 12-month windows x 3 series, scored 2021-03 to 2026-08"
+   "baseline": "a simple trend line over the last 60 months; error averaged over 10 rolling 12-month tests on 3 series, 2021-03 to 2026-08"
   },
   "note": "Forecast of a regional price index (3-month moving average of mortgage-backed prices), not of any single property. p10–p90 is an 80% range. Not a guarantee."
  },

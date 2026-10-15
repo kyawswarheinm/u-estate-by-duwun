@@ -190,8 +190,8 @@ def main() -> None:
                 "holdout_periods": a.holdout,
                 "mape_model_pct": round(mm, 2),
                 "mape_baseline_pct": round(mb, 2),
-                "baseline": f"log-linear trend over the last 60 months (src/lib/valuation/forecast.ts); MAPE averaged over {len(ends)} rolling "
-                            f"{a.holdout}-month windows x {len(keys)} series, scored {idx[ends[0]]} to {idx[-1]}",
+                "baseline": f"a simple trend line over the last 60 months; error averaged over {len(ends)} rolling {a.holdout}-month tests "
+                            f"on {len(keys)} series, {idx[ends[0]]} to {idx[-1]}",
             },
             "note": "Forecast of a regional price index (3-month moving average of mortgage-backed prices), not of any single property. "
                     "p10–p90 is an 80% range. Not a guarantee.",
