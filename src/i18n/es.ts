@@ -12,6 +12,7 @@ export const es = {
   "Ask AI": "Preguntar a IA",
   "Ledger": "Registro",
   "Partners": "Socios",
+  "Market": "Mercado",
   "Overview": "Resumen",
   "My properties": "Mis propiedades",
   "Wallet": "Saldo",

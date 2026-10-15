@@ -12,6 +12,7 @@ export const th = {
   "Ask AI": "ถาม AI",
   "Ledger": "บัญชีบันทึก",
   "Partners": "พันธมิตร",
+  "Market": "ตลาด",
   "Overview": "ภาพรวม",
   "My properties": "ทรัพย์สินของฉัน",
   "Wallet": "กระเป๋าเงิน",

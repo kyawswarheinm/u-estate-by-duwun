@@ -10,6 +10,7 @@ export const en = {
   "Ask AI": "Ask AI",
   "Ledger": "Ledger",
   "Partners": "Partners",
+  "Market": "Market",
   "Overview": "Overview",
   "My properties": "My properties",
   "Wallet": "Wallet",

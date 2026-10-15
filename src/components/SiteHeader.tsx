@@ -21,6 +21,7 @@ export type HeaderUser = {
 
 const NAV = [
   { href: "/", label: "Find a home", match: (p: string) => p === "/" || p.startsWith("/listing") || p.startsWith("/cobuy") },
+  { href: "/market", label: "Market", match: (p: string) => p.startsWith("/market") },
   { href: "/sell", label: "Sell", match: (p: string) => p.startsWith("/sell") },
   { href: "/assistant", label: "Ask AI", match: (p: string) => p.startsWith("/assistant") },
   { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") },

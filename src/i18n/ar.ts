@@ -12,6 +12,7 @@ export const ar = {
   "Ask AI": "اسأل الذكاء الاصطناعي",
   "Ledger": "السجل",
   "Partners": "الشركاء",
+  "Market": "السوق",
   "Overview": "نظرة عامة",
   "My properties": "عقاراتي",
   "Wallet": "المحفظة",

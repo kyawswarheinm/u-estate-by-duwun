@@ -12,6 +12,7 @@ export const zhHant = {
   "Ask AI": "詢問 AI",
   "Ledger": "公開紀錄",
   "Partners": "合作夥伴",
+  "Market": "市場",
   "Overview": "總覽",
   "My properties": "我的房產",
   "Wallet": "錢包",
