@@ -2,6 +2,8 @@
 
 **Updated:** Fri 16 Oct 2026, ~06:00 ICT (all three branches merged into `main`). **Update this file when you finish a task** (status table + "Last changes").
 
+> **Now (16 Oct ~05:00): three developers work in parallel on market intelligence.** Read [WORKPLAN.md](WORKPLAN.md) (P1/P2/P3 tasks, file ownership, merge at 10:30) and [TECH_STACK.md](TECH_STACK.md) (user → AI → engines → data diagram).
+
 **Event:** U-Hackathon 2026, AI track (Bangkok).
 
 | Milestone | When |
@@ -106,6 +108,11 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
 
 ## 8. Last changes
 
+- 16 Oct ~05:00, **three-developer split** (branch `plan/three-dev-split`):
+  - [TECH_STACK.md](TECH_STACK.md): diagrams for user → voice/chat/map → tools → engines → data, plus the offline pipeline (Scrapy → pandas/DuckDB → TimesFM).
+  - [WORKPLAN.md](WORKPLAN.md): P1T01–P1T06, P2T01–P2T07, P3T01–P3T07, file ownership, merge steps M01–M05, cut lines.
+  - The frozen contract `src/lib/market-data/` (types, loader, starter `find.ts` / `analytics.ts`, contract test) and FIXTURE snapshots in `src/data/market/`.
+  - D-02 amended for a demo-only scraping snapshot under guardrails; D-42 added.
 - 16 Oct ~06:00, **merge into `main`**:
   - Person 1 backend (`codex/person-1-backend-qa`)
   - Meena (T07 valuation, T14 scam rules, Person 2 tests and fixes)

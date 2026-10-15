@@ -41,7 +41,7 @@ Then follow [CONTRIBUTING.md](CONTRIBUTING.md) for branches, PRs and checks.
 
 1. [docs/HANDOFF.md](docs/HANDOFF.md): status, ownership, next tasks, gotchas.
 2. [docs/DECISIONS.md](docs/DECISIONS.md): **highest authority**. If anything conflicts, it wins.
-3. [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md): pick your task and follow the workflow there.
+3. **Now (16 Oct):** [docs/WORKPLAN.md](docs/WORKPLAN.md) splits new work into P1/P2/P3 tasks with file ownership and a frozen contract; the architecture is in [docs/TECH_STACK.md](docs/TECH_STACK.md). Older tasks: [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md).
 4. The spec your task references:
    - [PRD](docs/PRD.md): requirements FR-*, rules R1–R12
    - [TRD](docs/TRD.md): architecture, security, testing
@@ -71,7 +71,7 @@ Env vars: see `.env.example`. Never commit `.env.local`.
 
 ## Non-negotiable rules
 
-- **No crypto payments, tokens, NFTs, smart contracts or user wallets** (D-01 as amended). The **only** chain use is the A1 ledger fingerprint on **Avalanche Fuji** (D-33). The only crypto data is read-only Tokenomist unlocks for T1 (D-34). **No scraping** (D-02). The design's "testnet invest" stays **co-buy** (D-24).
+- **No crypto payments, tokens, NFTs, smart contracts or user wallets** (D-01 as amended). The **only** chain use is the A1 ledger fingerprint on **Avalanche Fuji** (D-33). The only crypto data is read-only Tokenomist unlocks for T1 (D-34). **Scraping only as D-02 is amended:** a demo snapshot under [docs/TECH_STACK.md](docs/TECH_STACK.md) §4 (no bypass, facts only, no personal data, always labelled external). The design's "testnet invest" stays **co-buy** (D-24).
 - **Voice agent and chat share one read-only tool layer** (`src/lib/assistant-tools.ts`, D-36). Tool names must match in `scripts/create-voice-agent.mjs` and `VoiceAgentDock.tsx`. Tools never write money, ownership or ledger data.
 - **Partners degrade to labelled fallbacks** (D-37). Never fake a "Live" status or a partner result; SAMPLE data stays labelled.
 - **Code computes every rule and number** (`src/lib/rules.ts`, `src/lib/valuation/*`, `src/lib/market/*`, SQL `cobuy_commit`). AI only reads, explains, translates and summarises (D-32). Never let AI output decide money, ownership, eligibility or fees.
@@ -101,7 +101,7 @@ Env vars: see `.env.example`. Never commit `.env.local`.
 - **Collaboration:**
   - stay inside your team's folders (HANDOFF §4); for shared files make small PRs and mention it
   - pull `main` before starting
-  - update the task status and HANDOFF "Last changes" when done
+  - update the task status and HANDOFF "Last changes" when done (during the WORKPLAN phase: log in your own `docs/work/Pn.md`; the integrator updates HANDOFF at merge)
 - **Keep it working:**
   - extend the existing prototype; don't break passing tests
   - small commits named `T## <title>` on a branch, PR into `main`, CI green

@@ -59,3 +59,14 @@ supabase/.branches/
 
 # render / scratch output
 /tmp/
+
+# offline market pipeline (docs/TECH_STACK.md): raw pages, HTTP caches, venvs and model weights stay local.
+# Only the cleaned snapshots in src/data/market/ are committed.
+/pipeline/**/.venv/
+/pipeline/**/__pycache__/
+/pipeline/**/.scrapy/
+/pipeline/**/raw/
+/pipeline/**/cache/
+/pipeline/**/out/
+*.safetensors
+*.ckpt

@@ -26,7 +26,7 @@
 
 ## 2. Predictive AI
 
-### 2.1 Data (no scraping: D-02)
+### 2.1 Data (valuation trains on synthetic data; the market snapshot follows D-02 as amended)
 
 `scripts/make-demo-dataset.ts` generates **`data/valuation/demo_sales.csv`** with about 1,200 rows. Every row has `is_synthetic=true`.
 

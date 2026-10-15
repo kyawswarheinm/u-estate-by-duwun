@@ -1,0 +1,89 @@
+{
+ "meta": {
+  "source": "fixture",
+  "is_sample": true,
+  "based_on": "FIXTURE listings.json",
+  "generated_at": "2026-10-16T05:00:00+07:00",
+  "method": "Median and quartiles of asking price per sqm by district, type and kind (linear interpolation).",
+  "min_count": 1
+ },
+ "by_area": [
+  {
+   "district": "ALL",
+   "type": "condo",
+   "kind": "rent",
+   "count": 1,
+   "median_price_per_sqm": 629,
+   "p25_price_per_sqm": 629,
+   "p75_price_per_sqm": 629,
+   "median_price_thb": 22000,
+   "median_area_sqm": 35
+  },
+  {
+   "district": "ALL",
+   "type": "condo",
+   "kind": "sale",
+   "count": 6,
+   "median_price_per_sqm": 113294,
+   "p25_price_per_sqm": 86970,
+   "p75_price_per_sqm": 146106,
+   "median_price_thb": 3850000,
+   "median_area_sqm": 34
+  },
+  {
+   "district": "ALL",
+   "type": "house",
+   "kind": "sale",
+   "count": 3,
+   "median_price_per_sqm": 30000,
+   "p25_price_per_sqm": 29737,
+   "p75_price_per_sqm": 30312,
+   "median_price_thb": 4900000,
+   "median_area_sqm": 160
+  },
+  {
+   "district": "Bang Na",
+   "type": "condo",
+   "kind": "sale",
+   "count": 3,
+   "median_price_per_sqm": 86667,
+   "p25_price_per_sqm": 84797,
+   "p75_price_per_sqm": 87273,
+   "median_price_thb": 2900000,
+   "median_area_sqm": 33
+  },
+  {
+   "district": "Bang Yai",
+   "type": "house",
+   "kind": "sale",
+   "count": 3,
+   "median_price_per_sqm": 30000,
+   "p25_price_per_sqm": 29737,
+   "p75_price_per_sqm": 30312,
+   "median_price_thb": 4900000,
+   "median_area_sqm": 160
+  },
+  {
+   "district": "Sathorn",
+   "type": "condo",
+   "kind": "rent",
+   "count": 1,
+   "median_price_per_sqm": 629,
+   "p25_price_per_sqm": 629,
+   "p75_price_per_sqm": 629,
+   "median_price_thb": 22000,
+   "median_area_sqm": 35
+  },
+  {
+   "district": "Sathorn",
+   "type": "condo",
+   "kind": "sale",
+   "count": 3,
+   "median_price_per_sqm": 148571,
+   "p25_price_per_sqm": 143640,
+   "p75_price_per_sqm": 150247,
+   "median_price_thb": 5200000,
+   "median_area_sqm": 35
+  }
+ ]
+}
