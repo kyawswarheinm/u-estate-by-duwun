@@ -106,6 +106,7 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
 
 ## 8. Last changes
 
+- 16 Oct (Meena, branch `Meena`): **T14 scam rules engine** (`src/lib/market/scam.ts`): price far below estimate, duplicate photo, deed mismatch, new-seller velocity, off-platform payment/ID phrases in EN/TH/AR/ZH/ES, urgency pressure; `scanMessage()` for the chat banner; `scamCheckForListing()` for pages. UI and DB writes still to do.
 - 16 Oct (Meena, branch `Meena`): **T07 valuation engine** (hedonic ridge OLS + conformal range, factors, forecast, synthetic dataset, eval → Model Card JSON; measured on the 2026 test split: median error 4.8%, 81.3% within ±10%, range coverage 76.8%). Person 2 test scripts in `tests/` with results in `tests/PERSON2_RESULTS.md`; fixed `/api/explain` 400, voice dock Esc/focus, Land Office label, 44 px select.
 - 16 Oct 00:45:
   - real-time database (migrations, RLS, RPCs, realtime, storage) + `db:verify` (62/62)
