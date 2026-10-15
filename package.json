@@ -14,6 +14,8 @@
     "db:verify": "node scripts/db/verify.mjs",
     "db:seed": "node --env-file-if-exists=.env.local scripts/db/seed-supabase.mjs",
     "brand": "node scripts/brand-assets.mjs",
+    "valuation:dataset": "npx --yes tsx@4.20.6 scripts/make-demo-dataset.ts",
+    "eval:valuation": "npx --yes tsx@4.20.6 scripts/eval-valuation.ts",
     "check": "npm run typecheck && npm run lint && npm test && npm run db:verify && npm run check:secrets"
   },
   "dependencies": {

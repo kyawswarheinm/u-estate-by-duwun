@@ -1,0 +1,37 @@
+{
+  "model_version": "hedonic-ols-v1",
+  "method": "Hedonic ridge regression on log(price per m²) with district, size, floor, building age, near-rail and price-index features; split-conformal 80% range.",
+  "metrics": {
+    "median_ape_pct": 4.8,
+    "within_10_pct": 81.3,
+    "range_coverage_pct": 76.8,
+    "n_test": 112,
+    "test_period": "2026-01 to 2026-09",
+    "n_train": 1018,
+    "n_calibration": 70
+  },
+  "split": "train before 2025-07; calibrate 2025-07 to 2025-12; test from 2026-01",
+  "dataset": {
+    "name": "U-Estate synthetic condo sales (demo)",
+    "file": "data/valuation/demo_sales.csv",
+    "rows": 1200,
+    "is_synthetic": true,
+    "seed": 20261016,
+    "period": "2019-01 to 2026-09",
+    "sources": [
+      "Synthetic district base prices (SYNTHETIC_DISTRICT_BASE in src/lib/valuation/dataset.ts)",
+      "SAMPLE condo price index (src/data/index-sample.ts), standing in for the Bank of Thailand index"
+    ],
+    "index": {
+      "label": "SAMPLE index (replace with Bank of Thailand Residential Property Price Index)",
+      "is_sample": true
+    }
+  },
+  "notice": "Trained and tested on synthetic demo data generated from synthetic district prices and a SAMPLE price index; it shows the method works, not market accuracy.",
+  "limitations": [
+    "Condos only; other property types show 'Not enough data'.",
+    "Only the districts in the training data; others show 'Not enough data'.",
+    "Missing floor, build year or rail distance are filled with the district average, and the page says so."
+  ],
+  "evaluated_on": "2026-10-15"
+}

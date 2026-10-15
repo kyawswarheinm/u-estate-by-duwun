@@ -1,0 +1,161 @@
+{
+ "version": "hedonic-ols-v1",
+ "propertyType": "condo",
+ "indexSeries": "condo_bkk",
+ "isSynthetic": true,
+ "districts": [
+  "Bang Na",
+  "Bang Rak",
+  "Bang Sue",
+  "Chatuchak",
+  "Huai Khwang",
+  "Khlong Toei",
+  "Pathum Wan",
+  "Phaya Thai",
+  "Phra Khanong",
+  "Sathorn",
+  "Thon Buri",
+  "Watthana"
+ ],
+ "featureNames": [
+  "intercept",
+  "district:Bang Rak",
+  "district:Bang Sue",
+  "district:Chatuchak",
+  "district:Huai Khwang",
+  "district:Khlong Toei",
+  "district:Pathum Wan",
+  "district:Phaya Thai",
+  "district:Phra Khanong",
+  "district:Sathorn",
+  "district:Thon Buri",
+  "district:Watthana",
+  "log_size",
+  "floor",
+  "age",
+  "rail_near",
+  "log_index"
+ ],
+ "beta": [
+  5.966786761390883,
+  0.260365907028703,
+  -0.32291833335947306,
+  -0.15605958914698015,
+  -0.17943893848376513,
+  0.1435470434443509,
+  0.45077718889663076,
+  0.00028087284178906016,
+  -0.11060050768532649,
+  0.04484446439796154,
+  -0.36852223891261354,
+  0.31704337103959984,
+  -0.08335031877655551,
+  0.0032291765363858184,
+  -0.0049297105992262445,
+  0.06654323415762076,
+  1.0912450482906704
+ ],
+ "band": {
+  "q10": -0.08909466721786004,
+  "q90": 0.08065120715835158,
+  "n": 70
+ },
+ "districtMeans": {
+  "Bang Na": {
+   "log_size": 3.9714752293381874,
+   "floor": 22.563218390804597,
+   "age": 9.74712643678161,
+   "rail_near": 0.22988505747126436,
+   "floorRaw": 22.563218390804597,
+   "railWalkMin": 14.35632183908046
+  },
+  "Bang Rak": {
+   "log_size": 3.9855932431953525,
+   "floor": 25.053333333333335,
+   "age": 8.68,
+   "rail_near": 0.26666666666666666,
+   "floorRaw": 25.053333333333335,
+   "railWalkMin": 13.573333333333334
+  },
+  "Bang Sue": {
+   "log_size": 4.003234753356431,
+   "floor": 21.561643835616437,
+   "age": 8.232876712328768,
+   "rail_near": 0.3013698630136986,
+   "floorRaw": 21.561643835616437,
+   "railWalkMin": 13.178082191780822
+  },
+  "Chatuchak": {
+   "log_size": 4.043409602992248,
+   "floor": 22.25925925925926,
+   "age": 8.604938271604938,
+   "rail_near": 0.2839506172839506,
+   "floorRaw": 22.25925925925926,
+   "railWalkMin": 13.530864197530864
+  },
+  "Huai Khwang": {
+   "log_size": 3.97893155073125,
+   "floor": 20.88235294117647,
+   "age": 8.223529411764705,
+   "rail_near": 0.29411764705882354,
+   "floorRaw": 20.88235294117647,
+   "railWalkMin": 13.08235294117647
+  },
+  "Khlong Toei": {
+   "log_size": 3.9656710785730076,
+   "floor": 24.17105263157895,
+   "age": 8.210526315789474,
+   "rail_near": 0.4473684210526316,
+   "floorRaw": 24.17105263157895,
+   "railWalkMin": 11.539473684210526
+  },
+  "Pathum Wan": {
+   "log_size": 4.019455171935905,
+   "floor": 23.541666666666668,
+   "age": 8.75,
+   "rail_near": 0.3611111111111111,
+   "floorRaw": 23.541666666666668,
+   "railWalkMin": 12.972222222222221
+  },
+  "Phaya Thai": {
+   "log_size": 4.045530992518788,
+   "floor": 23.719101123595507,
+   "age": 8.898876404494382,
+   "rail_near": 0.21348314606741572,
+   "floorRaw": 23.719101123595507,
+   "railWalkMin": 14.775280898876405
+  },
+  "Phra Khanong": {
+   "log_size": 4.024723773339059,
+   "floor": 25.22826086956522,
+   "age": 8.51086956521739,
+   "rail_near": 0.33695652173913043,
+   "floorRaw": 25.22826086956522,
+   "railWalkMin": 13.619565217391305
+  },
+  "Sathorn": {
+   "log_size": 4.00277260025776,
+   "floor": 22.72340425531915,
+   "age": 7.287234042553192,
+   "rail_near": 0.2872340425531915,
+   "floorRaw": 22.72340425531915,
+   "railWalkMin": 13.436170212765957
+  },
+  "Thon Buri": {
+   "log_size": 4.070193697125731,
+   "floor": 23.28205128205128,
+   "age": 8.602564102564102,
+   "rail_near": 0.3717948717948718,
+   "floorRaw": 23.28205128205128,
+   "railWalkMin": 12.166666666666666
+  },
+  "Watthana": {
+   "log_size": 4.0261639425371625,
+   "floor": 23.387931034482758,
+   "age": 8.85344827586207,
+   "rail_near": 0.3620689655172414,
+   "floorRaw": 23.387931034482758,
+   "railWalkMin": 12.422413793103448
+  }
+ }
+}
