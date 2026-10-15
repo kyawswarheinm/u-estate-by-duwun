@@ -1,11 +1,15 @@
 """P2T02 + P2T03: 12-month forecast of the BOT price index with Google TimesFM 2.5, backtested against
-the app's log-linear method (src/lib/valuation/forecast.ts).
+the app's log-linear method (src/lib/valuation/forecast.ts) over rolling windows.
 
-    python pipeline/analytics/forecast.py              # TimesFM (source "timesfm")
-    python pipeline/analytics/forecast.py --fallback   # log-linear only (source "fallback")
+    python pipeline/analytics/forecast.py                      # average of TimesFM 2.5 and the trend (team choice, 16 Oct)
+    python pipeline/analytics/forecast.py --method timesfm     # TimesFM 2.5 only
+    python pipeline/analytics/forecast.py --method loglinear   # trend only, no model download (source "fallback")
+
+The backtest always prints all three methods, so the choice can be revisited from script output.
 
 Reads  pipeline/analytics/data/bot_rppi.csv (+ SOURCE.md for the download stamp)
 Writes src/data/market/forecast.json (contract: src/lib/market-data/types.ts ForecastFile)
+       pipeline/analytics/data/backtest.csv (every backtest window, every method: the model card quotes this)
 
 Model: google/timesfm-2.5-200m-pytorch (Apache-2.0). The TimesFM 3.0 checkpoint is under a non-commercial
 licence, so we don't use it. Quantile columns: 0 = mean, 1..9 = 10th..90th percentile; the point forecast is
@@ -15,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -28,6 +31,7 @@ REPO = HERE.parent.parent
 DATA = HERE / "data" / "bot_rppi.csv"
 SOURCE_MD = HERE / "data" / "SOURCE.md"
 OUT = REPO / "src" / "data" / "market" / "forecast.json"
+BACKTEST = HERE / "data" / "backtest.csv"
 CHECKPOINT = "google/timesfm-2.5-200m-pytorch"
 ICT = timezone(timedelta(hours=7))
 Z80 = 1.2815515655446004  # 80% two-sided range, same as the app's 1.28
@@ -98,6 +102,18 @@ def timesfm_forecast(contexts: list[np.ndarray], horizon: int) -> list[tuple[np.
     return out
 
 
+def blend(a: tuple, b: tuple) -> tuple:
+    """Equal-weight average of two forecasts, quantile by quantile."""
+    return tuple((np.asarray(x) + np.asarray(y)) / 2 for x, y in zip(a, b))
+
+
+METHOD_MODEL = {
+    "blend": f"Average of Google TimesFM 2.5 200M ({CHECKPOINT}, Apache-2.0, zero-shot) and the log-linear trend",
+    "timesfm": f"Google TimesFM 2.5 200M ({CHECKPOINT}, Apache-2.0), zero-shot",
+    "loglinear": "Log-linear trend over the last 60 months (app baseline)",
+}
+
+
 def mape(actual: np.ndarray, pred: np.ndarray) -> float:
     return float(np.mean(np.abs(pred - actual) / actual) * 100)
 
@@ -108,40 +124,62 @@ def coverage(actual: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> float:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fallback", action="store_true", help="log-linear only, no TimesFM")
+    ap.add_argument("--method", choices=list(METHOD_MODEL), default="blend")
     ap.add_argument("--horizon", type=int, default=12)
-    ap.add_argument("--holdout", type=int, default=12)
+    ap.add_argument("--holdout", type=int, default=12, help="months scored after each backtest origin")
+    ap.add_argument("--origins", type=int, default=10, help="rolling backtest origins (1 = single last window)")
+    ap.add_argument("--step", type=int, default=6, help="months between backtest origins")
     a = ap.parse_args()
     series = load()
     keys = list(series)
 
-    # Backtest: fit on everything except the last `holdout` months, score on them.
-    ctx = [series[k].values[: -a.holdout] for k in keys]
-    act = [series[k].values[-a.holdout:] for k in keys]
-    base_bt = [loglinear(c, a.holdout) for c in ctx]
-    model_bt = base_bt if a.fallback else timesfm_forecast(ctx, a.holdout)
+    # Rolling-origin backtest: for each origin, fit on the months before it and score the next `holdout` months.
+    n = len(series[keys[0]])
+    ends = [n - a.holdout - i * a.step for i in range(a.origins)][::-1]
+    jobs = [(k, e) for e in ends for k in keys]
+    ctx = [series[k].values[:e] for k, e in jobs]
+    act = [series[k].values[e:e + a.holdout] for k, e in jobs]
+    preds = {"loglinear": [loglinear(c, a.holdout) for c in ctx]}
+    if a.method != "loglinear":
+        preds["timesfm"] = timesfm_forecast(ctx, a.holdout)
+        preds["blend"] = [blend(t, b) for t, b in zip(preds["timesfm"], preds["loglinear"])]
     rows = []
-    for k, y, b, m in zip(keys, act, base_bt, model_bt):
-        rows.append({"series": k, "mape_model": mape(y, m[1]), "mape_baseline": mape(y, b[1]),
-                     "cover80_model": coverage(y, m[0], m[2]), "cover80_baseline": coverage(y, b[0], b[2])})
+    for i, ((k, e), y) in enumerate(zip(jobs, act)):
+        for name, ps in preds.items():
+            lo, mid, hi = ps[i]
+            rows.append({"series": k, "origin": series[k].index[e - 1], "method": name, "mape": mape(y, mid), "cover80": coverage(y, lo, hi)})
     bt = pd.DataFrame(rows)
-    print(f"Backtest: last {a.holdout} months held out ({series[keys[0]].index[-a.holdout]} … {series[keys[0]].index[-1]})")
-    print(bt.round(2).to_string(index=False))
-    mm, mb = float(bt.mape_model.mean()), float(bt.mape_baseline.mean())
-    print(f"Mean MAPE  model {mm:.2f}%  baseline {mb:.2f}%   |  mean p10–p90 coverage  model {bt.cover80_model.mean():.0f}%  baseline {bt.cover80_baseline.mean():.0f}%")
+    bt.round(4).to_csv(BACKTEST, index=False)
+    idx = series[keys[0]].index
+    print(f"Backtest: {len(ends)} rolling origins every {a.step} months x {len(keys)} series, each scored on the next {a.holdout} months "
+          f"(scored periods {idx[ends[0]]} … {idx[-1]})")
+    print(bt.pivot_table(index="series", columns="method", values=["mape", "cover80"], aggfunc="mean").round(2).to_string())
+    summary = bt.groupby("method").agg(mape=("mape", "mean"), cover80=("cover80", "mean"))
+    print("Mean over all windows (MAPE %, share of actuals inside the p10–p90 range %):")
+    print(summary.round(2).to_string())
+    wide = bt.pivot_table(index=["series", "origin"], columns="method", values="mape")
+    if a.method != "loglinear":
+        print(f"More accurate than the trend in: TimesFM {int((wide.timesfm < wide.loglinear).sum())}/{len(wide)} windows, "
+              f"average {int((wide.blend < wide.loglinear).sum())}/{len(wide)}")
+    mm, mb = float(summary.loc[a.method, "mape"]), float(summary.loc["loglinear", "mape"])
 
     # Final forecast on the full history.
     full = [series[k].values for k in keys]
-    fc = [loglinear(c, a.horizon) for c in full] if a.fallback else timesfm_forecast(full, a.horizon)
+    trend = [loglinear(c, a.horizon) for c in full]
+    if a.method == "loglinear":
+        fc = trend
+    else:
+        tfm = timesfm_forecast(full, a.horizon)
+        fc = tfm if a.method == "timesfm" else [blend(t, b) for t, b in zip(tfm, trend)]
 
     stamp = re.search(r"Retrieved \(BOT stamp\):\*\*\s*([^;]+)", SOURCE_MD.read_text(encoding="utf-8"))
     updated = re.search(r"BOT last updated:\*\*\s*(.+)", SOURCE_MD.read_text(encoding="utf-8"))
     r1 = lambda v: round(float(v), 1)
     doc = {
         "meta": {
-            "source": "fallback" if a.fallback else "timesfm",
+            "source": "fallback" if a.method == "loglinear" else "timesfm",
             "is_sample": False,
-            "model": "Log-linear trend (app baseline)" if a.fallback else f"Google TimesFM 2.5 200M ({CHECKPOINT}, Apache-2.0), zero-shot",
+            "model": METHOD_MODEL[a.method],
             "series_source": "Bank of Thailand, Residential Property Price Index (table EC_EI_008_S4), Bangkok and vicinities"
                              + (f"; BOT updated {updated.group(1).strip()}" if updated else ""),
             "series_url": "https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?reportID=993&language=ENG",
@@ -152,7 +190,8 @@ def main() -> None:
                 "holdout_periods": a.holdout,
                 "mape_model_pct": round(mm, 2),
                 "mape_baseline_pct": round(mb, 2),
-                "baseline": "log-linear trend over the last 60 months (src/lib/valuation/forecast.ts)",
+                "baseline": f"log-linear trend over the last 60 months (src/lib/valuation/forecast.ts); MAPE averaged over {len(ends)} rolling "
+                            f"{a.holdout}-month windows x {len(keys)} series, scored {idx[ends[0]]} to {idx[-1]}",
             },
             "note": "Forecast of a regional price index (3-month moving average of mortgage-backed prices), not of any single property. "
                     "p10–p90 is an 80% range. Not a guarantee.",
