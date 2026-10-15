@@ -1,0 +1,22 @@
+{
+  "source": "Wikipedia contributors, List of districts of Bangkok, district reference coordinates (rounded)",
+  "source_url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Bangkok&oldid=1369007874",
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "checked_at": "2026-10-16",
+  "note": "Approximate representative district points, not computed polygon centroids and never actual building locations. Used only for SYNTHETIC rows.",
+  "centres": {
+    "Bang Na": {"lat": 13.680, "lng": 100.592},
+    "Bang Rak": {"lat": 13.731, "lng": 100.524},
+    "Bang Sue": {"lat": 13.810, "lng": 100.537},
+    "Chatuchak": {"lat": 13.829, "lng": 100.560},
+    "Huai Khwang": {"lat": 13.777, "lng": 100.579},
+    "Khlong Toei": {"lat": 13.708, "lng": 100.584},
+    "Pathum Wan": {"lat": 13.745, "lng": 100.522},
+    "Phaya Thai": {"lat": 13.780, "lng": 100.543},
+    "Phra Khanong": {"lat": 13.702, "lng": 100.602},
+    "Sathorn": {"lat": 13.708, "lng": 100.526},
+    "Thon Buri": {"lat": 13.725, "lng": 100.486},
+    "Watthana": {"lat": 13.742, "lng": 100.586}
+  }
+}

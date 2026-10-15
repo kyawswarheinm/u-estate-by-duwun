@@ -1,4 +1,8 @@
-# P1T01 — Thai listing source audit
+# P1 source audits
+
+**Current team decision (16 Oct): DDproperty, Hipflat, FazWaz and Livinginsider are off-limits. Do not crawl, retry or work around them.** P1T01b and OSM findings follow the historical audit below.
+
+## P1T01 — initial audit
 
 Checked **16 October 2026, approximately 05:24–05:28 ICT** for the U-Estate hackathon demo. Scope: DDproperty, Hipflat, FazWaz and Livinginsider. This is a permission/access audit, not a crawl or a listing snapshot.
 
@@ -6,7 +10,7 @@ Checked **16 October 2026, approximately 05:24–05:28 ICT** for the U-Estate ha
 
 **No approved primary or backup source. Do not start P1T02 against these sites.** All four failed the access gate; published policies also restrict collection or reuse. A readable robots file alone does not grant permission to extract or republish content.
 
-If the team can obtain explicit permission for the one-off facts-only snapshot and a public access route requiring no bypass, the permission-request priorities are **FazWaz (conditional primary)** and **Livinginsider (conditional backup)**, because their robots files were readable and their ordinary HTML routes are not covered by the observed wildcard restrictions. These are **not approved crawl targets**. Neither policy grants our proposed extraction; written authorization and a new successful access check are required before selection. DDproperty and Hipflat are rejected for this run.
+The initial audit identified FazWaz/Livinginsider only as possible permission-request priorities. **Those priorities are withdrawn by the subsequent team decision: all four remain off-limits.**
 
 The current `src/data/market/listings.json` stays unchanged with `source: "fixture"` and `is_sample: true`. If no eligible source is supplied by **06:15 ICT**, keep that labelled fixture under WORKPLAN §8. No synthetic rows or real-data claims were added in this task.
 
@@ -28,8 +32,8 @@ Official policy documents were researched separately using the web search reader
 |---|---|---|---|---|---|
 | **DDproperty** (`www.ddproperty.com`) | **403**, HTML response matched the audit's challenge/access-denial markers; body discarded. | Current rules could not be verified directly. The search reader had a cached [robots file](https://www.ddproperty.com/robots.txt), but it cannot clear the live failure. No search/listing request made. | Stopped at robots. No claim that a specific CAPTCHA or WAF vendor was confirmed. | Official [guidelines §§19–20](https://www.agentofferings.ddproperty.com/guidelines/) prohibit unauthorized bots/crawling and data mining. The document describes its membership scope; it supplies no permission for U-Estate. | **Reject**: access gate failed; no collection authorization. |
 | **Hipflat** (`www.hipflat.co.th`) | **401**, text response matched an access-denial marker; body discarded. | Robots unverified. No search/listing request made. | Stopped at robots. Did not switch to another Hipflat country domain. | The operator's [brand-to-terms directory](https://www.lifullconnect.com/tc-intro-lifull-connect-en/) points Hipflat to [portal terms §§2–3](https://www.lifullconnect.com/legal-notice-direct/): compiling/reproducing website content requires express authorization; user obligations restrict extraction and distribution. | **Reject**: access gate failed and proposed reuse is not authorized. |
-| **FazWaz** (`www.fazwaz.com`) | **200**, plain-text rules. | `User-agent: *` restricts `/api/`, `/graphql`, viewing/QR endpoints, advice search and URL parameters including `latLng`, `center`, `zoomLevel`, `radius`, `exclude`, `order_by`. Plain HTML `/property-for-sale/…` and `/property-sales/…` routes are not disallowed by the observed wildcard rules; these paths were not fetched. Several named crawler groups are entirely denied. | Subsequent homepage returned **403**. No further direct requests. Homepage content, listing markup and JSON-LD could not be checked. | [FazWaz terms §§2–3](https://www.lifullconnect.com/legal-notice-fazwaz/) require express authorization for compiling/reproducing content and restrict copying, extraction and distribution. The [other published terms page](https://www.lifullconnect.com/terms-and-conditions-fazwaz-en/) has matching restrictions. | **Reject for crawling now**. Conditional primary permission-request candidate only. |
-| **Livinginsider** (`www.livinginsider.com`) | **200**, plain-text wildcard rules allow `/` except `/api/`, `/bclick` and `/*/bclick`. | Ordinary search/listing HTML routes are not disallowed by these rules. No search/listing pages fetched after homepage denial. APIs and tracking links must not be crawled. | Subsequent homepage returned **403**. No further direct requests. No specific CAPTCHA confirmed. | [Official terms, clause 2](https://www.livinginsider.com/manual?action=MTE%3D), in Thai, restrict copying, reproduction and publication outside the site without written permission. This is an operational paraphrase of the published text, not a finding that our intended use is licensed. | **Reject for crawling now**. Conditional backup permission-request candidate only. |
+| **FazWaz** (`www.fazwaz.com`) | **200**, plain-text rules. | `User-agent: *` restricts `/api/`, `/graphql`, viewing/QR endpoints, advice search and URL parameters including `latLng`, `center`, `zoomLevel`, `radius`, `exclude`, `order_by`. Plain HTML `/property-for-sale/…` and `/property-sales/…` routes are not disallowed by the observed wildcard rules; these paths were not fetched. Several named crawler groups are entirely denied. | Subsequent homepage returned **403**. No further direct requests. Homepage content, listing markup and JSON-LD could not be checked. | [FazWaz terms §§2–3](https://www.lifullconnect.com/legal-notice-fazwaz/) require express authorization for compiling/reproducing content and restrict copying, extraction and distribution. The [other published terms page](https://www.lifullconnect.com/terms-and-conditions-fazwaz-en/) has matching restrictions. | **Reject for crawling now**. Off-limits under the subsequent team decision. |
+| **Livinginsider** (`www.livinginsider.com`) | **200**, plain-text wildcard rules allow `/` except `/api/`, `/bclick` and `/*/bclick`. | Ordinary search/listing HTML routes are not disallowed by these rules. No search/listing pages fetched after homepage denial. APIs and tracking links must not be crawled. | Subsequent homepage returned **403**. No further direct requests. No specific CAPTCHA confirmed. | [Official terms, clause 2](https://www.livinginsider.com/manual?action=MTE%3D), in Thai, restrict copying, reproduction and publication outside the site without written permission. This is an operational paraphrase of the published text, not a finding that our intended use is licensed. | **Reject for crawling now**. Off-limits under the subsequent team decision. |
 
 Successful direct robots response fingerprints (SHA-256 of returned bytes):
 
@@ -66,9 +70,52 @@ Searches on 16 October: `Scrapy FazWaz github`, `Scrapy Livinginsider github`, `
 
 GitHub repository metadata and complete default-branch file trees were checked directly. The three candidate repositories had no detected license and no standalone license file; that is a rejection for this task, not a claim about rights the authors might grant later. Credits above record research only, not code adoption or endorsement.
 
-## Handoff / reopening the gate
+## Initial handoff (superseded for the four excluded portals)
 
 1. A human supplies a source owner's explicit authorization or a licensed facts-only export, with permission to distribute the cleaned demo snapshot in the public repo. No credentials should be pasted into chat.
 2. Confirm the permitted host/routes, data fields, attribution, request limits and redistribution scope. Recheck robots and public access; permission does not authorize bypassing a challenge.
 3. Verify listing fields, dates and coordinate precision, then proceed to P1T02 with the required polite Scrapy settings and a 50-item cap.
 4. Otherwise keep the existing fixture labelled SAMPLE. P2/P3 can continue against the frozen contract. Source approval remains blocked; P1T01's primary/backup selection acceptance is not claimed as passed.
+
+
+## P1T01b — additional sources, 16 Oct ~05:54–06:05 ICT
+
+No excluded portal was contacted again. Policy checks used the same honest U-Estate User-Agent and at most one request per domain at a time. TLS-client failures were distinguished from access refusals; certificate verification was not disabled. No additional source passed the price-listing gate, so no live price listing spider was run.
+
+| Source | Robots / allowed paths | Access and terms | Result |
+|---|---|---|---|
+| [PropertyHub](https://propertyhub.in.th/robots.txt) | Direct 200; wildcard allows `/`. | [Official terms](https://propertyhub.in.th/en/terms), Description of Service §3 and Copyright, prohibit automated collection/extraction without company consent. No listing requests after that finding; fields/coordinates not inspected. | **Refused**, terms gate. |
+| [BAM](https://www.bam.co.th/robots.txt) | Direct 200; wildcard allows ordinary HTML, restricts `/api/`, previews, member/login/register routes. | [Official terms](https://www.bam.co.th/en/terms-and-conditions), Copyright, restrict copying, storing and disseminating website data for commercial purposes without prior written notice. This does not establish permission for our public marketplace snapshot. No listing requests; fields/coordinates unverified. | **Refused**, reuse not cleared. |
+| [AP Thai](https://www.apthai.com/robots.txt) | Initial system Python TLS error; a modern TLS client then returned 200. Ordinary English condominium paths allowed; Thai search paths and several query parameters disallowed. | Direct [terms page](https://www.apthai.com/en/terms-conditions) loaded 200 without a challenge. Its intellectual-property clause requires prior written consent for copying/distribution/public disclosure. No project-page collection after this finding; price/area/coordinates unverified. | **Refused**, terms gate. |
+| [Government Data Catalog / NHA vacant homes dataset](https://gdcatalog.go.th/en/dataset/gdpublish-03-44000) | Direct [robots](https://gdcatalog.go.th/robots.txt) 200; `User-agent: *` disallows `/`; separate Googlebot permissions do not apply to U-Estate. | Search-indexed catalogue metadata describes an open-data licence, but that does not override the host's robots rule. No dataset/API/file request made. Listing-level price, area and geographic coverage unverified. | **Refused**, robots gate. |
+| [Bangkok open-data district geometry](https://data.bangkok.go.th/robots.txt) | Direct 200; wildcard disallows `/`. | Looked up only as a potential district-coordinate source. No geometry/dataset download; no reuse claim. | **Refused**, robots gate. |
+
+These are failed source checks, not evidence that all Thai property sources prohibit collection. No primary/backup price source is approved. The explicitly authorized synthetic fallback remains labelled `fixture`, never `scrape`.
+
+## OSM endpoint and download audit — 16 Oct ~05:55 onward
+
+The [OSM copyright/licensing page](https://www.openstreetmap.org/copyright) permits copying and adapting OSM data under ODbL with attribution and share-alike requirements. All exported OSM places carry **© OpenStreetMap contributors, ODbL 1.0**, `license: ODbL-1.0` and the [licence URL](https://opendatacommons.org/licenses/odbl/1-0/). OSM supplies geography only; no price is attached to a named real feature.
+
+| Host / service | Rules and live observation | Decision |
+|---|---|---|
+| `overpass-api.de` | Direct robots 200: `/api/` disallowed. The public service documentation permits queries but does not change this project's robots requirement. | **No API request**, robots respected. |
+| `overpass.private.coffee` | Robots 404 (no exclusion rules); [operator terms](https://overpass.private.coffee/) explicitly allow programmatic use, including commercial projects, with privacy, fair resource use and attribution obligations. One bounded Scrapy POST and a later tiny diagnostic GET both returned **500**. | Source/service terms qualify; **live retrieval unavailable**. No automatic retries. |
+| `overpass.kumi.systems` | Documented former hostname of Private.coffee in the [OSM public-instance directory](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances). Robots 404; one bounded Scrapy POST returned **500**. | Explicitly permitted service, **live retrieval unavailable**. No API data exported. |
+| `maps.mail.ru` / `maps.vk.com` | The documented old VK robots URL redirected to a general HTML page. The canonical `maps.vk.com/robots.txt` then returned 200 with a wildcard default deny and only specific map UI paths allowed. | **No Overpass API request**; insufficient allowed API route. |
+| `overpass.osm.jp` | Robots request failed certificate validation (expired certificate). | **No API request**; TLS verification was not disabled. |
+| `api.openstreetmap.org` | Robots returned 301. Read the [core API policy](https://operations.osmfoundation.org/policies/api/), which says the editing API is not for read-only projects. | **No data request**; not a fallback for this scraper. |
+| `download.geofabrik.de` | Robots redirects normally to `/robots.txt/`, which returns 404. [Official download information](https://www.geofabrik.de/data/download.html) and [Thailand extract page](https://download.geofabrik.de/asia/thailand.html) explicitly provide OSM files for download under ODbL. Public files omit contributor usernames/user IDs/changeset IDs. | **Eligible regional-extract fallback**, distinct from Overpass. Scrapy follows the normal latest-to-dated-file redirect, with one request at a time and cached responses. Live outcome recorded in P1 log. |
+
+No parallel mirror racing, access-block retries, authentication, or spoofed User-Agent was used. Overpass's allowed provider failed with server errors, not a CAPTCHA. The regional download is a documented alternative delivery method for the same open OSM data, not a way around the four forbidden portals. The Overpass spider remains available; an extract result is never labelled as a successful Overpass call.
+
+District-reference coordinates for the synthetic fixture are separately attributed to [Wikipedia contributors](https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Bangkok&oldid=1369007874), CC BY-SA 4.0. Only twelve representative district points were transcribed and rounded. They are not polygon centroids, real building locations, or data from a blocked portal. The real OSM places and synthetic price records remain separate datasets.
+
+### Approved extract checks — 16 Oct ~06:10 ICT
+
+The human approved BBBike Bangkok as primary and Geofabrik Thailand as backup, and instructed no further Overpass retry loop. [BBBike robots](https://download.bbbike.org/robots.txt) returned HTTP 200 and explicitly disallows `/*.pbf$`. Its [Bangkok directory](https://download.bbbike.org/osm/bbbike/Bangkok/) offers OSM downloads, but the robots gate wins for this automated pipeline: **no PBF request to BBBike**. The approved Geofabrik backup remains eligible under the audit above. An in-flight Geofabrik request was interrupted on the proposed primary switch; after the BBBike robots failure the backup download was started again. No successful extract was downloaded twice. No additional Overpass calls were made.
+
+The `osmium==4.2.0` Python binding (pyosmium) is used under [BSD-2-Clause](https://github.com/osmcode/pyosmium/blob/v4.2.0/LICENSE.TXT), separate from OSM data's ODbL. Ways use polygon area centroids (line-length centroids for open/degenerate geometries). Rail classification additionally recognizes ARL / Airport Rail Link / SRTET evidence. Download URL, dated resolved URL, Last-Modified and SHA-256 are retained in the cleaned metadata; raw PBF is stored only under ignored `raw/`.
+
+### Live extraction outcome
+
+Geofabrik completed at ~06:18 ICT: **328,698,576 bytes**, resolved `https://download.geofabrik.de/asia/thailand-261014.osm.pbf`, Last-Modified **15 Oct 2026 00:00:13 GMT**. SHA-256 and collection time are in `places.json` metadata. Native-filtered pyosmium extraction yielded **6,987** Bangkok/vicinity facts-only places (6,751 residential features, 236 transit stations). The successful full response was downloaded once; subsequent runs use only the local HTTP cache/PBF. This is an actual successful Scrapy extract retrieval and offline OSM parse, not a successful Overpass call or a source of prices.

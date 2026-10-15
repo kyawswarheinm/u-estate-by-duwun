@@ -1,0 +1,3 @@
+scrapy==2.19.0
+# Regional-extract fallback while public Overpass endpoints are unavailable.
+osmium==4.2.0
