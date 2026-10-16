@@ -23,6 +23,11 @@ function km(aLat: number, aLng: number, bLat: number, bLng: number) {
   return 2 * 6371 * Math.asin(Math.sqrt(Math.min(1, Math.max(0, h))));
 }
 
+function listingTime(value: string | null) {
+  const time = value == null ? NaN : Date.parse(value);
+  return Number.isFinite(time) ? time : -Infinity;
+}
+
 export function findMarketListings(input: MarketSearch = {}) {
   const f = MarketSearchSchema.parse(input);
   const district = f.district?.trim().replace(/\s+/g, " ").toLowerCase();
@@ -37,7 +42,7 @@ export function findMarketListings(input: MarketSearch = {}) {
     .sort((a, b) => {
       const difference = sort === "price" ? a.l.price_thb - b.l.price_thb
         : sort === "price_desc" ? b.l.price_thb - a.l.price_thb
-        : sort === "newest" ? (b.l.listed_at ?? "").localeCompare(a.l.listed_at ?? "")
+        : sort === "newest" ? listingTime(b.l.listed_at) - listingTime(a.l.listed_at)
         : sort === "distance" ? (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)
         : a.l.price_per_sqm - b.l.price_per_sqm;
       return difference || a.l.id.localeCompare(b.l.id);

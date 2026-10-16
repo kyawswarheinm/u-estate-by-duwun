@@ -30,6 +30,34 @@ describe("market listing search", () => {
   it("sorts newest first and leaves unknown dates last with deterministic ties", () => {
     expect(findMarketListings({ sort: "newest" }).results.map((r) => r.id)).toEqual(["ext-b", "ext-a", "ext-c", "ext-d"]);
   });
+  it("orders newest by instant across time zones and puts unusable dates last", () => {
+    snapshot.listings = [
+      row("ext-a", { listed_at: "2026-10-16T08:00:00+07:00" }),
+      row("ext-b", { listed_at: "2026-10-16T02:00:00Z" }),
+      row("ext-c", { listed_at: "2026-10-16-invalid" }),
+      row("ext-d"),
+    ];
+    expect(findMarketListings({ sort: "newest" }).results.map((r) => r.id)).toEqual(["ext-b", "ext-a", "ext-c", "ext-d"]);
+  });
+  it("applies monthly rental budgets, property type and inclusive area boundaries", () => {
+    snapshot.listings = [
+      row("ext-rent", { kind: "rent", type: "house", price_thb: 25_000, area_sqm: 100 }),
+      row("ext-large", { kind: "rent", type: "house", price_thb: 25_001, area_sqm: 120 }),
+      row("ext-small", { kind: "rent", type: "house", price_thb: 20_000, area_sqm: 99 }),
+      row("ext-condo", { kind: "rent", price_thb: 20_000, area_sqm: 100 }),
+      row("ext-sale", { type: "house", price_thb: 25_000, area_sqm: 100 }),
+    ];
+    expect(findMarketListings({ kind: "rent", type: "house", maxPriceThb: 25_000, minSizeSqm: 100 }).results.map((r) => r.id)).toEqual(["ext-rent"]);
+  });
+  it("filters on unrounded distance and leaves the shared snapshot unchanged", () => {
+    snapshot.listings = [row("ext-outside", { lat: 13.7291 }), row("ext-inside", { lat: 13.7289 })];
+    const before = structuredClone(snapshot);
+    const result = findMarketListings({ near: { lat: 13.72, lng: 100.53, radiusKm: 1 } });
+    expect(result.results.map((r) => r.id)).toEqual(["ext-inside"]);
+    expect(result.results[0].distance_km).toBe(1);
+    expect(snapshot).toEqual(before);
+    expect(findMarketListings().results.every((r) => r.distance_km === null)).toBe(true);
+  });
   it("combines district, type, kind, budget and minimum area", () => {
     expect(findMarketListings({ district: "  SATHORN  ", type: "condo", kind: "sale", maxPriceThb: 3_000_000, minSizeSqm: 40 }).results.map((r) => r.id)).toEqual(["ext-b"]);
     expect(findMarketListings({ kind: "rent" }).total_matches).toBe(0);
