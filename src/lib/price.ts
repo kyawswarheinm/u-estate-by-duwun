@@ -73,16 +73,3 @@ export function pricePanel(listing: Listing, property: Property, comparables: { 
     risks,
   };
 }
-
-/** Linear trend over the last 24 months, projected 12 months. Labelled "trend, not a prediction". */
-export function trendLine(series: { month: string; value: number }[]) {
-  const recent = series.slice(-24);
-  const n = recent.length;
-  const xs = recent.map((_, i) => i);
-  const ys = recent.map((p) => p.value);
-  const mx = xs.reduce((a, b) => a + b, 0) / n;
-  const my = ys.reduce((a, b) => a + b, 0) / n;
-  const slope = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / xs.reduce((s, x) => s + (x - mx) ** 2, 0);
-  const intercept = my - slope * mx;
-  return Array.from({ length: 13 }, (_, k) => ({ step: k, value: Math.round((intercept + slope * (n - 1 + k)) * 10) / 10 }));
-}

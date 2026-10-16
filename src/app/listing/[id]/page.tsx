@@ -11,15 +11,14 @@ import { notFound } from "next/navigation";
 import { readDb } from "@/lib/store";
 import { currentUser } from "@/lib/session";
 import { pricePanel } from "@/lib/price";
-import { indexSeries } from "@/data/index-sample";
 import { agentSaleFee, sellerFee } from "@/lib/rules";
 import { Card, RiskIcon, SampleTag, VerificationBadge } from "@/components/ui";
-import { IndexChart } from "@/components/IndexChart";
+import { ForecastChart } from "@/components/ForecastChart";
 import { ExplainVoice } from "@/components/ExplainVoice";
 import { createCobuyGroup } from "@/app/actions";
 import { openOfferRound } from "@/app/sell/actions";
 import { compareToMarket } from "@/lib/market-data/analytics";
-import { MarketType } from "@/lib/market-data";
+import { MARKET_FORECAST, MarketType } from "@/lib/market-data";
 
 // A median of one or two asking prices says nothing useful, so the comparison needs at least three.
 const MIN_MARKET_COMPARE = 3;
@@ -49,6 +48,15 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const market = marketType.success
     ? compareToMarket({ priceThb: listing.askingPriceThb, areaSqm: property.areaSqm, district: property.district, type: marketType.data, kind: listing.kind })
     : null;
+  // TimesFM-based 12-month forecast of the same BOT series the price panel uses (D-42). Code computes every number.
+  const fseries = MARKET_FORECAST.series.find((s) => s.key === property.indexSeries) ?? MARKET_FORECAST.series.find((s) => s.type === property.type) ?? MARKET_FORECAST.series[0];
+  const lastIdx = fseries.history[fseries.history.length - 1];
+  const endIdx = fseries.forecast[fseries.forecast.length - 1];
+  const pctOf = (v: number) => Math.round(((v - lastIdx.value) / lastIdx.value) * 1000) / 10;
+  const outlook = t("Next {months} months: {low}% to {high}% (central {central}%), a forecast, not a guarantee.", { months: fseries.forecast.length, low: pctOf(endIdx.p10), high: pctOf(endIdx.p90), central: pctOf(endIdx.p50) });
+  // Only for homes sold with an index-adjusted estimate: rents and whole buildings don't follow a home price index.
+  const homeBase = listing.kind === "sale" && ["condo", "house", "townhouse"].includes(property.type) ? panel.estimate.thb : null;
+  const homeAt = (v: number) => Math.round((homeBase! * v) / lastIdx.value / 1000) * 1000;
 
   return (
     <article className="grid gap-5">
@@ -129,6 +137,13 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             <p className="mt-1 font-semibold">
               {(() => {
                 const values = { count: market.listings_compared, district: market.compared_with === "all districts" ? t("Bangkok and vicinity") : market.compared_with, pct: Math.abs(market.diff_pct) };
+                if (market.is_sample) {
+                  return market.diff_pct > 0
+                    ? t("Compared with {count} sample listings in {district}: {pct}% above the median.", values)
+                    : market.diff_pct < 0
+                      ? t("Compared with {count} sample listings in {district}: {pct}% below the median.", values)
+                      : t("Compared with {count} sample listings in {district}: at the median.", values);
+                }
                 return market.diff_pct > 0
                   ? t("Compared with {count} asking prices in {district}: {pct}% above the median.", values)
                   : market.diff_pct < 0
@@ -136,17 +151,31 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
                     : t("Compared with {count} asking prices in {district}: at the median.", values);
               })()}
             </p>
-            <p className="text-sm text-deep"><Text message="Price per m² here: {mine}. Median on listing websites: {median}." values={{ mine: formatMoney(market.price_per_sqm, locale), median: formatMoney(market.median_price_per_sqm, locale) }} /></p>
+            <p className="text-sm text-deep"><Text message={market.is_sample ? "Price per m² here: {mine}. Median of the sample listings: {median}." : "Price per m² here: {mine}. Median on listing websites: {median}."} values={{ mine: formatMoney(market.price_per_sqm, locale), median: formatMoney(market.median_price_per_sqm, locale) }} /></p>
             <p className="mt-1 text-xs text-ink-soft">
-              <Text message="Asking prices on listing websites, not sale prices." />{" "}
+              <Text message={market.is_sample ? "Sample listings are synthetic, not real prices." : "Asking prices on listing websites, not sale prices."} />{" "}
               <Link href={`/market?district=${encodeURIComponent(property.district)}`} className="font-semibold"><Text message="Explore the market" /></Link>
             </p>
           </section>
         )}
-        <div className="mt-5">
-          <IndexChart series={indexSeries(property.indexSeries)} isSample={panel.index.isSample} title={`Price index: ${property.type}s, Bangkok area`} />
-          <p className="mt-1 text-xs text-ink-soft"><Text message="Source: {source} · latest {month}" values={{ source: panel.index.source, month: panel.index.latestMonth }} /></p>
-        </div>
+        <section aria-labelledby="forecast-heading" className="mt-5 grid gap-2 rounded-lg border border-line p-4">
+          <h3 id="forecast-heading" className="sr-only">{t("Price index and 12-month forecast")}</h3>
+          <ForecastChart
+            history={fseries.history}
+            forecast={fseries.forecast}
+            isSample={MARKET_FORECAST.meta.is_sample}
+            title={`${t("Price index and 12-month forecast")} · ${fseries.label}`}
+            labels={{ history: MARKET_FORECAST.meta.is_sample ? t("SAMPLE INDEX DATA") : t("Bank of Thailand index"), band: t("80% range (p10–p90)"), central: t("Central forecast") }}
+            summary={`${fseries.label}, ${lastIdx.period}: ${lastIdx.value}. ${outlook}`}
+          />
+          <p className="text-sm font-semibold text-deep">{outlook}</p>
+          {homeBase !== null && (
+            <p className="text-sm text-deep">{t("If this home's value moves with the index: {value} in 12 months (range {low} – {high}).", { value: formatMoney(homeAt(endIdx.p50), locale), low: formatMoney(homeAt(endIdx.p10), locale), high: formatMoney(homeAt(endIdx.p90), locale) })}</p>
+          )}
+          <p className="text-xs text-ink-soft">
+            {t("Forecast model: {model}", { model: MARKET_FORECAST.meta.model })} · <Text message="Source: {source} · latest {month}" values={{ source: panel.index.source, month: panel.index.latestMonth }} />
+          </p>
+        </section>
         <div className="mt-5">
           <ExplainVoice listingId={listing.id} />
         </div>
