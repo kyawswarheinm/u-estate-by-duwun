@@ -44,7 +44,8 @@ export function findMarketListings(input: MarketSearch = {}) {
     });
   const note = MARKET_LISTINGS.meta.is_sample
     ? "SAMPLE / SYNTHETIC data, not real property listings or sale prices. U-Estate has not checked these as properties for sale. Source links identify fixture provenance; coordinates are approximate district centres, not building locations."
-    : EXTERNAL_NOTE + " Distances may use approximate project or district coordinates.";
+    : EXTERNAL_NOTE + " Distances may use approximate project or district coordinates."
+      + (MARKET_LISTINGS.meta.note ? ` Snapshot provenance: ${MARKET_LISTINGS.meta.note}` : "");
   return {
     total_matches: matches.length,
     results: matches.slice(0, f.limit).map(({ l, distanceKm }) => summarise(l, distanceKm)),

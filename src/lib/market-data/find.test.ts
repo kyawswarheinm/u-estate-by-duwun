@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MarketKind, MarketType, type MarketListing } from "./types";
 
-const snapshot = vi.hoisted(() => ({ meta: { is_sample: false, scraped_at: "2026-10-16T06:00:00+07:00" }, listings: [] as unknown[] }));
+const snapshot = vi.hoisted(() => ({ meta: { is_sample: false, scraped_at: "2026-10-16T06:00:00+07:00", note: "" }, listings: [] as unknown[] }));
 vi.mock("./index", () => ({ MARKET_LISTINGS: snapshot, MarketKind, MarketType }));
 import { findMarketListings } from "./find";
 
@@ -15,6 +15,7 @@ function row(id: string, overrides: Partial<MarketListing> = {}): MarketListing 
 describe("market listing search", () => {
   beforeEach(() => {
     snapshot.meta.is_sample = false;
+    snapshot.meta.note = "";
     snapshot.listings = [row("ext-a", { price_thb: 6_000_000, price_per_sqm: 150_000, listed_at: "2026-10-01", lat: 13.73 }),
       row("ext-b", { price_thb: 3_000_000, price_per_sqm: 75_000, listed_at: "2026-10-10" }),
       row("ext-c", { price_thb: 2_000_000, price_per_sqm: 50_000, district: "Bang Na", lat: 13.67, lng: 100.61 }),
@@ -63,5 +64,11 @@ describe("market listing search", () => {
     expect(result.is_sample).toBe(true);
     expect(result.note).toMatch(/SYNTHETIC/);
     expect(result.note).not.toMatch(/copied from other websites/);
+  });
+  it("carries coordinate attribution to the AI without changing the result shape", () => {
+    snapshot.meta.note = "Project coordinates: © OpenStreetMap contributors, ODbL 1.0.";
+    expect(findMarketListings().note).toContain(snapshot.meta.note);
+    snapshot.meta.is_sample = true;
+    expect(findMarketListings().note).not.toContain(snapshot.meta.note);
   });
 });

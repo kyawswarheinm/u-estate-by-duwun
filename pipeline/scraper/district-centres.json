@@ -4,7 +4,8 @@
   "license": "CC-BY-SA-4.0",
   "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
   "checked_at": "2026-10-16",
-  "note": "Approximate representative district points, not computed polygon centroids and never actual building locations. Used only for SYNTHETIC rows.",
+  "province": "Bangkok",
+  "note": "Approximate representative district reference points, not polygon centroids or actual building locations. Used for explicitly labelled district fallback and SYNTHETIC rows; never exact building coordinates.",
   "centres": {
     "Bang Na": {"lat": 13.680, "lng": 100.592},
     "Bang Rak": {"lat": 13.731, "lng": 100.524},

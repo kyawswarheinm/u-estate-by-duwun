@@ -65,6 +65,45 @@ Cleaning rules:
 
 Counters and per-cohort thresholds are written to ignored `out/listing-cleaning-report.json` (`--report` overrides the path). Re-running on the same original raw items is deterministic. Always use the original raw items, not a previously trimmed snapshot. Input, metadata, report and snapshot paths must differ. Validation and the minimum-count check finish before writing; each output is replaced atomically. Empty/undersized/invalid input preserves the previous snapshot. No new npm dependency/script or frozen-contract field was added.
 
+## P1T04 coordinates
+
+The real-listing export now resolves coordinates after cleaning, with a default **80% coverage gate**. Existing page coordinates keep `exact`; previously labelled project/district coordinates retain their precision. Missing coordinates use a strictly matched cached/project lookup (`project`), then an attributed district reference (`district`), otherwise null/`none`. Every new point is rounded to three decimals. No synthetic row is submitted for project lookup and the OSM places file is not joined to prices.
+
+**Read the [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/):** this is a small, one-time offline batch on **one thread, one process, one machine**, with cached results, attribution and at most one request per second. This client waits **two seconds after each request**, persists the rate state across runs, and locks the shared cache against concurrent batches. Do not schedule recurring jobs or offer this as an app/chat address-search service. The operator is responsible for choosing an eligible endpoint and supplying a real public contact URL. [Search API documentation](https://nominatim.org/release-docs/latest/api/Search/).
+
+**Live source audit:** on 16 October, `https://nominatim.openstreetmap.org/robots.txt` returned 200 and explicitly disallowed `/search`. **No search query was sent.** The client enforces robots and stops online lookup on denial, challenge, HTTP error or timeout, with no retries or mirror rotation. The default public endpoint is therefore currently unavailable under our rules. Cache hits and district fallback still work. A separately configured Nominatim-compatible endpoint must have its terms/robots checked and recorded in SOURCES before use.
+
+The ordinary command remains cache-only and needs no contact configuration:
+
+```sh
+.venv/bin/python export.py listings --sites out/source-sites.json
+```
+
+For a **separately audited, permitted endpoint only**, configure its real URL and the operator's public contact URL in the terminal, then:
+
+```sh
+.venv/bin/python export.py listings --sites out/source-sites.json \
+  --geocode-online --geocode-endpoint "$UEST_NOMINATIM_ENDPOINT" \
+  --contact-url "$UEST_OPERATOR_CONTACT_URL"
+```
+
+These are public URLs, not API credentials; the client rejects URL credentials/query strings. Nothing reads or modifies `.env.local`. The CLI endpoint is configurable without code changes. Live requests first check robots, use an identifying project User-Agent with the contact URL, enforce a 500-project-query budget, and stop after the first service failure. No personal addresses, descriptions, owner/agent names or contact details are submitted as queries. The listing adapter accepts a project name only from an explicit `containedInPlace` / `ApartmentComplex` object, not from headlines or seller fields.
+
+`cache/nominatim/` (ignored) stores only the safe query, endpoint, collection time and rounded result or a cached no-match. No raw geocoder response, display-name/address payload, contact URL or arbitrary OSM tags are stored. Results must match the exact normalized public project name, tagged district/province and country `th`; ambiguous or administrative-boundary matches are rejected. Offline cache misses proceed to district fallback.
+
+`district-centres.json` has twelve **Bangkok** representative reference points, with source/CC BY-SA attribution. They are not geometric centroids, entrances or verified property locations. Province matching prevents using a Bangkok reference for a similarly named district in another province. `--centres` accepts an attributed registry; each entry can specify its province, or inherit the registry's province. Missing districts remain unknown; no city-wide default point is invented.
+
+The cleaning report includes `geocoding` counts, endpoint, cache/network counters, coordinate coverage and district provenance. Exported source notes credit Nominatim/OSM when used and the district reference source when used. P3 must preserve these credits and the distinction between `exact`, `project` and `district`. No new frozen-contract fields were added. `--min-coordinate-coverage` makes the threshold explicit; it defaults to `.8` and is never reduced automatically. A coverage failure leaves the prior snapshot intact, although legitimate lookup results may already be cached.
+
+Network-free verification (generated fixtures, never real results):
+
+```sh
+.venv/bin/python -m tests.smoke_geocoding
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+The smoke test covers page → cached project → district → unknown, demonstrates **4/5 = 80% on generated fixtures**, and writes only labelled fixture artifacts under ignored `out/tests/`. It is not evidence of real-listing coverage. Real coverage remains unmeasurable until P1T02 supplies real eligible listing items.
+
 ## OSM via Overpass
 
 ```sh

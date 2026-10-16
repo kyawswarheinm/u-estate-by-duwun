@@ -3,6 +3,7 @@ from datetime import date
 import hashlib
 import math
 import re
+import unicodedata
 from urllib.parse import urlsplit
 
 from estate_scraper.clean import CONTACT, district, text
@@ -95,9 +96,12 @@ def sale_listing(document, url, site, fetched_at):
         listed_at = date.fromisoformat(listed_at).isoformat() if isinstance(listed_at, str) else None
     except ValueError:
         listed_at = None
+    parent = residence.get("containedInPlace")
+    name = parent.get("name") if isinstance(parent, dict) and parent.get("@type") == "ApartmentComplex" else None
+    project = text(unicodedata.normalize("NFKC", name)) if isinstance(name, str) else None
     return {"id": "ext-" + site + "-" + hashlib.sha1(url.encode()).hexdigest()[:10],
             "site": site, "source_url": url, "kind": "sale", "type": kind,
-            "project": None, "district": location, "province": province,
+            "project": project, "district": location, "province": province,
             "lat": round(lat, 3) if lat is not None else None,
             "lng": round(lng, 3) if lng is not None else None,
             "geo_precision": "exact" if lat is not None else "none", "price_thb": price,

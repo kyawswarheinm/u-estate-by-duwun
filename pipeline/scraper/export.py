@@ -9,6 +9,7 @@ from pathlib import Path
 
 from estate_scraper.clean import FIELDS, district, text
 from estate_scraper.market_export import clean_listings, collection_time, source_url
+from estate_scraper.geocoding import ENDPOINT, OSM_CREDIT, NominatimClient, resolve_coordinates
 
 ROOT = Path(__file__).resolve().parents[2]
 LICENSE = "https://opendatacommons.org/licenses/odbl/1-0/"
@@ -137,9 +138,13 @@ def validate_listing_sources(sites):
     return by_name
 
 
-def export_listings(source, sites_file, output, min_items=200, report_path="out/listing-cleaning-report.json"):
+def export_listings(source, sites_file, output, min_items=200, report_path="out/listing-cleaning-report.json", *,
+                    geocode_online=False, contact_url=None, geocode_endpoint=ENDPOINT, geocode_cache=None,
+                    centres_file=None, min_coordinate_coverage=.8):
     if min_items < 1:
         raise ValueError("Minimum clean item count must be positive")
+    if isinstance(min_coordinate_coverage, bool) or not isinstance(min_coordinate_coverage, (int, float)) or not 0 <= min_coordinate_coverage <= 1:
+        raise ValueError("Coordinate coverage must be between 0 and 1")
     if len({Path(path).resolve() for path in (source, sites_file, output, report_path)}) != 4:
         raise ValueError("Inputs, report and listing snapshot must use different paths")
     sites = validate_listing_sources(json.loads(Path(sites_file).read_text()))
@@ -155,6 +160,19 @@ def export_listings(source, sites_file, output, min_items=200, report_path="out/
     rows, report = clean_listings(raw)
     if len(rows) < min_items:
         raise ValueError(f"Only {len(rows)} clean listings; {min_items} required. Existing snapshot preserved.")
+    directory = Path(__file__).resolve().parent
+    with NominatimClient(geocode_cache or directory / "cache/nominatim", online=geocode_online,
+                         contact_url=contact_url, endpoint=geocode_endpoint) as client:
+        rows, geo = resolve_coordinates(rows, centres_file or directory / "district-centres.json", client)
+    report["geocoding"] = geo
+    if geo["coverage"] < min_coordinate_coverage:
+        raise ValueError(f"Coordinate coverage {geo['located']}/{geo['total']} ({geo['coverage']:.1%}); {min_coordinate_coverage:.1%} required. Existing snapshot preserved.")
+    credits = []
+    if geo.get("nominatim"):
+        credits.append("Project coordinates: " + OSM_CREDIT + ".")
+    if geo.get("district_fallback"):
+        origin = geo["district_source"]
+        credits.append(f"District reference coordinates: {origin['source']}, {origin['license']} ({origin['license_url']}); approximate, not polygon centroids.")
     used = sorted({row["site"] for row in rows})
     payload = {"meta": {"source": "scrape", "is_sample": False,
         "sites": [sites[name] for name in used],
@@ -162,7 +180,8 @@ def export_listings(source, sites_file, output, min_items=200, report_path="out/
         "note": "External asking prices, not completed-sale prices; not checked by U-Estate. "
                 "Open the source to confirm price and availability. Dates refer to collection, not export. "
                 "Duplicate adverts and price-per-m² outliers removed. Coordinates rounded to 3 decimals; "
-                "project/district locations are approximate. These records are separate from OSM geography and synthetic examples."}, "listings": rows}
+                "project/district locations are approximate. These records are separate from OSM geography and synthetic examples. "
+                + " ".join(credits)}, "listings": rows}
     # Both files are atomic individually; finish all validation before touching either.
     write_json(report_path, report)
     write_json(output, payload)
@@ -186,12 +205,20 @@ def main():
     listings.add_argument("--output", default=str(ROOT / "src/data/market/listings.json"))
     listings.add_argument("--min-items", type=int, default=200)
     listings.add_argument("--report", default="out/listing-cleaning-report.json")
+    listings.add_argument("--geocode-online", action="store_true", help="Enable one-off live lookups after policy/robots checks; default is cache-only")
+    listings.add_argument("--contact-url", help="Public operator contact URL for the live geocoder User-Agent")
+    listings.add_argument("--geocode-endpoint", default=ENDPOINT, help="Audited Nominatim-compatible search endpoint")
+    listings.add_argument("--geocode-cache", help="Local cache directory; run only one batch on one machine")
+    listings.add_argument("--centres", help="Attributed district reference registry")
+    listings.add_argument("--min-coordinate-coverage", type=float, default=.8)
     args = parser.parse_args()
     try:
         if args.mode == "places":
             count = export_places(args.input, args.output, args.extract_meta)
         elif args.mode == "listings":
-            count = export_listings(args.input, args.sites, args.output, args.min_items, args.report)
+            count = export_listings(args.input, args.sites, args.output, args.min_items, args.report,
+                geocode_online=args.geocode_online, contact_url=args.contact_url, geocode_endpoint=args.geocode_endpoint,
+                geocode_cache=args.geocode_cache, centres_file=args.centres, min_coordinate_coverage=args.min_coordinate_coverage)
         else:
             count = export_synthetic(args.input, args.centres, args.output)
     except (ValueError, OSError) as error:
