@@ -33,7 +33,7 @@ export const DATASET = {
   isSynthetic: true,
   sources: [
     "Synthetic district base prices (SYNTHETIC_DISTRICT_BASE in src/lib/valuation/dataset.ts)",
-    "SAMPLE condo price index (src/data/index-sample.ts), standing in for the Bank of Thailand index",
+    "Bank of Thailand condominium price index, Bangkok and vicinities (EC_EI_008_S4, via src/data/index-sample.ts): real index movement over time",
   ],
 };
 

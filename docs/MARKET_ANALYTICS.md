@@ -50,7 +50,14 @@ Charts are drawn by `pipeline/analytics/chart.py` from `forecast.json` and `back
 | Single-detached house price index, including land (Bank of Thailand) | 2026-08: 143.2 | 2027-08: 139.3 | 143.9 | 148.8 | -2.7% / +0.5% / +3.9% | +2.1% |
 | Townhouse price index, including land (Bank of Thailand) | 2026-08: 177.9 | 2027-08: 175.6 | 181.5 | 187.0 | -1.3% / +2.0% / +5.1% | +1.7% |
 
-## 4. Market statistics (`get_market_stats`, `compare_to_market`)
+## 4. Real index in the price panel and the valuation (P2T07)
+
+`src/data/index-sample.ts` (name kept for its importers) now serves the BOT series from `forecast.json` instead of SAMPLE values:
+- The listing page chart and the index-adjusted estimate use the real BOT index, with the source shown and no SAMPLE banner.
+- The valuation's **synthetic** training data was regenerated with the real index movement (`npm run valuation:dataset`), and the model was refitted (`npm run eval:valuation`). The rows are still synthetic and labelled; only their price-over-time path now follows BOT.
+- Model card, as printed by `eval:valuation` on 16 Oct: median error 4.8% (unchanged), within ±10% **83%** (was 81.3%), range coverage **75%** (was 76.8%).
+
+## 5. Market statistics (`get_market_stats`, `compare_to_market`)
 
 | | |
 |---|---|
@@ -59,7 +66,7 @@ Charts are drawn by `pipeline/analytics/chart.py` from `forecast.json` and `back
 | **Method** | `describe.py` (pandas): medians and quartiles with linear interpolation. Groups with fewer than 5 listings are left out. The final `stats.json` is regenerated on the merged real snapshot (WORKPLAN M03) |
 | **Trend** | The snapshot covers a few weeks, too short for a per-district trend. The tools show the **regional BOT index trend** for the property type instead, labelled as regional |
 
-## 5. Limits: say these out loud
+## 6. Limits: say these out loud
 
 - **An index, not a property.** The forecast is for a regional price index built from mortgage-backed transactions. It is not the value of any single home.
 - **Asking prices are not sale prices.** Market statistics come from listing websites on the snapshot date.

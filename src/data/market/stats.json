@@ -2,8 +2,8 @@
  "meta": {
   "source": "fixture",
   "is_sample": true,
-  "based_on": "listings.json (fixture) scraped_at 2026-10-15T23:04:41.481377+00:00, 1200 listings from synthetic. Input note: SYNTHETIC: generated demo condo sales from data/valuation/demo_sales.csv, not real listings, asking prices or transactions",
-  "generated_at": "2026-10-16T06:28+07:00",
+  "based_on": "listings.json (fixture) scraped_at 2026-10-16T00:32:12.980151+00:00, 1200 listings from synthetic. Input note: SYNTHETIC: generated demo condo sales from data/valuation/demo_sales.csv, not real listings, asking prices or transactions",
+  "generated_at": "2026-10-16T07:32+07:00",
   "method": "Median and quartiles (linear interpolation) of price per m2 by district, type and kind, plus all districts together; groups with fewer than 5 listings are left out. Input is SAMPLE/SYNTHETIC demo data, not real listings or market prices.",
   "min_count": 5
  },
@@ -13,10 +13,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 105,
-   "median_price_per_sqm": 78870,
-   "p25_price_per_sqm": 73990,
-   "p75_price_per_sqm": 86975,
-   "median_price_thb": 4603148,
+   "median_price_per_sqm": 79649,
+   "p25_price_per_sqm": 73986,
+   "p75_price_per_sqm": 87336,
+   "median_price_thb": 4672003,
    "median_area_sqm": 56.0
   },
   {
@@ -24,10 +24,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 85,
-   "median_price_per_sqm": 103504,
-   "p25_price_per_sqm": 95260,
-   "p75_price_per_sqm": 112578,
-   "median_price_thb": 5706576,
+   "median_price_per_sqm": 102896,
+   "p25_price_per_sqm": 94563,
+   "p75_price_per_sqm": 113254,
+   "median_price_thb": 5705184,
    "median_area_sqm": 58.0
   },
   {
@@ -35,10 +35,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 91,
-   "median_price_per_sqm": 59093,
-   "p25_price_per_sqm": 54138,
-   "p75_price_per_sqm": 62697,
-   "median_price_thb": 3137920,
+   "median_price_per_sqm": 58849,
+   "p25_price_per_sqm": 54532,
+   "p75_price_per_sqm": 62178,
+   "median_price_thb": 3173818,
    "median_area_sqm": 56.0
   },
   {
@@ -46,10 +46,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 99,
-   "median_price_per_sqm": 67613,
-   "p25_price_per_sqm": 63564,
-   "p75_price_per_sqm": 72096,
-   "median_price_thb": 4011660,
+   "median_price_per_sqm": 67751,
+   "p25_price_per_sqm": 63255,
+   "p75_price_per_sqm": 71435,
+   "median_price_thb": 4045456,
    "median_area_sqm": 62.0
   },
   {
@@ -57,10 +57,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 95,
-   "median_price_per_sqm": 65935,
-   "p25_price_per_sqm": 62188,
-   "p75_price_per_sqm": 70436,
-   "median_price_thb": 3689536,
+   "median_price_per_sqm": 65453,
+   "p25_price_per_sqm": 61116,
+   "p75_price_per_sqm": 70892,
+   "median_price_thb": 3684800,
    "median_area_sqm": 58.0
   },
   {
@@ -68,10 +68,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 92,
-   "median_price_per_sqm": 93709,
-   "p25_price_per_sqm": 87905,
-   "p75_price_per_sqm": 100740,
-   "median_price_thb": 5392650,
+   "median_price_per_sqm": 94734,
+   "p25_price_per_sqm": 87813,
+   "p75_price_per_sqm": 100670,
+   "median_price_thb": 5319360,
    "median_area_sqm": 59.5
   },
   {
@@ -79,10 +79,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 89,
-   "median_price_per_sqm": 126617,
-   "p25_price_per_sqm": 117780,
-   "p75_price_per_sqm": 138847,
-   "median_price_thb": 7233072,
+   "median_price_per_sqm": 125774,
+   "p25_price_per_sqm": 119347,
+   "p75_price_per_sqm": 137217,
+   "median_price_thb": 7115554,
    "median_area_sqm": 57.0
   },
   {
@@ -90,10 +90,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 103,
-   "median_price_per_sqm": 79385,
-   "p25_price_per_sqm": 73930,
-   "p75_price_per_sqm": 86010,
-   "median_price_thb": 4656900,
+   "median_price_per_sqm": 78744,
+   "p25_price_per_sqm": 73334,
+   "p75_price_per_sqm": 86031,
+   "median_price_thb": 4644816,
    "median_area_sqm": 58.0
   },
   {
@@ -101,10 +101,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 108,
-   "median_price_per_sqm": 73497,
-   "p25_price_per_sqm": 67316,
-   "p75_price_per_sqm": 77482,
-   "median_price_thb": 4391628,
+   "median_price_per_sqm": 73453,
+   "p25_price_per_sqm": 67719,
+   "p75_price_per_sqm": 78016,
+   "median_price_thb": 4384925,
    "median_area_sqm": 61.0
   },
   {
@@ -112,10 +112,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 105,
-   "median_price_per_sqm": 83339,
-   "p25_price_per_sqm": 77498,
-   "p75_price_per_sqm": 90484,
-   "median_price_thb": 4963800,
+   "median_price_per_sqm": 83582,
+   "p25_price_per_sqm": 77507,
+   "p75_price_per_sqm": 90565,
+   "median_price_thb": 4887320,
    "median_area_sqm": 61.0
   },
   {
@@ -123,10 +123,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 96,
-   "median_price_per_sqm": 55486,
-   "p25_price_per_sqm": 50966,
-   "p75_price_per_sqm": 60300,
-   "median_price_thb": 3436917,
+   "median_price_per_sqm": 55128,
+   "p25_price_per_sqm": 50675,
+   "p75_price_per_sqm": 60432,
+   "median_price_thb": 3437334,
    "median_area_sqm": 62.5
   },
   {
@@ -134,10 +134,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 132,
-   "median_price_per_sqm": 110489,
-   "p25_price_per_sqm": 101086,
-   "p75_price_per_sqm": 120210,
-   "median_price_thb": 6761977,
+   "median_price_per_sqm": 111358,
+   "p25_price_per_sqm": 101050,
+   "p75_price_per_sqm": 119808,
+   "median_price_thb": 6766746,
    "median_area_sqm": 59.5
   },
   {
@@ -145,10 +145,10 @@
    "type": "condo",
    "kind": "sale",
    "count": 1200,
-   "median_price_per_sqm": 79321,
-   "p25_price_per_sqm": 66320,
-   "p75_price_per_sqm": 97914,
-   "median_price_thb": 4527614,
+   "median_price_per_sqm": 79150,
+   "p25_price_per_sqm": 66388,
+   "p75_price_per_sqm": 98093,
+   "median_price_thb": 4538716,
    "median_area_sqm": 59.0
   }
  ]

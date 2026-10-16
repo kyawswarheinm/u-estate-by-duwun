@@ -3,8 +3,8 @@
   "method": "Hedonic ridge regression on log(price per m²) with district, size, floor, building age, near-rail and price-index features; split-conformal 80% range.",
   "metrics": {
     "median_ape_pct": 4.8,
-    "within_10_pct": 81.3,
-    "range_coverage_pct": 76.8,
+    "within_10_pct": 83,
+    "range_coverage_pct": 75,
     "n_test": 112,
     "test_period": "2026-01 to 2026-09",
     "n_train": 1018,
@@ -20,11 +20,11 @@
     "period": "2019-01 to 2026-09",
     "sources": [
       "Synthetic district base prices (SYNTHETIC_DISTRICT_BASE in src/lib/valuation/dataset.ts)",
-      "SAMPLE condo price index (src/data/index-sample.ts), standing in for the Bank of Thailand index"
+      "Bank of Thailand condominium price index, Bangkok and vicinities (EC_EI_008_S4, via src/data/index-sample.ts): real index movement over time"
     ],
     "index": {
-      "label": "SAMPLE index (replace with Bank of Thailand Residential Property Price Index)",
-      "is_sample": true
+      "label": "Bank of Thailand, Residential Property Price Index (table EC_EI_008_S4), Bangkok and vicinities; BOT updated 30 Sep 2026 14:32 (2011 = 100)",
+      "is_sample": false
     }
   },
   "notice": "Trained and tested on synthetic demo data generated from synthetic district prices and a SAMPLE price index; it shows the method works, not market accuracy.",
@@ -33,5 +33,5 @@
     "Only the districts in the training data; others show 'Not enough data'.",
     "Missing floor, build year or rail distance are filled with the district average, and the page says so."
   ],
-  "evaluated_on": "2026-10-15"
+  "evaluated_on": "2026-10-16"
 }
