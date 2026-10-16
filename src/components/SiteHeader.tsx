@@ -1,6 +1,6 @@
 "use client";
-import { CurrencyMenu, LanguageMenu, ThemeMenu, useSystemThemeSync } from "./preferences/PreferenceMenus";
-import type { ThemePref } from "@/lib/theme";
+import { CurrencyMenu, LanguageMenu, ThemeToggle } from "./preferences/PreferenceMenus";
+import type { Theme } from "@/lib/theme";
 import { useI18n } from "@/i18n/provider";
 
 import { Label, Text } from "@/i18n/Text";
@@ -18,15 +18,17 @@ export type HeaderUser = {
   email?: string;
   isDemoPersona: boolean;
   utopiaMember: boolean;
+  premium: boolean;
   availableThb: number;
 } | null;
 
 const NAV = [
   { href: "/", label: "Find a home", match: (p: string) => p === "/" || p.startsWith("/listing") || p.startsWith("/cobuy") },
   { href: "/market", label: "Market", match: (p: string) => p.startsWith("/market") },
+  { href: "/coinvest", label: "Co-Invest", match: (p: string) => p.startsWith("/coinvest") || p.startsWith("/premium") },
   { href: "/sell", label: "Sell", match: (p: string) => p.startsWith("/sell") },
-  { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") },
 ];
+// The Ledger lives in the footer (and stays reachable from every ledger link), not in the main navigation.
 
 const ACCOUNT_LINKS = [
   { href: "/messages", label: "Messages" },
@@ -54,10 +56,8 @@ export function Logo({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-export function SiteHeader({ user, demoMode, signOutAction, notifications, themePref: initialThemePref }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void>; themePref: ThemePref }) {
+export function SiteHeader({ user, demoMode, signOutAction, notifications, theme }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void>; theme: Theme | null }) {
   const { t } = useI18n();
-  const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
-  useSystemThemeSync(themePref);
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false); // account menu
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -128,7 +128,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
           <div className="hidden items-center gap-1.5 sm:flex">
             <LanguageMenu />
             <CurrencyMenu />
-            <ThemeMenu pref={themePref} onChange={setThemePref} />
+            <ThemeToggle initial={theme} />
           </div>
           {notifications}
           {user ? (
@@ -152,7 +152,10 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
                   <div className="border-b border-silver px-3 pb-3 pt-2">
                     <p className="font-semibold">{user.name}</p>
                     <p className="text-sm text-muted">{user.isDemoPersona ? <Text message="Demo persona" /> : user.email}</p>
-                    <p className="mt-1 text-sm">{user.utopiaMember ? <Text message="U-topia member" /> : <Text message="Not a U-topia member" />}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm">
+                      {user.premium ? <span className="pill bg-midnight text-on-strong"><Text message="Premium" /></span> : <Link href="/premium" className="pill border border-silver no-underline hover:border-deep"><Text message="Standard · Upgrade" /></Link>}
+                      <span className="text-muted">{user.utopiaMember ? <Text message="U-topia member" /> : <Text message="Not a U-topia member" />}</span>
+                    </p>
                   </div>
                   <ul className="py-1">
                     {ACCOUNT_LINKS.map((l) => (
@@ -179,8 +182,8 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
             </div>
           ) : (
             <>
-              <Link href={`/signin?next=${next}`} className="btn btn-secondary hidden sm:inline-flex"><Text message="Sign in" /></Link>
-              <Link href={`/signup?next=${next}`} className="btn btn-primary hidden sm:inline-flex"><Text message="Create account" /></Link>
+              <Link href={`/signin?next=${next}`} className="btn btn-secondary btn-sm hidden sm:inline-flex"><Text message="Sign in" /></Link>
+              <Link href={`/signup?next=${next}`} className="btn btn-primary btn-sm hidden sm:inline-flex"><Text message="Create account" /></Link>
             </>
           )}
 
@@ -230,7 +233,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("Preferences")}</p>
             <LanguageMenu block />
             <CurrencyMenu block />
-            <ThemeMenu block pref={themePref} onChange={setThemePref} />
+            <ThemeToggle block initial={theme} />
           </section>
         </nav>
       </dialog>

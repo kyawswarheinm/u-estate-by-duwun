@@ -1,6 +1,6 @@
-# Theme: light, dark and system
+# Theme: light and dark
 
-**Added:** 16 Oct 2026. Code: `src/app/globals.css` (tokens), `src/lib/theme.ts` (preference, boot script), `src/app/layout.tsx` (server attributes), `src/components/preferences/PreferenceMenus.tsx` (menu).
+**Added:** 16 Oct 2026. Code: `src/app/globals.css` (tokens), `src/lib/theme.ts` (preference, boot script), `src/app/layout.tsx` (server attributes), `src/components/preferences/PreferenceMenus.tsx` (`ThemeToggle`).
 
 ## How it works
 
@@ -27,9 +27,9 @@
 
 2. **Always-dark bands.** The footer, the "Your listing" owner bar and the wallet balance card use the `.band` class (and the home hero is treated the same way). Inside a band, the tokens are pinned to their light-on-dark values, so the normal classes (`text-ice`, `text-silver`, `btn-on-dark`, `btn-ghost-dark`) work in both themes.
 
-3. **Preference.** A readable cookie `theme` = `system` | `light` | `dark`, kept for a year. The server reads it and renders `<html data-theme-pref="…" data-theme="…">` for an explicit choice. For `system`, a tiny inline script in `<head>` (`THEME_BOOT_SCRIPT`) resolves `prefers-color-scheme` before the first paint, so there is no flash. The header keeps `system` in step with the device while the page is open.
+3. **Choice (D-46).** Two states only, **light** and **dark**, switched by a compact sun/moon toggle (`aria-pressed` = dark). A readable cookie `theme` = `light` | `dark` is kept for a year; the server renders `<html data-theme="…">` for a saved choice. There is no "system" option: before anyone has chosen, a tiny inline script in `<head>` (`THEME_BOOT_SCRIPT`) starts from the device setting before the first paint, so there is no flash. Older `system` cookies count as no choice.
 
-4. **Switching** (`applyThemePref`) sets the attributes immediately (no reload), saves the cookie, and adds a 220 ms colour transition only while switching (off with reduced motion).
+4. **Switching** (`applyTheme`) sets the attribute immediately (no reload), saves the cookie, and adds a 220 ms colour transition only while switching (off with reduced motion).
 
 5. **Browser integration.** `viewport.colorScheme = "light dark"` and the CSS `color-scheme` property tell browsers the site has its own dark theme. That stops Chrome/Edge auto-darkening the page (the source of the earlier grey-on-dark text) and themes native controls and scrollbars. Dark mode swaps the navy logo for the white mark (`dark:` variant = `[data-theme="dark"]`).
 

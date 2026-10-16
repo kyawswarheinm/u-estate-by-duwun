@@ -1,61 +1,68 @@
-import { Label, Text } from "@/i18n/Text";
+import { Text } from "@/i18n/Text";
+import { formatMoneyRef } from "@/i18n";
 import { getPreferences } from "@/i18n/server";
 import { readDb } from "@/lib/store";
-import { thb } from "@/lib/rules";
 import { hashChain, headHash } from "@/lib/ledger-hash";
-import { avalancheConfigured } from "@/lib/avalanche";
+import { ledgerProvider } from "@/lib/ledger/provider";
+import { anchorFor, entryStatus, statusCounts } from "@/lib/ledger/status";
+import { currentUser } from "@/lib/session";
+import { usesSupabase } from "@/lib/db/runtime";
 import { AnchorPanel } from "@/components/AnchorPanel";
+import { LedgerList, type LedgerRow } from "@/components/LedgerList";
 import { UPalPageContext } from "@/components/upal/UPalProvider";
+import type { LedgerType } from "@/lib/types";
 
-const LABEL = {
+export const metadata = { title: "Ledger" };
+
+const LABEL: Record<LedgerType, LedgerRow["type"]> = {
   commit_test_funds: "Commitment (test money)",
   co_owner_share: "Co-owner share",
   loan: "Registered loan",
   offer_submitted: "Sealed offer",
   offer_accepted: "Offer accepted",
   document_checked: "Document check",
-} as const;
+  share_transfer: "Co-Invest unit transfer",
+};
 
 export default async function LedgerPage() {
-  const { locale } = await getPreferences();
-  const db = await readDb();
-  const rows = [...db.ledger].reverse();
-  const who = (id: string) => db.profiles.find((p) => p.id === id)?.name ?? id;
+  const [{ locale, currency }, db, me, provider] = await Promise.all([getPreferences(), readDb(), currentUser(), ledgerProvider()]);
+  const who = (id: string) => db.profiles.find((p) => p.id === id)?.name ?? "—";
   const hashes = new Map(hashChain(db.ledger).map((h) => [h.id, h.hash]));
   const lastId = db.ledger.reduce((m, e) => Math.max(m, e.id), 0);
   const head = headHash(db.ledger, lastId);
   const latest = db.anchors.at(-1) ?? null;
-  const anchoredUpTo = latest?.upToEntryId ?? 0;
+  const counts = statusCounts(db.ledger, db.anchors, provider.id);
+  const unanchored = counts.pending_anchor + counts.recorded;
+  const rows: LedgerRow[] = [...db.ledger].reverse().map((e) => {
+    const status = entryStatus(e, db.anchors, provider.id);
+    return {
+      id: e.id, type: LABEL[e.entryType] ?? "Record", createdAt: e.createdAt, who: who(e.userId),
+      amount: e.amountThb ? formatMoneyRef(e.amountThb, locale, currency) : null, details: e.details,
+      hash: hashes.get(e.id) ?? "", status, explorerUrl: status === "verified" ? anchorFor(e.id, db.anchors)?.explorerUrl ?? null : null,
+      simulated: e.isSimulated,
+    };
+  });
+  // Publishing is a reviewer action on the hosted database; the offline prototype lets anyone try it.
+  const mayPublish = provider.canPublish && (!usesSupabase() || Boolean(me?.isReviewer));
 
   return (
-    <article className="grid gap-4">
+    <article className="grid gap-6">
       <UPalPageContext facts={{
-        entries: db.ledger.length, all_entries_simulated: db.ledger.every((e) => e.isSimulated), entries_anchored: anchoredUpTo,
-        entries_not_yet_anchored: db.ledger.filter((e) => e.id > anchoredUpTo).length, latest_anchor_network: latest?.network ?? null,
-        latest_anchor_tx: latest?.txHash ?? null, anchoring_configured: avalancheConfigured(), money: "test money only",
+        entries: db.ledger.length, all_entries_simulated: db.ledger.every((e) => e.isSimulated),
+        entries_verified_on_avalanche: counts.verified, entries_pending_anchoring: counts.pending_anchor, entries_recorded_only: counts.recorded,
+        ledger_provider: provider.id === "avalanche" ? "Avalanche Fuji available" : "U-Estate database ledger (network not available)",
+        latest_anchor_tx: latest?.txHash ?? null, money: "test money only",
       }} />
       <header>
         <h1 className="page-title"><Text message="ledgerTitle" /></h1>
-        <p className="mt-1 max-w-3xl text-ink-soft">
+        <p className="lead mt-3 max-w-3xl">
           <Text message="What you see here is exactly what is (or would be) registered: co-owner shares, loans and accepted offers. There are no hidden owners and no side records. Entries can only be added, never edited. In this demo every entry is simulated and uses test money." />
         </p>
       </header>
 
-      <p className="rounded-2xl bg-ice p-5 text-sm text-muted"><Text message="ledgerLegal" /></p>
-      <AnchorPanel latest={latest} configured={avalancheConfigured()} headHash={head.hash} entryCount={head.count} unanchored={db.ledger.filter((e) => e.id > anchoredUpTo).length} />
-
-      {rows.length === 0 ? (
-        <p className="rounded-lg bg-mist p-4"><Text message="No activity yet. Check a deed, make an offer or join a co-buy group." /></p>
-      ) : (
-        <ol className="ledger-timeline">
-          {rows.map(e => <li key={e.id} className="ledger-event">
-            <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold"><Label>{LABEL[e.entryType]}</Label></h2><time className="text-xs text-muted" dateTime={e.createdAt}>{new Date(e.createdAt).toLocaleString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</time></div>
-            <p className="mt-3 text-sm text-muted">{who(e.userId)} {e.amountThb ? thb(e.amountThb) : ""}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="pill bg-ice"><Text message={e.id <= anchoredUpTo ? "publishedRecord" : "localRecord"} /></span>{e.isSimulated && <span className="pill bg-amber-soft text-amber"><Text message="simulated" /></span>}</div>
-            <details className="mt-5"><summary><Text message="recordDetails" /></summary><p className="mt-3 text-sm">{e.details}</p><p className="mt-3 break-all font-mono text-xs text-muted">#{e.id} / {hashes.get(e.id)}</p></details>
-          </li>)}
-        </ol>
-      )}
+      <p className="rounded-2xl bg-ice p-5 text-sm text-deep"><Text message="ledgerLegal" /></p>
+      <AnchorPanel latest={latest} provider={provider.id} canPublish={mayPublish} headHash={head.hash} entryCount={head.count} unanchored={unanchored} />
+      <LedgerList rows={rows} />
     </article>
   );
 }

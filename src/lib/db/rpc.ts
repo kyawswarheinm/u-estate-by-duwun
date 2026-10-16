@@ -20,6 +20,7 @@ const messages: Record<string, string> = {
   WALLET_LIMIT: "This exceeds your per-commitment limit.", WALLET_CAP: "Your wallet has reached the test-money cap.",
   OWN_LISTING: "You cannot buy or bid on your own listing.", ROUND_CLOSED: "This offer round is closed.",
   NOT_OWNER: "Only the listing owner can do this.", NOT_SIGNED_IN: "Sign in to continue.",
+  HOLDINGS_LOCK_NATIONALITY: "Sell your Co-Invest units before changing your nationality.", PREMIUM_ONLY: "Co-Invest is for Premium members.",
 };
 export function dbMessage(error: { message?: string; code?: string }) {
   return messages[error.message ?? ""] ?? "The operation could not be completed. Refresh the page and try again.";

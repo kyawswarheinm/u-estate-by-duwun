@@ -1,10 +1,11 @@
 import { anchorMessage, headHash, parseAnchorMessage } from "@/lib/ledger-hash";
-import { readAnchor } from "@/lib/avalanche";
+import { readFingerprint } from "@/lib/ledger/provider";
 import { rateLimit } from "@/lib/ratelimit";
 import { readDb } from "@/lib/store";
 
 // A1 verification: recompute the fingerprint from today's ledger and compare it with what is on Avalanche.
 // Anyone can repeat this with the explorer link: the transaction data is readable UTF-8 text.
+// When the network cannot be reached the verdict says so; it never claims a match it could not check.
 export async function GET(req: Request) {
   const limited = rateLimit(req, "anchor-verify", 20);
   if (limited) return limited;
@@ -17,20 +18,17 @@ export async function GET(req: Request) {
   const recomputed = anchorMessage(anchor.upToEntryId, now.count, now.hash);
   const ledgerUnchanged = now.hash === anchor.headHash && now.count === anchor.entryCount;
 
-  let chain: { matches: boolean; message: string | null; blockNumber: number | null; error?: string };
-  try {
-    const onChain = await readAnchor(anchor.txHash);
-    const parsed = parseAnchorMessage(onChain.message);
-    chain = { matches: onChain.message === recomputed && parsed?.hash === now.hash, message: onChain.message, blockNumber: onChain.blockNumber };
-  } catch (e) {
-    chain = { matches: false, message: null, blockNumber: null, error: e instanceof Error ? e.message.split("\n")[0] : "unreachable" };
-  }
+  const onChain = await readFingerprint(anchor.txHash);
+  const parsed = onChain ? parseAnchorMessage(onChain.message) : null;
+  const chain = onChain
+    ? { reachable: true, matches: onChain.message === recomputed && parsed?.hash === now.hash, message: onChain.message, blockNumber: onChain.blockNumber }
+    : { reachable: false, matches: false, message: null, blockNumber: null };
 
   return Response.json({
     anchor,
     recomputedHash: now.hash,
     ledgerUnchanged,
     chain,
-    verdict: ledgerUnchanged && chain.matches ? "verified" : chain.error ? "chain_unreachable" : "mismatch",
+    verdict: !chain.reachable ? "chain_unreachable" : ledgerUnchanged && chain.matches ? "verified" : "mismatch",
   });
 }

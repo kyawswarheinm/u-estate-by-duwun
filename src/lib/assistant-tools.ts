@@ -14,6 +14,12 @@ import { findMarketListings, MarketSearchSchema } from "./market-data/find";
 import { MarketType, provenance } from "./market-data";
 import { findRealListings, RealListingSearchSchema } from "./listings/find";
 import { googleMapsLink } from "./listings/maps";
+import { currentUser } from "./session";
+import { walletSummary } from "./wallet";
+import { COINVEST, unitPrice } from "./coinvest/engine";
+import { offeringViews, offeringValuation, portfolio } from "./coinvest/view";
+import { ledgerProvider } from "./ledger/provider";
+import { statusCounts } from "./ledger/status";
 
 export const ToolInputs = {
   search_listings: SearchFiltersSchema.partial().extend({
@@ -34,6 +40,10 @@ export const ToolInputs = {
   compare_to_market: z.object({ listing_id: z.string().max(40).describe("A U-Estate listing id or code, e.g. l-condo") }),
   // Real third-party listings imported with permission (src/data/market/verified-listings.json).
   search_real_listings: RealListingSearchSchema,
+  // Premium Co-Invest (D-44), the signed-in user's own account, and the ledger's verification status.
+  get_coinvest_offerings: z.object({ code: z.string().max(40).optional().describe("One offering code, e.g. ci-lumpini; omit for all") }),
+  get_my_account: z.object({}),
+  get_ledger_status: z.object({}),
 } as const;
 export type ToolName = keyof typeof ToolInputs;
 export const TOOL_NAMES = Object.keys(ToolInputs) as ToolName[];
@@ -49,6 +59,9 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   get_price_forecast: "Get the price-index forecast for a property type: the 80% range (p10 to p90) and central value months ahead, with the model name and the index source. A forecast, never a guarantee.",
   compare_to_market: "Compare one U-Estate listing's asking price per m² with asking prices on listing websites in its district: the median, the difference in % and how many listings were compared.",
   search_real_listings: "Search real third-party listings (owners, agencies, licensed feeds) by sale/rent, types, area, budget, bedrooms, bathrooms, furnishing or amenities, or fetch up to 5 by id to compare. Returns stated facts only, with source, original listing link, Google Maps link, verification and availability. Use after search_listings.",
+  get_coinvest_offerings: "Get Co-Invest (premium) opportunities: SAMPLE properties split into units of simulated co-ownership, with status (funding or funded), unit price, funding progress, the value estimate tracked by the Bank of Thailand index, the change since funding, the 12-month forecast range and the rental-yield assumption. Test money only; not a security or a legal title.",
+  get_my_account: "Get the signed-in user's own account: plan (standard or premium), test-money wallet balance and recent movements, co-buy commitments and their Co-Invest portfolio (units, share, value, gain, simulated income). Returns signed_in false for guests. Never shows anyone else's data.",
+  get_ledger_status: "Get the transparency ledger's status: how many entries are verified on Avalanche, pending network anchoring or recorded in the U-Estate ledger only, whether the network is available, and the latest anchor. Explains fingerprints truthfully.",
 };
 
 /** Finds a U-Estate listing by id or code, with its property. */
@@ -197,5 +210,70 @@ export async function runTool(name: string, rawInput: unknown): Promise<unknown>
       return compareTool((input as { listing_id: string }).listing_id);
     case "search_real_listings":
       return findRealListings(input);
+    case "get_coinvest_offerings":
+      return coinvestTool((input as { code?: string }).code);
+    case "get_my_account":
+      return accountTool();
+    case "get_ledger_status":
+      return ledgerTool();
   }
+}
+
+async function coinvestTool(code?: string) {
+  const db = await readDb();
+  const views = offeringViews(db, false).filter((v) => !code || v.offering.code === code);
+  return {
+    offerings: views.map((v) => {
+      const val = offeringValuation(v.offering, v.property);
+      const end = val.forecast.at(-1);
+      return {
+        code: v.offering.code, link: `/coinvest/${v.offering.code}`, property: v.property.title, type: v.property.type, district: v.property.district,
+        status: v.offering.status, unit_price_thb: v.unitPriceThb, total_units: v.offering.totalUnits, units_sold: v.offering.unitsOutstanding,
+        units_in_pool: v.poolUnits, funded_pct: v.soldPct, value_estimate_thb: v.offering.currentValueThb, value_month: v.offering.valuedMonth,
+        change_since_funding_pct: v.changePct, forecast_12m_thb: end ? { month: end.month, p10: end.p10, p50: end.p50, p90: end.p90 } : null,
+        gross_yield_assumption_pct: v.offering.grossYieldPct, foreign_members: v.property.type === "condo" ? "allowed within the building's 49% quota (FET)" : "not allowed (house or land)",
+      };
+    }),
+    rules: {
+      access: "Premium members only (one-time " + COINVEST.premiumFeeThb + " THB test-money upgrade at /premium). Guests and standard members see a preview.",
+      pricing: "While funding, units cost the funding price; once funded, units are priced at the index-tracked value. Members buy from and sell back to the U-Estate pool; total units never change.",
+      legal: "Units are simulated registered co-ownership: foreign members only in condos within the 49% quota; no nominees. Max 20 co-owners per property.",
+      valuation: "Values follow the Bank of Thailand residential price index since funding: an estimate, not an appraisal. Forecasts are p10-p90 ranges, not guarantees.",
+      demo: "Test money and SAMPLE properties; nothing is a real investment.",
+    },
+  };
+}
+
+async function accountTool() {
+  const me = await currentUser();
+  if (!me) return { signed_in: false, note: "The user is a guest. Wallet, co-buy and Co-Invest need an account (/signup); Co-Invest also needs Premium." };
+  const db = await readDb();
+  const w = walletSummary(db, me.id);
+  const p = me.premium ? portfolio(db, me.id) : null;
+  const recent = db.walletTxns.filter((t) => t.userId === me.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6)
+    .map((t) => ({ date: t.createdAt.slice(0, 10), kind: t.kind, amount_thb: t.amountThb, note: t.note }));
+  return {
+    signed_in: true, plan: me.premium ? "premium" : "standard", premium_since: me.premiumSince ?? null, utopia_member: me.utopiaMember,
+    wallet: { available_thb: w.availableThb, received_thb: w.fundedThb, committed_to_cobuy_thb: w.committedThb, spent_on_premium_and_coinvest_thb: w.spentThb, back_from_sales_and_refunds_thb: w.receivedThb, recent_movements: recent },
+    cobuy_commitments: w.commitments.length,
+    properties_listed: db.listings.filter((l) => l.sellerId === me.id).length,
+    coinvest: p ? {
+      totals: { value_thb: p.totals.valueThb, invested_thb: p.totals.costThb, gain_thb: p.totals.gainThb, gain_pct: p.totals.gainPct, simulated_income_month_thb: p.totals.incomeThb },
+      holdings: p.rows.map((r) => ({ code: r.offering.code, property: r.property.title, units: r.position.units, share_pct: r.position.sharePct, unit_price_thb: unitPrice(r.offering), value_thb: r.position.valueThb, gain_thb: r.position.gainThb })),
+    } : null,
+    money: "test money only",
+  };
+}
+
+async function ledgerTool() {
+  const [db, provider] = await Promise.all([readDb(), ledgerProvider()]);
+  const counts = statusCounts(db.ledger, db.anchors, provider.id);
+  const latest = db.anchors.at(-1);
+  return {
+    entries: db.ledger.length, verified_on_avalanche: counts.verified, pending_network_anchoring: counts.pending_anchor, recorded_in_u_estate_ledger_only: counts.recorded,
+    network: provider.id === "avalanche" ? "Avalanche Fuji available" : "not available right now; records are kept in the U-Estate ledger and can be anchored later",
+    latest_anchor: latest ? { entries_up_to: latest.upToEntryId, date: latest.createdAt, tx_hash: latest.txHash, explorer: latest.explorerUrl } : null,
+    how_it_works: "Each entry's SHA-256 hash covers the previous one. Publishing the latest hash on Avalanche Fuji makes later edits detectable. Only the hash goes on-chain. An entry is 'verified on Avalanche' only when a published fingerprint covers it.",
+    all_simulated: db.ledger.every((e) => e.isSimulated),
+  };
 }

@@ -19,6 +19,8 @@
     "qa:hosted": "node --env-file-if-exists=.env.local scripts/db/verify-hosted.mjs && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-auth-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-offers-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-transactions-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-boundaries-hosted.mjs --allow-demo-writes && node --no-warnings --env-file-if-exists=.env.local scripts/db/verify-services-hosted.mjs --allow-demo-writes && node --env-file-if-exists=.env.local scripts/db/archive-qa-fixtures.mjs --apply",
     "qa:archive": "node --env-file-if-exists=.env.local scripts/db/archive-qa-fixtures.mjs --apply",
     "db:make-reviewer": "node --env-file-if-exists=.env.local scripts/db/make-reviewer.mjs",
+    "db:seed-population": "npx --yes tsx@4.20.6 scripts/db/seed-population.ts",
+    "start:offline": "node scripts/start-offline.mjs",
     "valuation:dataset": "npx --yes tsx@4.20.6 scripts/make-demo-dataset.ts",
     "eval:valuation": "npx --yes tsx@4.20.6 scripts/eval-valuation.ts",
     "listings:import": "npx --yes tsx@4.20.6 scripts/import-listings.ts",

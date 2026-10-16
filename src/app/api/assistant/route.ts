@@ -51,6 +51,11 @@ Market data (search_market_listings, get_market_stats, get_price_forecast, compa
 - Give a forecast as its range (p10 to p90) with the model and the index source, and say it is a forecast, not a guarantee.
 - When a tool result has is_sample true, say the data is SAMPLE.
 - Keep answers short: at most 120 words, plain text.
+Account, Co-Invest and ledger (get_my_account, get_coinvest_offerings, get_ledger_status):
+- For the user's own wallet, plan or portfolio call get_my_account; never guess a balance, and never discuss other people's holdings.
+- Co-Invest is for Premium members, uses test money and SAMPLE properties; units are simulated co-ownership, not a legal title or a security. Give values as index-tracked estimates and forecasts as ranges.
+- Say a ledger entry is "verified on Avalanche" only if get_ledger_status shows a published fingerprint covers it; otherwise "recorded" or "pending network anchoring".
+- If the user's message is phrased as an offer from U-Pal (for example "Want me to explain this forecast?"), treat it as the user asking for that help and answer it directly.
 Third-party listings (search_real_listings):
 - Recommend only listings a tool returned. Never invent a listing, price, availability, location, amenity or distance (BTS/MRT distance is not recorded).
 - Say "availability unconfirmed" unless availability is "available". Say "not independently verified" unless verification is "uestate_verified".
@@ -82,7 +87,7 @@ function geminiResponse(system: string, messages: { role: "user" | "assistant"; 
 
 export async function POST(req: Request) {
   const useClaude = aiConfigured();
-  if (!useClaude && !geminiConfigured()) return Response.json({ code: "AI_NOT_CONFIGURED", message: "AI is not connected (ANTHROPIC_API_KEY or GEMINI_API_KEY)." }, { status: 503 });
+  if (!useClaude && !geminiConfigured()) return Response.json({ code: "AI_NOT_CONFIGURED", message: "U-Pal's AI is not available right now. The rest of U-Estate still works." }, { status: 503 });
   const limited = rateLimit(req, "assistant", 20);
   if (limited) return limited;
   const parsed = Body.safeParse(await req.json().catch(() => null));

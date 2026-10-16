@@ -72,7 +72,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
             <Text message="AI reads the deed type, owner name and warning signs. Code then checks the name against your account and applies Thai deed rules. AI flags are indicators, not proof. Ownership is only confirmed at the Land Office." />
           </p>
         </div>
-        {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber">AI is not connected on this server yet (ANTHROPIC_API_KEY). The check will show an error.</p>}
+        {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber"><Text message="The AI document check is not available right now. You can still list your property; the deed check can run later." /></p>}
         <p className="text-sm">
           Sample deeds to try: <a className="underline" href="/samples/deed-chanote-malee.png" download>clean Chanote (house)</a>,{" "}
           <a className="underline" href="/samples/deed-condo-malee.png" download>condo title</a>,{" "}

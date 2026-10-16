@@ -113,6 +113,21 @@ const TOOLS = [
     parameters: { type: "object", required: ["listing_id"], properties: { listing_id: str("A U-Estate listing id or code, e.g. l-condo") } },
   },
   {
+    name: "get_coinvest_offerings",
+    description: "Get Co-Invest (premium) opportunities: SAMPLE properties split into units of simulated co-ownership, with status, unit price, funding progress, the index-tracked value estimate, the 12-month forecast range and the rental-yield assumption. Test money only.",
+    parameters: { type: "object", required: [], properties: { code: str("One offering code, e.g. ci-lumpini; omit for all") } },
+  },
+  {
+    name: "get_my_account",
+    description: "Get the signed-in user's own plan, test-money wallet, co-buy commitments and Co-Invest portfolio. Returns signed_in false for guests. Never shows anyone else's data.",
+    parameters: { type: "object", required: [], properties: {} },
+  },
+  {
+    name: "get_ledger_status",
+    description: "Get how many ledger entries are verified on Avalanche, pending network anchoring or recorded in the U-Estate ledger only, and whether the network is available.",
+    parameters: { type: "object", required: [], properties: {} },
+  },
+  {
     name: "search_real_listings",
     description: "Search real third-party listings (owners, agencies, licensed feeds) by sale/rent, type, area, budget, bedrooms, furnishing or amenities. Returns stated facts only, with source, original link, Google Maps link and availability. Never say a listing is available unless availability is 'available'.",
     parameters: {
@@ -139,6 +154,8 @@ Rules:
 - Foreigners: condos only, within the 49% foreign quota, funds from abroad with an FET form; on houses and land they can only lend at a fixed rate of at most 15% a year. Never suggest nominee arrangements.
 - U-Estate never accepts crypto. If someone will sell crypto for a deposit, use check_token_unlocks and explain the safety buffer.
 - You cannot move money, make offers or sign anything. Tell the user to use the buttons on the page.
+- For the user's own wallet, plan or portfolio use get_my_account; never guess a balance. Co-Invest is premium-only, uses test money and SAMPLE properties, and its units are simulated co-ownership (get_coinvest_offerings).
+- Ledger: an entry is "verified on Avalanche" only when get_ledger_status says a published fingerprint covers it; otherwise say it is recorded or pending anchoring.
 - Never ask for passwords, bank details or ID numbers. Warn the user if anyone asks them to pay a deposit outside U-Estate.
 Market questions (search_market_listings, get_market_stats, get_price_forecast, compare_to_market):
 - Mention U-Estate listings first (search_listings); other websites' listings only after them, or when asked about the wider market.

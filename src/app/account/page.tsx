@@ -5,6 +5,8 @@ import { readDb } from "@/lib/store";
 import { requireUser } from "@/lib/session";
 import { walletSummary } from "@/lib/wallet";
 import { MyProperties } from "@/components/MyProperties";
+import { portfolio } from "@/lib/coinvest/view";
+import { UPalPageContext } from "@/components/upal/UPalProvider";
 
 export const metadata = { title: "Your account | U-Estate" };
 
@@ -14,6 +16,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const wallet = walletSummary(db, me.id);
   const listings = db.listings.filter((l) => l.sellerId === me.id).length;
   const groups = new Set(wallet.commitments.map((c) => c.groupId)).size;
+  const folio = me.premium ? portfolio(db, me.id) : null;
 
   return (
     <div className="grid gap-6">
@@ -27,7 +30,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <p className="mt-1 text-deep"><Text message="Everything you own, sell or have committed on U-Estate." /></p>
       </header>
 
-      <dl className="grid gap-3 sm:grid-cols-3">
+      <UPalPageContext facts={{
+        user_tier: me.premium ? "premium" : "standard", properties_listed: listings, wallet_available_thb: wallet.availableThb, cobuy_groups_joined: groups,
+        utopia_member: me.utopiaMember, coinvest_portfolio_value_thb: folio?.totals.valueThb ?? null, coinvest_gain_pct: folio?.totals.gainPct ?? null, coinvest_properties: folio?.totals.properties ?? null,
+      }} />
+      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="panel p-5">
           <dt className="text-sm text-deep"><Text message="Properties listed" /></dt>
           <dd className="mt-1 text-3xl font-bold">{listings}</dd>
@@ -42,6 +49,17 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <dt className="text-sm text-deep"><Text message="Co-buy groups joined" /></dt>
           <dd className="mt-1 text-3xl font-bold">{groups}</dd>
           <dd className="mt-2 text-sm">{me.utopiaMember ? <Text message="U-topia member: co-buy open" /> : <Link href="/account/settings#membership" className="font-semibold text-blue-ink underline"><Text message="Co-buy needs U-topia membership" /></Link>}</dd>
+        </div>
+        <div className="panel p-5">
+          <dt className="text-sm text-deep"><Text message="Plan" /></dt>
+          <dd className="mt-1 text-3xl font-bold">{me.premium ? <Text message="Premium" /> : <Text message="Standard" />}</dd>
+          <dd className="mt-2 text-sm">
+            {folio ? (
+              <Link href="/coinvest" className="font-semibold text-blue-ink underline"><Text message="Co-Invest portfolio" />: <Money amount={folio.totals.valueThb} /></Link>
+            ) : (
+              <Link href="/premium" className="font-semibold text-blue-ink underline"><Text message="Upgrade to Premium" /></Link>
+            )}
+          </dd>
         </div>
       </dl>
 

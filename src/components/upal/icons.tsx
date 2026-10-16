@@ -1,4 +1,5 @@
-// Small inline icons for the U-Pal widget (stroke follows currentColor).
+// Small inline icons for the U-Pal assistant (stroke follows currentColor), and the U-Pal avatar.
+import Image from "next/image";
 
 const base = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
 
@@ -25,13 +26,6 @@ export function SendIcon() {
     </svg>
   );
 }
-export function MinimizeIcon() {
-  return (
-    <svg {...base} width={18} height={18}>
-      <path d="M6 12h12" />
-    </svg>
-  );
-}
 export function CloseIcon({ size = 18 }: { size?: number }) {
   return (
     <svg {...base} width={size} height={size}>
@@ -40,11 +34,11 @@ export function CloseIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-/** The U-Pal avatar: a soft orb in the brand blues with a sparkle. */
+/** The U-Pal avatar: the official U-Pal artwork (public/brand/u-pal.png) in a circle. Decorative: names come from text. */
 export function UPalAvatar({ size = 36 }: { size?: number }) {
   return (
     <span className="upal-avatar" style={{ width: size, height: size }} aria-hidden="true">
-      <SparkleIcon size={Math.round(size * 0.5)} />
+      <Image src="/brand/u-pal.png" alt="" width={size} height={size} sizes={`${size}px`} />
     </span>
   );
 }

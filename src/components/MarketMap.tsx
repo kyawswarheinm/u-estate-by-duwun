@@ -263,7 +263,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, hove
     <section aria-label={t("Market map")} className="grid gap-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.uestate} />{t("U-Estate listings")}</span>
-        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.external} />{isSample ? t("Third-party and SAMPLE listings") : t("Third-party listings (not checked by U-Estate)")}</span>
+        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.external} />{isSample ? t("Third-party and SAMPLE listings") : t("Third-party listings")}</span>
         {!failed && (
           <button type="button" aria-pressed={threeD} onClick={() => setThreeD((v) => !v)} className="ms-auto min-h-11 rounded-lg border border-line bg-paper px-3 font-semibold">
             {threeD ? t("2D view") : t("3D view")}

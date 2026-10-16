@@ -12,7 +12,7 @@ main :where(h1, h2, h3, p, dd, dt, a, label, li) { overflow-wrap: anywhere; }
 main :where(input, select, textarea) { min-inline-size: 0; max-inline-size: 100%; scroll-margin-block: 100px; }
 main :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select) { min-block-size: 44px; }
 main label:has(> input[type="checkbox"], > input[type="radio"]) { min-block-size: 44px; padding-block: 8px; }
-main :where(button, summary), .voice-dock button { min-block-size: 44px; }
+main :where(button, summary) { min-block-size: 44px; }
 summary { align-content: center; cursor: pointer; }
 button, a, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; }
@@ -32,8 +32,6 @@ button:disabled { cursor: not-allowed; }
 .mobile-menu::backdrop { background: rgb(0 0 0 / .45); }
 .mobile-menu-heading { position: sticky; inset-block-start: 0; z-index: 2; background: var(--paper); display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; border-block-end: 1px solid var(--silver); }
 .mobile-menu a[aria-current="page"] { color: var(--blue-ink); border-inline-start: 3px solid currentColor; padding-inline-start: .75rem; }
-.voice-dock { inset-inline-end: max(1rem, env(safe-area-inset-right)); inset-block-end: max(1rem, var(--safe-bottom)); max-inline-size: calc(100vw - 2rem); }
-#voice-agent-panel { max-block-size: calc(100dvh - 160px - var(--safe-top) - var(--safe-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 body > footer { padding-block-end: calc(80px + var(--safe-bottom)); }
 body > footer a { display: inline-flex; align-items: center; min-block-size: 44px; }
 .input { min-inline-size: 0; }
@@ -70,10 +68,6 @@ body > footer a { display: inline-flex; align-items: center; min-block-size: 44p
   .site-header > div > div { gap: 4px; }
   .site-header > div > div > a.btn { padding-inline: 10px; }
   .site-header > div > div > button { padding-inline: 14px; }
-  .voice-launcher { display: flex; align-items: center; justify-content: center; inline-size: 56px; block-size: 56px; padding: 0; font-size: 20px; }
-  #voice-agent-panel { padding: 16px; inline-size: calc(100vw - 2rem); }
-  /* Keep the input and submit action visible while a phone keyboard is open. */
-  body:has(main input:focus, main textarea:focus, main select:focus) .voice-dock { visibility: hidden; }
   .record-table { display: block; min-inline-size: 0; }
   .record-table thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
   .record-table tbody { display: grid; gap: 12px; }
@@ -89,7 +83,6 @@ body > footer a { display: inline-flex; align-items: center; min-block-size: 44p
 }
 @media (max-height: 500px) and (max-width: 1023px) {
   .site-header { position: relative; }
-  #voice-agent-panel { max-block-size: calc(100dvh - 96px - var(--safe-bottom)); }
 }
 @media (hover: none) {
   .btn:hover, .property-card:hover { transform: none; }

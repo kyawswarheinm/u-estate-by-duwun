@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const me = await currentUser();
   if (!me) return Response.json({ error: "Sign in to check a deed." }, { status: 401 });
   if (!aiConfigured()) {
-    return Response.json({ error: "AI is not configured. Add ANTHROPIC_API_KEY to .env.local." }, { status: 503 });
+    return Response.json({ error: "The document check is not available right now. Try again later." }, { status: 503 });
   }
   const form = await req.formData();
   const file = form.get("deed");

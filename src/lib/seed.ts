@@ -1,7 +1,38 @@
 import type { DB } from "./types";
+import { applyPopulation, type PopulationIds } from "./coinvest/apply";
+import { trade, upgradePremium } from "./coinvest/engine";
+
+// Offline ids for the demo population (the hosted seed uses fixed uuids for the same plan).
+export const POPULATION_IDS: PopulationIds = {
+  user: (key) => `u-${key}`,
+  building: (key) => `b-ci-${key}`,
+  property: (key) => `p-ci-${key}`,
+  offering: (key) => `ci-${key}`,
+  sellerId: "u-malee",
+};
 
 // All people, properties and numbers below are SAMPLE data for the hackathon demo.
 export function seed(now = new Date()): DB {
+  const db = baseSeed(now);
+  seedCoinvest(db, now);
+  return db;
+}
+
+/** The 90-member demo population, plus two premium personas (Ploy, Thai; Daniel, Australian) with a Co-Invest holding. */
+export function seedCoinvest(db: DB, now = new Date()) {
+  applyPopulation(db, POPULATION_IDS);
+  const at = new Date(Math.max(now.getTime(), Date.parse("2026-10-12T04:00:00.000Z"))).toISOString();
+  for (const [persona, offering, units] of [["u-ploy", "ci-ari", 20], ["u-daniel", "ci-ari-studio", 10]] as const) {
+    const profile = db.profiles.find((p) => p.id === persona);
+    if (!profile || profile.premium) continue;
+    const up = upgradePremium(db, persona, `seed-premium-${persona}`, at);
+    const t = up.ok ? trade(db, { userId: persona, offeringId: offering, side: "buy", units, requestId: `seed-${persona}-${offering}`, at }) : up;
+    if (!t.ok) throw new Error(`seed persona ${persona}: ${t.code}`);
+  }
+}
+
+/** Personas, sample listings and the FairOffer round, without the Co-Invest population (cheap to build). */
+export function baseSeed(now = new Date()): DB {
   const iso = (d: Date) => d.toISOString();
   const inHours = (h: number) => iso(new Date(now.getTime() + h * 3600_000));
 
@@ -159,5 +190,8 @@ export function seed(now = new Date()): DB {
     walletTxns: ["u-malee", "u-somchai", "u-ploy", "u-daniel", "u-aiko", "u-narin"].map((userId) => ({
       id: `w-${userId}`, userId, kind: "demo_grant" as const, amountThb: 5_000_000, note: "Demo test-money grant", createdAt: iso(now),
     })),
+    coinvestOfferings: [],
+    coinvestHoldings: [],
+    coinvestTrades: [],
   };
 }

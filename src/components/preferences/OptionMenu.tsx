@@ -1,7 +1,7 @@
 "use client";
 // Accessible single-select menu (button + popup listbox, WAI-ARIA "select-only combobox" style):
 // arrow keys, Home/End, type-ahead, Enter/Space to choose, Escape to close; the chosen option shows "Current".
-// Shared by the language, currency and theme menus so they look and behave the same.
+// Shared by the language and currency menus so they look and behave the same.
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
@@ -16,7 +16,7 @@ export type MenuOption<V extends string> = {
 };
 
 export function OptionMenu<V extends string>({
-  title, value, options, trigger, triggerLabel, onSelect, currentLabel, footer, pending = false, block = false,
+  title, value, options, trigger, triggerLabel, onSelect, currentLabel, footer, pending = false, block = false, compact = false,
 }: {
   title: string;
   value: V;
@@ -29,6 +29,8 @@ export function OptionMenu<V extends string>({
   pending?: boolean;
   /** Full-width trigger and popup (mobile menu). */
   block?: boolean;
+  /** Small header trigger: icon + short code. */
+  compact?: boolean;
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -102,13 +104,13 @@ export function OptionMenu<V extends string>({
           if (pending) return;
           if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); openMenu(e.key === "ArrowUp" ? options.length - 1 : selectedIndex); }
         }}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-silver bg-paper px-3 text-sm font-medium text-ink transition-colors hover:border-field hover:bg-ice aria-disabled:cursor-progress aria-disabled:opacity-70 aria-expanded:border-field aria-expanded:bg-ice ${block ? "w-full justify-between rounded-xl" : ""}`}
+        className={`inline-flex items-center rounded-full border border-silver bg-paper font-medium text-ink transition-colors hover:border-field hover:bg-ice aria-disabled:cursor-progress aria-disabled:opacity-70 aria-expanded:border-field aria-expanded:bg-ice ${compact ? "h-9 gap-1.5 px-2.5 text-[13px]" : "min-h-11 gap-2 px-3 text-sm"} ${block ? "w-full justify-between rounded-xl" : ""}`}
       >
-        <span className="inline-flex min-w-0 items-center gap-2">{trigger}</span>
+        <span className={`inline-flex min-w-0 items-center ${compact ? "gap-1.5" : "gap-2"}`}>{trigger}</span>
         {pending ? (
           <span aria-hidden="true" className="size-3.5 animate-spin rounded-full border-2 border-silver border-t-ink" />
         ) : (
-          <svg aria-hidden="true" viewBox="0 0 12 12" className={`size-3 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 12 12" className={`${compact ? "size-2.5" : "size-3"} shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         )}
       </button>
 

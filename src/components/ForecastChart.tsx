@@ -15,26 +15,33 @@ function niceStep(span: number) {
   return [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? 10 * mag;
 }
 
-export function ForecastChart({ history, forecast, title, isSample, months = 48, labels, summary }: {
+export function ForecastChart({ history, forecast, title, isSample, months = 48, labels, summary, format, axisWidth = "2.5rem" }: {
   history: Point[];
+  /** May be empty: then only the history line is drawn (e.g. a portfolio's past value). */
   forecast: Band[];
   title: ReactNode;
   isSample: boolean;
   months?: number;
   /** Already translated by the caller (strings or <Text> elements). */
-  labels: { history: ReactNode; band: ReactNode; central: ReactNode };
+  labels: { history: ReactNode; band?: ReactNode; central?: ReactNode };
   /** One sentence for screen readers and as the chart's accessible name. */
   summary: string;
+  /** Formats axis ticks and value labels (default: index points with one decimal). */
+  format?: (v: number) => string;
+  axisWidth?: string;
 }) {
   const hist = history.slice(-months);
+  if (hist.length === 0) return null; // nothing to draw yet
   const last = hist[hist.length - 1];
   const end = forecast[forecast.length - 1];
-  const total = hist.length + forecast.length;
+  const total = Math.max(2, hist.length + forecast.length);
 
   const values = [...hist.map((p) => p.value), ...forecast.flatMap((f) => [f.p10, f.p90])];
-  const step = niceStep(Math.max(...values) - Math.min(...values) || 1);
-  const lo = Math.floor(Math.min(...values) / step) * step;
-  const hi = Math.ceil(Math.max(...values) / step) * step;
+  const span = Math.max(...values) - Math.min(...values);
+  const step = niceStep(span || Math.max(1, Math.abs(values[0]) * 0.04)); // a flat line still gets a visible scale
+  let lo = Math.floor(Math.min(...values) / step) * step;
+  let hi = Math.ceil(Math.max(...values) / step) * step;
+  if (hi === lo) { lo -= step; hi += step; }
   const ticks: number[] = [];
   for (let v = lo; v <= hi + step / 1e6; v += step) ticks.push(Math.round(v * 100) / 100);
 
@@ -55,7 +62,8 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
   // Year ticks: every January in the window (labelled with the year).
   const all = [...hist.map((p) => p.period), ...forecast.map((f) => f.period)];
   const years = all.map((p, i) => ({ p, i })).filter(({ p }) => p.endsWith("-01"));
-  const fmt = (v: number) => v.toFixed(1);
+  const fmt = format ?? ((v: number) => v.toFixed(1));
+  const tick = format ?? ((v: number) => String(v));
 
   return (
     <figure dir="ltr" className="grid gap-3">
@@ -64,11 +72,11 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
         {isSample && <span className="rounded bg-amber-soft px-1.5 py-0.5 text-xs font-semibold text-amber">SAMPLE</span>}
       </figcaption>
 
-      <div className="grid grid-cols-[2.5rem_1fr] gap-x-2">
+      <div className="grid gap-x-2" style={{ gridTemplateColumns: `${axisWidth} minmax(0, 1fr)` }}>
         {/* y-axis labels */}
         <div className="relative h-56 sm:h-72" aria-hidden="true">
           {ticks.map((v) => (
-            <span key={v} className="absolute end-0 -translate-y-1/2 text-xs tabular-nums text-muted" style={{ top: pctY(y(v)) }}>{v}</span>
+            <span key={v} className="absolute end-0 -translate-y-1/2 whitespace-nowrap text-xs tabular-nums text-muted" style={{ top: pctY(y(v)) }}>{tick(v)}</span>
           ))}
         </div>
 
@@ -79,9 +87,9 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
               <line key={v} x1={0} x2={VW} y1={y(v)} y2={y(v)} stroke="var(--ice)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
             ))}
             <line x1={xNow} x2={xNow} y1={TOP / 2} y2={VH - BOTTOM} stroke="var(--silver)" strokeWidth={1} strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
-            <polygon points={band} fill="var(--blue)" opacity={0.16} />
+            {end && <polygon points={band} fill="var(--blue)" opacity={0.16} />}
             <path d={histPath} fill="none" stroke="var(--midnight)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            <path d={centralPath} fill="none" stroke="var(--blue)" strokeWidth={2.5} strokeDasharray="7 5" vectorEffect="non-scaling-stroke" />
+            {end && <path d={centralPath} fill="none" stroke="var(--blue)" strokeWidth={2.5} strokeDasharray="7 5" vectorEffect="non-scaling-stroke" />}
           </svg>
 
           {/* last actual: dot + label */}
@@ -90,9 +98,11 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
             {last.period}: {fmt(last.value)}
           </span>
           {/* forecast end: central value and range */}
-          <span aria-hidden="true" className="absolute -translate-x-full -translate-y-full whitespace-nowrap pb-1 text-end text-xs font-semibold leading-tight tabular-nums text-blue-ink" style={{ left: "100%", top: pctY(y(end.p90)) }}>
-            {end.period}: {fmt(end.p50)}<br /><span className="font-normal">({fmt(end.p10)}–{fmt(end.p90)})</span>
-          </span>
+          {end && (
+            <span aria-hidden="true" className="absolute -translate-x-full -translate-y-full whitespace-nowrap pb-1 text-end text-xs font-semibold leading-tight tabular-nums text-blue-ink" style={{ left: "100%", top: pctY(y(end.p90)) }}>
+              {end.period}: {fmt(end.p50)}<br /><span className="font-normal">({fmt(end.p10)}–{fmt(end.p90)})</span>
+            </span>
+          )}
         </div>
 
         {/* x-axis year labels */}
@@ -107,8 +117,8 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
       {/* legend: shape + colour, never colour alone */}
       <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-deep" aria-hidden="true">
         <li className="inline-flex items-center gap-2"><span className="inline-block h-0.5 w-6 rounded bg-midnight" />{labels.history}</li>
-        <li className="inline-flex items-center gap-2"><span className="inline-block h-3 w-6 rounded-sm bg-blue/20" />{labels.band}</li>
-        <li className="inline-flex items-center gap-2"><span className="inline-block w-6 border-t-2 border-dashed border-blue" />{labels.central}</li>
+        {end && labels.band && <li className="inline-flex items-center gap-2"><span className="inline-block h-3 w-6 rounded-sm bg-blue/20" />{labels.band}</li>}
+        {end && labels.central && <li className="inline-flex items-center gap-2"><span className="inline-block w-6 border-t-2 border-dashed border-blue" />{labels.central}</li>}
       </ul>
     </figure>
   );

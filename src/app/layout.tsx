@@ -23,7 +23,7 @@ import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 import { UPalProvider } from "@/components/upal/UPalProvider";
 import { UPalWidget } from "@/components/upal/UPalWidget";
 import { usesSupabase } from "@/lib/db/runtime";
-import { asThemePref, THEME_BOOT_SCRIPT, THEME_COOKIE } from "@/lib/theme";
+import { asTheme, THEME_BOOT_SCRIPT, THEME_COOKIE } from "@/lib/theme";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const notoThai = Noto_Sans_Thai({ variable: "--font-noto-thai", subsets: ["thai"], display: "swap", weight: ["400", "600", "700"] });
@@ -51,7 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { locale, currency } = await getPreferences();
   const t = translator(locale);
   const [db, me, jar] = await Promise.all([readDb(), currentUser(), cookies()]);
-  const themePref = asThemePref(jar.get(THEME_COOKIE)?.value);
+  const theme = asTheme(jar.get(THEME_COOKIE)?.value);
   const headerUser: HeaderUser = me
     ? {
         name: me.name,
@@ -59,6 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         email: me.email,
         isDemoPersona: Boolean(me.isDemoPersona),
         utopiaMember: me.utopiaMember,
+        premium: Boolean(me.premium),
         availableThb: walletSummary(db, me.id).availableThb,
       }
     : null;
@@ -67,9 +68,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={locale}
       dir={LOCALE_INFO[locale].dir}
-      data-theme-pref={themePref}
-      data-theme={themePref === "system" ? undefined : themePref}
-      suppressHydrationWarning /* the boot script sets data-theme for "system" before hydration */
+      data-theme={theme ?? undefined}
+      suppressHydrationWarning /* without a saved choice the boot script sets data-theme before hydration */
       className={`${inter.variable} ${notoThai.variable} ${notoArabic.variable} ${notoTc.variable} h-full antialiased`}
     >
       <head>
@@ -80,8 +80,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[var(--z-skip)] focus:rounded-lg focus:bg-paper focus:px-4 focus:py-3">
           <Text message="Skip to content" />
         </a>
-        <SiteHeader user={headerUser} themePref={themePref} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
-        <UPalProvider userName={me?.name ?? "there"}>
+        <SiteHeader user={headerUser} theme={theme} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
+        <UPalProvider userName={me?.name ?? "there"} tier={me ? (me.premium ? "premium" : "standard") : "guest"}>
           <main tabIndex={-1} id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
           <UPalWidget />
         </UPalProvider>
@@ -97,8 +97,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <p className="text-sm font-semibold text-ice"><Text message="Explore" /></p>
               <ul className="mt-2 grid gap-1 text-sm">
                 <li><Link className="text-silver hover:text-ice" href="/"><Text message="Find a home" /></Link></li>
+                <li><Link className="text-silver hover:text-ice" href="/market"><Text message="Market" /></Link></li>
+                <li><Link className="text-silver hover:text-ice" href="/coinvest"><Text message="Co-Invest" /></Link></li>
                 <li><Link className="text-silver hover:text-ice" href="/sell"><Text message="Sell a property" /></Link></li>
-                <li><Link className="text-silver hover:text-ice" href="/ledger"><Text message="Transparency ledger" /></Link></li>
+                <li><Link className="text-silver hover:text-ice" href="/ledger"><Text message="Ledger" /></Link></li>
+                <li><Link className="text-silver hover:text-ice" href="/partners"><Text message="Partners and your data" /></Link></li>
               </ul>
             </nav>
             <div>

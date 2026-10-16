@@ -51,6 +51,11 @@ export const TYPE_LABEL: Record<string, MessageKey> = {
 };
 const FURNISHING_LABEL: Record<string, MessageKey> = { furnished: "Furnished", partly_furnished: "Partly furnished", unfurnished: "Unfurnished" };
 const MAPS_LABEL: Record<"exact" | "project" | "area", MessageKey> = { exact: "View on Google Maps", project: "Project on Google Maps", area: "Area on Google Maps" };
+const iconProps = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+const PinIcon = () => <svg {...iconProps}><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" /><circle cx="12" cy="10" r="2.4" /></svg>;
+const MapIcon = () => <svg {...iconProps}><path d="m9 4-5.5 2v14L9 18l6 2 5.5-2V4L15 6 9 4Zm0 0v14m6-12v14" /></svg>;
+const ExternalIcon = () => <svg {...iconProps}><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>;
+
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const desktopMapQuery = "(min-width: 1024px)";
 function subscribeToDesktopMap(changed: () => void) {
@@ -154,24 +159,25 @@ export function MarketExplorer({ cards, total, external, uestate, isSample, mode
                         )}
                         {c.source === "sample" && <li className="pill bg-amber-soft text-amber">{t("Synthetic, not a real listing")}</li>}
                       </ul>
-                      {(c.sourceName || c.updatedAt) && (
-                        <p className="caption">
-                          {[c.sourceName ? t("Source: {name}", { name: c.sourceName }) : null, c.updatedAt ? t("Updated {date}", { date: c.updatedAt }) : null].filter(Boolean).join(" · ")}
-                        </p>
-                      )}
+                      {c.sourceName && <p className="caption">{t("Source: {name}", { name: c.sourceName })}</p>}
 
-                      <div className="mt-2 flex flex-wrap gap-2">
+                      {/* One primary action; map and source links are compact icon buttons (their names stay for screen readers). */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         {c.detailHref && <Link href={c.detailHref} className="btn btn-primary min-h-11 px-4 text-sm">{t("View details")}</Link>}
-                        {c.mapsUrl && c.mapsPrecision ? (
-                          <a href={c.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary min-h-11 px-4 text-sm">{t(MAPS_LABEL[c.mapsPrecision])} ↗</a>
-                        ) : (
-                          <span className="btn btn-secondary min-h-11 cursor-not-allowed px-4 text-sm opacity-60" aria-disabled="true">{t("Location unavailable")}</span>
-                        )}
-                        {c.originalUrl && <a href={c.originalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary min-h-11 px-4 text-sm">{t("View original listing")} ↗</a>}
                         {c.onMap && (
-                          <button type="button" aria-pressed={isSelected} onClick={() => showOnMap(c.id)} className="btn btn-secondary min-h-11 px-4 text-sm">
-                            {t("Show on map")}
+                          <button type="button" aria-pressed={isSelected} onClick={() => showOnMap(c.id)} className="card-icon-btn" aria-label={t("Show on map")} title={t("Show on map")}>
+                            <PinIcon />
                           </button>
+                        )}
+                        {c.mapsUrl && c.mapsPrecision && (
+                          <a href={c.mapsUrl} target="_blank" rel="noopener noreferrer" className="card-icon-btn" aria-label={`${t(MAPS_LABEL[c.mapsPrecision])} (${t("opens in a new tab")})`} title={t(MAPS_LABEL[c.mapsPrecision])}>
+                            <MapIcon />
+                          </a>
+                        )}
+                        {c.originalUrl && (
+                          <a href={c.originalUrl} target="_blank" rel="noopener noreferrer" className="card-icon-btn" aria-label={`${t("View original listing")} (${t("opens in a new tab")})`} title={t("View original listing")}>
+                            <ExternalIcon />
+                          </a>
                         )}
                       </div>
                     </div>

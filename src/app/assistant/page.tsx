@@ -22,7 +22,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
       </header>
       {!status.claude && !geminiConfigured() && (
         <p role="alert" className="rounded-lg bg-amber-soft p-3 text-amber">
-          {t("AI is not connected on this server (ANTHROPIC_API_KEY). Voice search on the home page still works with keyword rules.")}
+          {t("U-Pal's AI is not available right now. Search on the home page still works with keyword rules.")}
         </p>
       )}
       <UPalChat variant="page" initialQuestion={initialQuestion} />

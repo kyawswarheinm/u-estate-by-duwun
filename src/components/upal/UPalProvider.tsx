@@ -6,10 +6,11 @@ import { useI18n } from "@/i18n/provider";
 import type { MessageKey } from "@/i18n";
 import { UPAL_UI } from "@/i18n/upal";
 import { LOCALE_INFO, type Locale } from "@/lib/locale";
-import { describeContext, pageKindFor, toHistory, type PageContext, type PageFacts } from "@/lib/upal";
+import { describeContext, pageKindFor, toHistory, type PageContext, type PageFacts, type UPalTier } from "@/lib/upal";
 
-// U-Pal state shared by the floating widget and the /assistant page: one conversation (typed and spoken) that survives
-// page changes, the current page context, and the ElevenLabs voice session. Lives in the root layout.
+// U-Pal state shared by the floating assistant and the /assistant page: one conversation (typed and spoken) that survives
+// page changes, the current page context, and the ElevenLabs voice session. Lives in the root layout, so there is
+// exactly one U-Pal however the user navigates. Closing the assistant ends any voice session and releases the microphone.
 // The voice agent's tools are read-only and run through /api/agent-tools. Tool names must match
 // scripts/create-voice-agent.mjs and src/lib/assistant-tools.ts (D-36).
 
@@ -28,8 +29,11 @@ export const TOOL_LABEL: Record<string, MessageKey> = {
   get_price_forecast: "Checked the price forecast",
   compare_to_market: "Compared with the market",
   search_real_listings: "Searched third-party listings",
+  get_coinvest_offerings: "Checked Co-Invest opportunities",
+  get_my_account: "Checked your account",
+  get_ledger_status: "Checked the ledger status",
 };
-const SAFE_PATH = /^\/(?:$|listing\/[a-z0-9-]+(?:\/offers)?$|market\/rl-[a-f0-9]{12}$|cobuy\/[a-z0-9-]+$|ledger$|sell$|assistant$|market(?:\?[A-Za-z0-9=&_%+-]*)?$)/;
+const SAFE_PATH = /^\/(?:$|listing\/[a-z0-9-]+(?:\/offers)?$|market\/rl-[a-f0-9]{12}$|cobuy\/[a-z0-9-]+$|coinvest(?:\/[a-z0-9-]+)?$|premium$|account(?:\/wallet)?$|ledger$|sell$|assistant$|market(?:\?[A-Za-z0-9=&_%+-]*)?$)/;
 
 // Opening line per language (sent as an override; the agent must allow "First message" + "Language" overrides).
 const FIRST_MESSAGE: Record<Locale, (name: string) => string> = {
@@ -45,12 +49,19 @@ type UPalValue = {
   messages: UPalMsg[];
   busy: boolean;
   send: (text: string) => Promise<void>;
+  /** Opens the assistant and asks this question with the current page context (the bubble and chips use it). */
+  ask: (text: string) => void;
+  /** Asks the last failed question again. */
+  retry: () => void;
+  tier: UPalTier;
   locale: Locale;
   setLocale: (l: Locale) => void;
   page: PageContext;
   setFacts: (path: string, facts: PageFacts | null) => void;
   open: boolean;
-  setOpen: (open: boolean) => void;
+  openAssistant: () => void;
+  /** Closes the assistant: ends a live or starting voice session first, so no microphone stays on. */
+  closeAssistant: () => void;
   voice: {
     status: VoiceStatus;
     isSpeaking: boolean;
@@ -70,15 +81,15 @@ export function useUPal() {
   return value;
 }
 
-export function UPalProvider({ userName, children }: { userName: string; children: ReactNode }) {
+export function UPalProvider({ userName, tier, children }: { userName: string; tier: UPalTier; children: ReactNode }) {
   return (
     <ConversationProvider>
-      <Inner userName={userName}>{children}</Inner>
+      <Inner userName={userName} tier={tier}>{children}</Inner>
     </ConversationProvider>
   );
 }
 
-function Inner({ userName, children }: { userName: string; children: ReactNode }) {
+function Inner({ userName, tier, children }: { userName: string; tier: UPalTier; children: ReactNode }) {
   const { locale: uiLocale } = useI18n();
   const router = useRouter();
   const pathname = usePathname() || "/";
@@ -92,6 +103,7 @@ function Inner({ userName, children }: { userName: string; children: ReactNode }
   const messagesRef = useRef(messages);
   const busyRef = useRef(false);
   const endedByUser = useRef(false);
+  const voiceAttempt = useRef(0); // bumped by endVoice: a start that is still awaiting the token or mic permission gives up
   const ui = UPAL_UI[locale];
 
   useEffect(() => {
@@ -153,6 +165,9 @@ function Inner({ userName, children }: { userName: string; children: ReactNode }
       get_price_forecast: serverTool("get_price_forecast"),
       compare_to_market: serverTool("compare_to_market"),
       search_real_listings: serverTool("search_real_listings"),
+      get_coinvest_offerings: serverTool("get_coinvest_offerings"),
+      get_my_account: serverTool("get_my_account"),
+      get_ledger_status: serverTool("get_ledger_status"),
       open_page: (params: Record<string, unknown>) => {
         const path = String(params.path ?? "");
         if (!SAFE_PATH.test(path)) return "That page is not available.";
@@ -190,20 +205,24 @@ function Inner({ userName, children }: { userName: string; children: ReactNode }
   }, [pageDescription, connected, sendContextualUpdate]);
 
   async function startVoice() {
+    const attempt = ++voiceAttempt.current;
     setNotice("");
-    const r = await fetch("/api/voice/agent-token", { cache: "no-store" });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.token) {
-      setNotice(j.message ?? ui.voiceError);
+    const r = await fetch("/api/voice/agent-token", { cache: "no-store" }).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : {};
+    if (attempt !== voiceAttempt.current) return;
+    if (!r?.ok || !j.token) {
+      // The server's message is user-facing text; never a provider or configuration error.
+      setNotice(typeof j.message === "string" ? j.message : ui.voiceError);
       return;
     }
     try {
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       mic.getTracks().forEach((track) => track.stop());
     } catch {
-      setNotice(ui.micDenied);
+      if (attempt === voiceAttempt.current) setNotice(ui.micDenied);
       return;
     }
+    if (attempt !== voiceAttempt.current) return; // closed while the permission prompt was open
     endedByUser.current = false;
     conversation.startSession({
       conversationToken: j.token,
@@ -213,8 +232,17 @@ function Inner({ userName, children }: { userName: string; children: ReactNode }
     });
   }
   function endVoice() {
+    voiceAttempt.current++;
     endedByUser.current = true;
-    conversation.endSession();
+    if (conversation.status !== "disconnected") conversation.endSession();
+  }
+
+  function openAssistant() {
+    setOpen(true);
+  }
+  function closeAssistant() {
+    endVoice();
+    setOpen(false);
   }
 
   // ---- Typed chat (streams NDJSON from /api/assistant) ----
@@ -267,16 +295,34 @@ function Inner({ userName, children }: { userName: string; children: ReactNode }
     }
   }
 
+  function ask(text: string) {
+    setOpen(true);
+    void send(text);
+  }
+  function retry() {
+    const all = messagesRef.current;
+    const lastUser = all.findLastIndex((m) => m.role === "user");
+    if (lastUser < 0 || busyRef.current) return;
+    const question = all[lastUser].content;
+    setMessages(all.slice(0, lastUser));
+    messagesRef.current = all.slice(0, lastUser);
+    void send(question);
+  }
+
   const value: UPalValue = {
     messages,
     busy,
     send,
+    ask,
+    retry,
+    tier,
     locale,
     setLocale,
     page,
     setFacts,
     open,
-    setOpen,
+    openAssistant,
+    closeAssistant,
     voice: {
       status: voiceStatus,
       isSpeaking: conversation.isSpeaking,

@@ -7,6 +7,9 @@ export interface Profile {
   nationality: string;
   isThai: boolean;
   utopiaMember: boolean;
+  /** Premium entitlement (Co-Invest). Set only by the premium upgrade (server side), never by the browser. */
+  premium?: boolean;
+  premiumSince?: string;
   roles: string[];
   /** Demo personas are seeded people you can switch to with one click (DEMO_MODE). */
   isDemoPersona?: boolean;
@@ -35,14 +38,18 @@ export interface Session {
   expiresAt: string;
 }
 
-/** Test-money wallet movements (grants and top-ups). Commitments come from co-buy participants. */
+/** Test-money wallet movements. Credits are positive, debits negative; co-buy commitments are holds, not movements. */
+export type WalletKind = "demo_grant" | "top_up" | "premium_fee" | "share_purchase" | "share_sale" | "refund";
 export interface WalletTxn {
   id: string;
   userId: string;
-  kind: "demo_grant" | "top_up";
-  amountThb: number;
+  kind: WalletKind;
+  amountThb: number; // signed: + money in, − money out
   note: string;
   createdAt: string;
+  offeringId?: string;
+  tradeId?: string;
+  requestId?: string;
 }
 
 export interface Building {
@@ -165,7 +172,8 @@ export type LedgerType =
   | "loan"
   | "offer_submitted"
   | "offer_accepted"
-  | "document_checked";
+  | "document_checked"
+  | "share_transfer";
 
 export interface LedgerEntry {
   id: number;
@@ -193,6 +201,50 @@ export interface LedgerAnchor {
   createdAt: string;
 }
 
+/** Co-Invest (premium): a property split into equal units of simulated co-ownership (D-44). Test money only. */
+export interface CoinvestOffering {
+  id: string;
+  code: string;
+  propertyId: string;
+  totalUnits: number;
+  unitParThb: number; // price per unit while funding
+  targetThb: number; // totalUnits × unitParThb
+  unitsOutstanding: number; // units held by members; the rest sit in the U-Estate pool
+  status: "funding" | "active" | "closed";
+  baseValueThb: number; // value at baseMonth (the funding price)
+  baseMonth: string; // YYYY-MM
+  currentValueThb: number; // index-tracked estimate at valuedMonth, set by code from the BOT index
+  valuedMonth: string;
+  grossYieldPct: number; // assumption for the simulated rental income
+  maxHolders: number;
+  opensAt: string;
+  fundedAt?: string;
+  createdAt: string;
+}
+
+export interface CoinvestHolding {
+  offeringId: string;
+  userId: string;
+  units: number;
+  costThb: number; // what the member paid for the units they still hold
+  areaSqmAttributed: number; // condos, foreign holders: floor area counted against the 49% quota
+  fetRequired: boolean;
+  updatedAt: string;
+}
+
+export interface CoinvestTrade {
+  id: string;
+  offeringId: string;
+  userId: string;
+  side: "buy" | "sell";
+  phase: "funding" | "active";
+  units: number;
+  unitPriceThb: number;
+  amountThb: number;
+  requestId?: string;
+  createdAt: string;
+}
+
 export interface DB {
   profiles: Profile[];
   buildings: Building[];
@@ -208,4 +260,7 @@ export interface DB {
   accounts: Account[];
   sessions: Session[];
   walletTxns: WalletTxn[];
+  coinvestOfferings: CoinvestOffering[];
+  coinvestHoldings: CoinvestHolding[];
+  coinvestTrades: CoinvestTrade[];
 }

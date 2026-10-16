@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/account", label: "Overview" },
   { href: "/account/properties", label: "My properties" },
   { href: "/account/wallet", label: "Wallet" },
+  { href: "/coinvest", label: "Co-Invest" },
   { href: "/account/settings", label: "Account settings" },
 ];
 
@@ -19,7 +20,7 @@ export function AccountNav() {
     <nav aria-label={t("Account")}>
       <ul className="flex gap-1 overflow-x-auto lg:grid">
         {LINKS.map((l) => {
-          const active = pathname === l.href;
+          const active = l.href === "/account" ? pathname === l.href : pathname.startsWith(l.href);
           return (
             <li key={l.href} className="shrink-0">
               <Link

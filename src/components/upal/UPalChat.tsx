@@ -19,7 +19,7 @@ function withLinks(text: string) {
 /** The U-Pal conversation: greeting, suggestions, messages, voice controls and composer. Shared by the widget and /assistant. */
 export function UPalChat({ variant, inputRef, initialQuestion = "" }: { variant: "panel" | "page"; inputRef?: RefObject<HTMLInputElement | null>; initialQuestion?: string }) {
   const { t } = useI18n();
-  const { messages, busy, send, locale, setLocale, page, voice } = useUPal();
+  const { messages, busy, send, retry, locale, setLocale, page, voice } = useUPal();
   const [input, setInput] = useState(initialQuestion);
   const [status, setStatus] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
@@ -67,7 +67,8 @@ export function UPalChat({ variant, inputRef, initialQuestion = "" }: { variant:
         )}
 
         <ol className="grid gap-3">
-          {messages.map((m) => (
+          {/* An assistant reply that has nothing yet is shown by the typing indicator below, not as an empty bubble. */}
+          {messages.filter((m) => m.role === "user" || m.content || (m.tools?.length ?? 0) > 0).map((m) => (
             <li key={m.id} className={m.role === "user" ? "upal-row upal-row--user" : "upal-row"}>
               {m.role === "assistant" && <UPalAvatar size={28} />}
               <div className="grid min-w-0 gap-1.5">
@@ -78,9 +79,14 @@ export function UPalChat({ variant, inputRef, initialQuestion = "" }: { variant:
                 )}
                 {(m.content || m.role === "user") && (
                   <p dir="auto" lang={m.role === "assistant" ? locale : undefined} className={`upal-bubble ${m.role === "user" ? "upal-bubble--user" : m.error ? "upal-bubble--error" : "upal-bubble--ai"}`}>
-                    {m.error && <span className="sr-only">Error: </span>}
+                    {m.error && <span className="sr-only">{t("Error")}: </span>}
                     {m.role === "assistant" ? withLinks(m.content) : m.content}
                   </p>
+                )}
+                {m.error && m.id === last?.id && !busy && (
+                  <button type="button" className="upal-listen" onClick={retry}>
+                    <span aria-hidden="true">↻</span> {ui.retry}
+                  </button>
                 )}
                 {m.role === "assistant" && m.content && !m.error && m.via !== "voice" && !(busy && m.id === last?.id) && (
                   <button type="button" className="upal-listen" onClick={async () => setStatus(VOICE_SOURCE_NOTE[await speak(m.content, locale, audioRef.current)])}>
