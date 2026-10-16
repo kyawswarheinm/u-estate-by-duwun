@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 import scrapy
 from scrapy.exceptions import CloseSpider
 
-from estate_scraper.listings import sale_listing
+from estate_scraper.listings import market_listing
 
 REFUSED = {"ddproperty.com", "hipflat.co.th", "hipflat.com", "fazwaz.com", "livinginsider.com"}
 
@@ -74,7 +74,7 @@ class LicensedListingsSpider(scrapy.Spider):
             for entry in documents:
                 entries = entry.get("@graph", [entry]) if isinstance(entry, dict) else []
                 for candidate in entries if isinstance(entries, list) else []:
-                    row = sale_listing(candidate, response.url, self.site, stamp)
+                    row = market_listing(candidate, response.url, self.site, stamp)
                     if limit and len(self.seen) >= limit:
                         return
                     if row and row["id"] not in self.seen:

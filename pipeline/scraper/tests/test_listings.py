@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from scrapy.exceptions import CloseSpider
 from scrapy.http import HtmlResponse
 
-from estate_scraper.listings import LISTING_FIELDS, area_sqm, sale_listing
+from estate_scraper.listings import LISTING_FIELDS, area_sqm, sale_listing, market_listing
 from estate_scraper.spiders.licensed_listings import LicensedListingsSpider
 
 STAMP = "2026-10-16T00:00:00+00:00"
@@ -74,6 +74,52 @@ class ListingProjection(unittest.TestCase):
             self.assertIsNone(sale_listing(data, URL, "fixture", STAMP))
         data = document(); data["offers"]["itemOffered"]["@type"] = ["Apartment", "Place"]
         self.assertIsNone(sale_listing(data, URL, "fixture", STAMP))
+
+
+class MonthlyRentProjection(unittest.TestCase):
+    def rental(self):
+        data = document()
+        offer = data["offers"]
+        offer["businessFunction"] = "https://purl.org/goodrelations/v1#LeaseOut"
+        offer["price"] = 20000
+        offer["priceSpecification"] = {"@type": "UnitPriceSpecification", "price": 20000,
+            "priceCurrency": "THB", "referenceQuantity": {"@type": "QuantitativeValue", "value": 1, "unitCode": "MON"}}
+        return data
+
+    def test_monthly_condo_rent_contract_and_sale_compatibility(self):
+        data = self.rental()
+        row = market_listing(data, URL, "fixture", STAMP)
+        self.assertEqual(set(row), LISTING_FIELDS)
+        self.assertEqual((row["kind"], row["price_thb"], row["price_per_sqm"]), ("rent", 20000, 500))
+        self.assertIsNone(sale_listing(data, URL, "fixture", STAMP))
+        from estate_scraper.market_export import clean_listings
+        cleaned, report = clean_listings([row])
+        self.assertEqual(report["retained"], 1)
+        self.assertEqual((cleaned[0]["kind"], cleaned[0]["price_thb"], cleaned[0]["price_per_sqm"]), ("rent", 20000, 500))
+        self.assertEqual(market_listing(document(), URL, "fixture", STAMP)["kind"], "sale")
+
+    def test_unknown_daily_annual_multi_month_and_ranged_prices_rejected(self):
+        for reference in [None, {"value": 1, "unitCode": "DAY"}, {"value": 1, "unitCode": "ANN"},
+                          {"value": 2, "unitCode": "MON"}, {"value": True, "unitCode": "MON"},
+                          {"value": 1, "unitCode": "MON", "minValue": 1}]:
+            data = self.rental(); data["offers"]["priceSpecification"]["referenceQuantity"] = reference
+            self.assertIsNone(market_listing(data, URL, "fixture", STAMP))
+        for key, value in [("minPrice", 10000), ("maxPrice", 30000), ("priceComponentType", "Deposit"),
+                           ("price", "20000-30000"), ("priceCurrency", "USD"), ("billingDuration", "P1Y")]:
+            data = self.rental(); data["offers"]["priceSpecification"][key] = value
+            self.assertIsNone(market_listing(data, URL, "fixture", STAMP))
+        data = self.rental(); data["offers"]["itemOffered"]["@type"] = "House"
+        self.assertIsNone(market_listing(data, URL, "fixture", STAMP))
+
+    def test_spider_emits_explicit_monthly_rent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            spider = LicensedSpider().authorized_test_spider()
+            spider.crawler = Mock(); spider.crawler.settings.getint.return_value = 0
+            spider.collection_path = Path(directory) / "collection.json"
+            response = HtmlResponse(URL, body=('<script type="application/ld+json">' + json.dumps(self.rental()) + '</script>').encode(), encoding="utf8")
+            rows = list(spider.parse(response))
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["kind"], "rent")
 
 
 class LicensedSpider(unittest.TestCase):

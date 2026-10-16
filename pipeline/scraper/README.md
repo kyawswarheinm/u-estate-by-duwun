@@ -31,7 +31,7 @@ After a source is approved, inspect its JSON-LD and supply its actual URLs and l
   -a start_urls=https://example.org/approved-sale-path -s CLOSESPIDER_ITEMCOUNT=50
 ```
 
-Output is ignored `out/listings.json`, with only frozen contract fields. The adapter accepts explicit in-stock THB sale offers for apartments/houses in Bangkok and the five surrounding provinces, with a scalar floor area and verified unit. It drops ranges, aggregates, unknown sale/rental intent, missing price/area and contact-bearing locations/URLs. Never multiply starting prices by arbitrary minimum unit sizes. Page coordinates are rounded, optional facts stay null when unknown, IDs hash the source URL, and cached identical bodies retain collection time. Link discovery is opt-in and restricted to approved hosts, with no credential/query-bearing links. Requests that fail or present a challenge stop the spider. The runner requires the requested minimum count and rejects spider exceptions. Successful raw items still need P1T03 cleaning/export before replacing the application snapshot.
+Output is ignored `out/listings.json`, with only frozen contract fields. The adapter accepts explicit in-stock THB sale offers for apartments/houses and strictly monthly condominium rental offers in Bangkok and the five surrounding provinces, with a scalar floor area and verified unit. It drops ranges, aggregates, unknown sale/rental intent, missing price/area and contact-bearing locations/URLs. Never multiply starting prices by arbitrary minimum unit sizes. Page coordinates are rounded, optional facts stay null when unknown, IDs hash the source URL, and cached identical bodies retain collection time. Link discovery is opt-in and restricted to approved hosts, with no credential/query-bearing links. Requests that fail or present a challenge stop the spider. The runner requires the requested minimum count and rejects spider exceptions. Successful raw items still need P1T03 cleaning/export before replacing the application snapshot.
 
 Network-free engineering verification, **generated test fixtures only**:
 
@@ -159,3 +159,10 @@ npm run build
 ```
 
 Run the market-data tests after each export and `npm run check` before every push. Raw downloads, cached responses, virtual environments and build artifacts must remain untracked. The cleaned places schema and P3 integration limits are in `docs/work/P1.md`; this new file is outside the frozen listing/stats/forecast contract.
+
+
+## P1T06 monthly condo rental support
+
+The same `licensed_listings` spider and `export.py listings` commands accept explicit `LeaseOut` offers for `Apartment` items. `priceSpecification` must be a single `UnitPriceSpecification` with a positive scalar THB price and `referenceQuantity` of exactly one `MON` (month). This narrow mapping uses [Schema.org referenceQuantity](https://schema.org/referenceQuantity); it does not infer monthly rent from contractual `billingDuration`, page titles or bare prices. Price components, ranges, daily/yearly/multi-month units, conflicting top-level price/currency and non-condo rental types are rejected. No conversion from daily or annual rates is performed. The existing `sale_listing` Python helper remains sale-only; the spider uses `market_listing` for both kinds.
+
+The cleaner/exporter already separates sale and rent percentile cohorts and preserves monthly rent in `price_thb` and monthly rent/m² in `price_per_sqm`. The same permission, robots, privacy, coordinate and minimum-row gates apply. Do not create permission records to enable a demo. RentHub was checked and refused under its terms (see SOURCES). There are still no eligible real rental items; no synthetic rents or additional application rows were manufactured. Live P1T06 acceptance (more real rows) remains open.

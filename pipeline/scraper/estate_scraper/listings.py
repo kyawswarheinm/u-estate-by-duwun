@@ -1,4 +1,4 @@
-"""Project explicit JSON-LD sale offers into the frozen listing contract."""
+"""Project explicit JSON-LD sale and monthly condo rental offers into the frozen listing contract."""
 from datetime import date
 import hashlib
 import math
@@ -39,8 +39,8 @@ def area_sqm(value):
     return amount * multiplier if multiplier else None
 
 
-def sale_listing(document, url, site, fetched_at):
-    """Accept an explicit single sale offer, never pair unrelated price/size minima."""
+def market_listing(document, url, site, fetched_at):
+    """Accept explicit scalar offers; rent requires an unambiguous monthly basis."""
     if not isinstance(document, dict):
         return None
     parsed = urlsplit(url)
@@ -54,8 +54,27 @@ def sale_listing(document, url, site, fetched_at):
     if not isinstance(offer, dict) or offer.get("@type") != "Offer":
         return None
     function = offer.get("businessFunction")
-    if function not in ("Sell", "http://purl.org/goodrelations/v1#Sell", "https://purl.org/goodrelations/v1#Sell"):
-        return None  # An unknown offer might be monthly rent; never guess sale.
+    sale = function in ("Sell", "http://purl.org/goodrelations/v1#Sell", "https://purl.org/goodrelations/v1#Sell")
+    rental = function in ("LeaseOut", "http://purl.org/goodrelations/v1#LeaseOut", "https://purl.org/goodrelations/v1#LeaseOut")
+    if not sale and not rental:
+        return None
+    pricing = offer
+    if rental:
+        pricing = offer.get("priceSpecification")
+        if not isinstance(pricing, dict) or pricing.get("@type") != "UnitPriceSpecification":
+            return None
+        reference = pricing.get("referenceQuantity")
+        if not isinstance(reference, dict) or number(reference.get("value")) != 1 or reference.get("unitCode") != "MON":
+            return None
+        # Components, ranges and conflicting top-level prices cannot identify base monthly rent.
+        if any(key in pricing for key in ("minPrice", "maxPrice", "priceComponentType", "billingDuration", "billingIncrement", "billingStart")):
+            return None
+        if any(key in reference for key in ("minValue", "maxValue")):
+            return None
+        if "price" in offer and number(offer["price"]) != number(pricing.get("price")):
+            return None
+        if "priceCurrency" in offer and offer["priceCurrency"] != pricing.get("priceCurrency"):
+            return None
     if offer.get("availability") not in ("InStock", "https://schema.org/InStock", "http://schema.org/InStock"):
         return None
     residence = offer.get("itemOffered")
@@ -65,7 +84,7 @@ def sale_listing(document, url, site, fetched_at):
         return None
     kind = {"Apartment": "condo", "House": "house", "SingleFamilyResidence": "house"}.get(residence.get("@type") if isinstance(residence.get("@type"), str) else None)
     address = residence.get("address")
-    if kind is None or not isinstance(address, dict):
+    if kind is None or (rental and kind != "condo") or not isinstance(address, dict):
         return None
     country = address.get("addressCountry")
     if isinstance(country, dict):
@@ -77,9 +96,9 @@ def sale_listing(document, url, site, fetched_at):
     province = {"กรุงเทพมหานคร": "Bangkok", "กรุงเทพฯ": "Bangkok"}.get(province, province)
     if not location or province not in {"Bangkok", "Nonthaburi", "Pathum Thani", "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"}:
         return None
-    price = number(offer.get("price"))
+    price = number(pricing.get("price"))
     size = area_sqm(residence.get("floorSize"))
-    if offer.get("priceCurrency") != "THB" or price is None or price <= 0 or size is None:
+    if pricing.get("priceCurrency") != "THB" or price is None or price <= 0 or size is None:
         return None
     unit_price = price / size
     if not math.isfinite(unit_price) or unit_price <= 0:
@@ -100,10 +119,16 @@ def sale_listing(document, url, site, fetched_at):
     name = parent.get("name") if isinstance(parent, dict) and parent.get("@type") == "ApartmentComplex" else None
     project = text(unicodedata.normalize("NFKC", name)) if isinstance(name, str) else None
     return {"id": "ext-" + site + "-" + hashlib.sha1(url.encode()).hexdigest()[:10],
-            "site": site, "source_url": url, "kind": "sale", "type": kind,
+            "site": site, "source_url": url, "kind": "rent" if rental else "sale", "type": kind,
             "project": project, "district": location, "province": province,
             "lat": round(lat, 3) if lat is not None else None,
             "lng": round(lng, 3) if lng is not None else None,
             "geo_precision": "exact" if lat is not None else "none", "price_thb": price,
             "area_sqm": size, "price_per_sqm": unit_price, "bedrooms": bedrooms,
             "listed_at": listed_at, "scraped_at": fetched_at}
+
+
+def sale_listing(document, url, site, fetched_at):
+    """Compatibility entry point: continues to accept sale offers only."""
+    row = market_listing(document, url, site, fetched_at)
+    return row if row and row["kind"] == "sale" else None
