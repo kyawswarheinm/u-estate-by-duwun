@@ -10,7 +10,7 @@ import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { formatMoney, formatNumber, translator } from "@/i18n";
 import { useI18n } from "@/i18n/provider";
-import { BANGKOK_CENTRE } from "@/lib/market-data/district-centres";
+import { BANGKOK_CENTRE, safeSourceUrl } from "@/lib/market-data/district-centres";
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const BUILDINGS_3D = "ue-3d-buildings";
@@ -181,7 +181,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
           el("span", {}, [l.project, l.district].filter(Boolean).join(", ")),
           el("span", { className: "text-xs text-ink-soft" }, t("{site}, listed {date}", { site: l.site, date: l.listedAt ?? "—" })),
           el("span", { className: "text-xs text-amber" }, isSample ? `${t("Not checked by U-Estate")} · SAMPLE` : t("Not checked by U-Estate")),
-          el("a", { href: l.sourceUrl, target: "_blank", rel: "noopener noreferrer", className: "font-semibold underline" }, t("Open source ↗")),
+          ...(safeSourceUrl(l.sourceUrl) ? [el("a", { href: safeSourceUrl(l.sourceUrl)!, target: "_blank", rel: "noopener noreferrer", className: "font-semibold underline" }, t("Open source ↗"))] : []),
         ));
     }
     for (const l of placed.filter((x) => x.source === "uestate") as (MapUEstateListing & { at: [number, number]; offset: [number, number] })[]) {

@@ -32,7 +32,7 @@ export type MarketCard = {
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function MarketExplorer({ cards, external, uestate, isSample }: { cards: MarketCard[]; external: MapExternalListing[]; uestate: MapUEstateListing[]; isSample: boolean }) {
+export function MarketExplorer({ cards, total, external, uestate, isSample }: { cards: MarketCard[]; total: number; external: MapExternalListing[]; uestate: MapUEstateListing[]; isSample: boolean }) {
   const { t, locale, currency } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const money = (thb: number) => formatMoney(thb, locale, currency);
@@ -52,7 +52,7 @@ export function MarketExplorer({ cards, external, uestate, isSample }: { cards: 
         <MarketMapLazy external={external} uestate={uestate} isSample={isSample} selectedId={selected} onSelect={fromMarker} />
       </div>
       <div className="grid content-start gap-3 lg:order-1">
-        <p role="status" className="text-sm text-deep">{t("{count} results", { count: cards.length })}</p>
+        <p role="status" className="text-sm text-deep">{t("{count} results", { count: total })}</p>
         {cards.length === 0 ? (
           <p className="rounded-[14px] border border-line bg-white p-6 text-ink-soft">{t("No listings match. Try another location or clear the filters.")}</p>
         ) : (
@@ -90,9 +90,9 @@ export function MarketExplorer({ cards, external, uestate, isSample }: { cards: 
                     <div className="mt-2 flex flex-wrap gap-2">
                       {c.source === "uestate" ? (
                         <Link href={c.href} className="btn btn-primary min-h-11 px-3 text-sm">{t("View listing")}</Link>
-                      ) : (
+                      ) : c.href ? (
                         <a href={c.href} target="_blank" rel="noopener noreferrer" className="btn btn-secondary min-h-11 px-3 text-sm">{t("Open source ↗")}</a>
-                      )}
+                      ) : null}
                       {c.onMap && (
                         <button type="button" aria-pressed={isSelected} onClick={() => showOnMap(c.id)} className="min-h-11 rounded-lg border border-line px-3 text-sm font-semibold">
                           {t("Show on map")}

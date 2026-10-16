@@ -38,5 +38,18 @@ export function districtCentre(district: string) {
   return key ? DISTRICT_CENTRES[key] : null;
 }
 
+/**
+ * Source links from the scrape snapshot, made safe to render: only http(s) URLs pass. The contract checks z.url(),
+ * which also accepts "javascript:" URLs, and the map builds its popup links outside React's URL protection.
+ */
+export function safeSourceUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Where the map should open when there is nothing to fit: central Bangkok. */
 export const BANGKOK_CENTRE = { lat: 13.75, lng: 100.55 };

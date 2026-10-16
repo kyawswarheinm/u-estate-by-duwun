@@ -7,7 +7,7 @@ import type { MapExternalListing, MapUEstateListing } from "@/components/MarketM
 import { artVariant } from "@/components/MarketPropertyArt";
 import { MARKET_FORECAST, MARKET_LISTINGS, MARKET_STATS, MarketKind, MarketType } from "@/lib/market-data";
 import { getMarketStats, getPriceForecast } from "@/lib/market-data/analytics";
-import { districtCentre } from "@/lib/market-data/district-centres";
+import { districtCentre, safeSourceUrl } from "@/lib/market-data/district-centres";
 import { readDb } from "@/lib/store";
 import { coverPhotos } from "./cover-photos";
 
@@ -18,6 +18,8 @@ export const metadata = { title: "Market" };
 const TYPES = ["condo", "house", "townhouse", "land", "building"] as const;
 const TYPE_LABEL = { condo: "Condo", house: "House", townhouse: "Townhouse", land: "Land", building: "Building" } as const;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
+// Real snapshots hold hundreds of rows: cards, map markers and the table show one page of other websites' listings.
+const PAGE_SIZE = 24;
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
@@ -42,7 +44,16 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     .filter(({ l, p }) => (!type || p.type === type) && (!kind || l.kind === kind) && matchesPlace(p.district, p.title));
   const photos = await coverPhotos(ours.map(({ l }) => l.id));
 
-  const theirs = MARKET_LISTINGS.listings.filter((l) => (!type || l.type === type) && (!kind || l.kind === kind) && matchesPlace(l.district, l.project ?? ""));
+  const allTheirs = MARKET_LISTINGS.listings.filter((l) => (!type || l.type === type) && (!kind || l.kind === kind) && matchesPlace(l.district, l.project ?? ""));
+  const pages = Math.max(1, Math.ceil(allTheirs.length / PAGE_SIZE));
+  const pageNo = Math.min(pages, Math.max(1, Number.parseInt(one(sp.page), 10) || 1));
+  const theirs = allTheirs.slice((pageNo - 1) * PAGE_SIZE, pageNo * PAGE_SIZE);
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams(Object.entries({ q, type, kind, district }).filter(([, v]) => v));
+    if (n > 1) params.set("page", String(n));
+    const s = params.toString();
+    return s ? `/market?${s}` : "/market";
+  };
 
   const uestate: MapUEstateListing[] = ours.flatMap(({ l, p }) => {
     const c = districtCentre(p.district);
@@ -51,12 +62,12 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const external: MapExternalListing[] = theirs
     .filter((l) => l.lat != null && l.lng != null)
     .map((l) => ({
-      id: l.id, site: l.site, sourceUrl: l.source_url, kind: l.kind, type: l.type, project: l.project, district: l.district,
+      id: l.id, site: l.site, sourceUrl: safeSourceUrl(l.source_url) ?? "", kind: l.kind, type: l.type, project: l.project, district: l.district,
       lat: l.lat!, lng: l.lng!, priceThb: l.price_thb, areaSqm: l.area_sqm, pricePerSqm: l.price_per_sqm, listedAt: l.listed_at,
     }));
   const onMap = new Set([...uestate.map((x) => x.id), ...external.map((x) => x.id)]);
   const cards: MarketCard[] = [
-    ...ours.map(({ l, p }) => ({
+    ...(pageNo === 1 ? ours : []).map(({ l, p }) => ({
       id: l.id, source: "uestate" as const, title: p.title, district: p.district, kind: l.kind, type: p.type,
       priceThb: l.askingPriceThb, areaSqm: p.areaSqm, pricePerSqm: Math.round(l.askingPriceThb / p.areaSqm), bedrooms: null,
       href: `/listing/${l.id}`, site: null, listedAt: null, photoUrl: photos[l.id] ?? null, art: artVariant(p.type, p.title), onMap: onMap.has(l.id),
@@ -64,7 +75,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
     ...theirs.map((l) => ({
       id: l.id, source: "external" as const, title: l.project ?? t(l.type), district: l.district, kind: l.kind, type: l.type,
       priceThb: l.price_thb, areaSqm: l.area_sqm, pricePerSqm: l.price_per_sqm, bedrooms: l.bedrooms,
-      href: l.source_url, site: l.site, listedAt: l.listed_at, photoUrl: null, art: artVariant(l.type), onMap: onMap.has(l.id),
+      href: safeSourceUrl(l.source_url) ?? "", site: l.site, listedAt: l.listed_at, photoUrl: null, art: artVariant(l.type), onMap: onMap.has(l.id),
     })),
   ];
 
@@ -127,7 +138,14 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         </div>
       </form>
 
-      <MarketExplorer cards={cards} external={external} uestate={uestate} isSample={MARKET_LISTINGS.meta.is_sample} />
+      <MarketExplorer cards={cards} total={ours.length + allTheirs.length} external={external} uestate={uestate} isSample={MARKET_LISTINGS.meta.is_sample} />
+      {allTheirs.length > PAGE_SIZE && (
+        <nav aria-label={t("Market listings pages")} className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-deep">{t("Other websites: {from}–{to} of {total}", { from: (pageNo - 1) * PAGE_SIZE + 1, to: (pageNo - 1) * PAGE_SIZE + theirs.length, total: allTheirs.length })}</span>
+          {pageNo > 1 && <Link href={pageHref(pageNo - 1)} className="btn btn-secondary" rel="prev">{t("Previous page")}</Link>}
+          {pageNo < pages && <Link href={pageHref(pageNo + 1)} className="btn btn-secondary" rel="next">{t("Next page")}</Link>}
+        </nav>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section aria-labelledby="stats-title" className="grid content-start gap-3">
@@ -190,7 +208,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
                     <td className="p-2">{money(l.price_per_sqm)}</td>
                     <td className="p-2">{l.site}</td>
                     <td className="p-2">{l.listed_at ?? "—"}</td>
-                    <td className="p-2"><a href={l.source_url} target="_blank" rel="noopener noreferrer" className="font-semibold underline">{t("Open source ↗")}</a></td>
+                    <td className="p-2">{safeSourceUrl(l.source_url) ? <a href={safeSourceUrl(l.source_url)!} target="_blank" rel="noopener noreferrer" className="font-semibold underline">{t("Open source ↗")}</a> : "—"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -483,5 +483,9 @@ export const es = {
   "Searched other websites' listings": "Anuncios de otros sitios buscados",
   "Checked market asking prices": "Precios pedidos del mercado revisados",
   "Checked the price forecast": "Previsión de precios revisada",
-  "Compared with the market": "Comparado con el mercado"
+  "Compared with the market": "Comparado con el mercado",
+  "Previous page": "Página anterior",
+  "Next page": "Página siguiente",
+  "Other websites: {from}–{to} of {total}": "Otros sitios: {from}–{to} de {total}",
+  "Market listings pages": "Páginas de anuncios del mercado"
 } satisfies Dictionary;

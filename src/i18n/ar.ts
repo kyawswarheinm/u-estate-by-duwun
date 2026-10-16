@@ -483,5 +483,9 @@ export const ar = {
   "Searched other websites' listings": "تم البحث في إعلانات مواقع أخرى",
   "Checked market asking prices": "تم التحقق من الأسعار المطلوبة في السوق",
   "Checked the price forecast": "تم التحقق من توقع الأسعار",
-  "Compared with the market": "تمت المقارنة بالسوق"
+  "Compared with the market": "تمت المقارنة بالسوق",
+  "Previous page": "الصفحة السابقة",
+  "Next page": "الصفحة التالية",
+  "Other websites: {from}–{to} of {total}": "مواقع أخرى: {from}–{to} من {total}",
+  "Market listings pages": "صفحات إعلانات السوق"
 } satisfies Dictionary;

@@ -481,7 +481,11 @@ export const en = {
   "Searched other websites' listings": "Searched other websites' listings",
   "Checked market asking prices": "Checked market asking prices",
   "Checked the price forecast": "Checked the price forecast",
-  "Compared with the market": "Compared with the market"
+  "Compared with the market": "Compared with the market",
+  "Previous page": "Previous page",
+  "Next page": "Next page",
+  "Other websites: {from}–{to} of {total}": "Other websites: {from}–{to} of {total}",
+  "Market listings pages": "Market listings pages"
 } as const;
 export type MessageKey = keyof typeof en;
 export type Dictionary = { [K in MessageKey]: string };

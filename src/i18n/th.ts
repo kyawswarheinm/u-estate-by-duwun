@@ -483,5 +483,9 @@ export const th = {
   "Searched other websites' listings": "ค้นหาประกาศจากเว็บไซต์อื่นแล้ว",
   "Checked market asking prices": "ตรวจราคาที่ประกาศในตลาดแล้ว",
   "Checked the price forecast": "ตรวจการคาดการณ์ราคาแล้ว",
-  "Compared with the market": "เทียบกับตลาดแล้ว"
+  "Compared with the market": "เทียบกับตลาดแล้ว",
+  "Previous page": "หน้าก่อนหน้า",
+  "Next page": "หน้าถัดไป",
+  "Other websites: {from}–{to} of {total}": "เว็บไซต์อื่น: {from}–{to} จาก {total}",
+  "Market listings pages": "หน้าประกาศในตลาด"
 } satisfies Dictionary;

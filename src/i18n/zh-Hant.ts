@@ -483,5 +483,9 @@ export const zhHant = {
   "Searched other websites' listings": "已搜尋其他網站的刊登",
   "Checked market asking prices": "已查看市場開價",
   "Checked the price forecast": "已查看價格預測",
-  "Compared with the market": "已與市場比較"
+  "Compared with the market": "已與市場比較",
+  "Previous page": "上一頁",
+  "Next page": "下一頁",
+  "Other websites: {from}–{to} of {total}": "其他網站：第 {from}–{to} 筆，共 {total} 筆",
+  "Market listings pages": "市場刊登分頁"
 } satisfies Dictionary;
