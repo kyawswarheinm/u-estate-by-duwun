@@ -58,7 +58,7 @@ for (const p of PROPERTIES) await insert("properties", p);
 for (const l of LISTINGS) await insert("listings", l);
 for (const { hoursOpen, ...r } of OFFER_ROUNDS) await insert("offer_rounds", { ...r, closes_at: new Date(Date.now() + hoursOpen * 3600_000).toISOString() });
 for (const o of OFFERS) await insert("offers", o);
-check("seed demo data (8 personas, 3 listings, 1 offer round, 2 offers)", (await db.query("select count(*)::int c from public.profiles")).rows[0].c === 8);
+check("seed demo data (8 personas, demo listings, 1 offer round, 2 offers)", (await db.query("select count(*)::int c from public.profiles")).rows[0].c === 8);
 
 // ---------- role helpers ----------
 const as = async (uid, fn) => {
@@ -85,7 +85,7 @@ const CONDO = id(401), HOUSE = id(402), ROUND = id(501);
 
 // ---------- public data and private data ----------
 await as(null, async () => {
-  check("guest can read listings", (await q("select id from listings")).length === 3);
+  check("guest can read listings", (await q("select id from listings")).length === LISTINGS.length);
   check("guest cannot read wallets", (await q("select id from wallet_transactions")).length === 0);
   check("guest cannot read private settings", (await q("select user_id from profile_settings")).length === 0);
   check("guest cannot read sealed offers", (await q("select id from offers")).length === 0);

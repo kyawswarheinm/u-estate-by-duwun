@@ -1,5 +1,6 @@
 "use client";
 import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -10,17 +11,23 @@ import { LocaleSelect } from "./LocaleSelect";
 
 // E3: real-time voice conversation with U-Estate (ElevenLabs Agents, WebRTC).
 // Lives in the root layout, so the conversation continues while the agent opens pages for you.
-// The agent's tools are read-only (search, facts, fees, token unlocks, rules) and run through /api/agent-tools.
+// The agent's tools are read-only (search, facts, fees, token unlocks, rules, market data) and run through /api/agent-tools.
+// Tool names must match scripts/create-voice-agent.mjs and src/lib/assistant-tools.ts.
 
-const TOOL_LABEL: Record<string, string> = {
+// English source text = dictionary keys, so the transcript chips follow the page language.
+const TOOL_LABEL: Record<string, MessageKey> = {
   search_listings: "Searched listings",
   get_listing_facts: "Checked listing facts",
   compute_fees: "Calculated fees",
   check_token_unlocks: "Checked token unlocks (Tokenomist)",
   get_cobuy_rules: "Read co-buy rules",
   open_page: "Opened a page",
+  search_market_listings: "Searched other websites' listings",
+  get_market_stats: "Checked market asking prices",
+  get_price_forecast: "Checked the price forecast",
+  compare_to_market: "Compared with the market",
 };
-const SAFE_PATH = /^\/(?:$|listing\/[a-z0-9-]+(?:\/offers)?$|cobuy\/[a-z0-9-]+$|ledger$|partners$|sell$|assistant$)/;
+const SAFE_PATH = /^\/(?:$|listing\/[a-z0-9-]+(?:\/offers)?$|cobuy\/[a-z0-9-]+$|ledger$|partners$|sell$|assistant$|market(?:\?[A-Za-z0-9=&_%+-]*)?$)/;
 
 type Line = { role: "user" | "agent" | "tool"; text: string };
 
@@ -42,7 +49,7 @@ export function VoiceAgentDock({ userName }: { userName: string }) {
 }
 
 function Dock({ userName }: { userName: string }) {
-  const { locale: uiLocale } = useI18n();
+  const { locale: uiLocale, t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -56,7 +63,7 @@ function Dock({ userName }: { userName: string }) {
   const add = (l: Line) => setLines((prev) => [...prev.slice(-40), l]);
 
   const serverTool = (name: string) => async (params: Record<string, unknown>) => {
-    add({ role: "tool", text: TOOL_LABEL[name] ?? name });
+    add({ role: "tool", text: TOOL_LABEL[name] ? t(TOOL_LABEL[name]) : name });
     const r = await fetch("/api/agent-tools", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tool: name, input: params }) });
     const j = await r.json().catch(() => ({ message: "Tool failed" }));
     return JSON.stringify(r.ok ? j.result : { error: j.message ?? "Tool failed" });
@@ -69,10 +76,14 @@ function Dock({ userName }: { userName: string }) {
       compute_fees: serverTool("compute_fees"),
       check_token_unlocks: serverTool("check_token_unlocks"),
       get_cobuy_rules: serverTool("get_cobuy_rules"),
+      search_market_listings: serverTool("search_market_listings"),
+      get_market_stats: serverTool("get_market_stats"),
+      get_price_forecast: serverTool("get_price_forecast"),
+      compare_to_market: serverTool("compare_to_market"),
       open_page: (params: Record<string, unknown>) => {
         const path = String(params.path ?? "");
         if (!SAFE_PATH.test(path)) return "That page is not available.";
-        add({ role: "tool", text: `${TOOL_LABEL.open_page}: ${path}` });
+        add({ role: "tool", text: `${t(TOOL_LABEL.open_page)}: ${path}` });
         router.push(path);
         return `Opened ${path}`;
       },
@@ -203,7 +214,7 @@ function Dock({ userName }: { userName: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls="voice-agent-panel"
-        className="rounded-full bg-ink px-5 py-3 font-semibold text-paper shadow-lg"
+        className="voice-launcher rounded-full bg-ink px-5 py-3 font-semibold text-paper shadow-lg"
       >
         <span aria-hidden="true">🎙</span> {connected ? "In a call" : "Talk to U-Estate"}
       </button>

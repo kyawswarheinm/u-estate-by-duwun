@@ -1,4 +1,5 @@
 "use client";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { useI18n } from "@/i18n/provider";
 
 import { Label, Text } from "@/i18n/Text";
@@ -21,6 +22,7 @@ export type HeaderUser = {
 
 const NAV = [
   { href: "/", label: "Find a home", match: (p: string) => p === "/" || p.startsWith("/listing") || p.startsWith("/cobuy") },
+  { href: "/market", label: "Market", match: (p: string) => p.startsWith("/market") },
   { href: "/sell", label: "Sell", match: (p: string) => p.startsWith("/sell") },
   { href: "/assistant", label: "Ask AI", match: (p: string) => p.startsWith("/assistant") },
   { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") },
@@ -66,29 +68,29 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
     setMobileOpen(false);
   }
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !mobileOpen) return;
     const onClick = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenuOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setMenuOpen(false); setMobileOpen(false); } };
     document.addEventListener("click", onClick);
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("click", onClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [menuOpen]);
+  }, [menuOpen, mobileOpen]);
 
   const onAuthPage = pathname.startsWith("/signin") || pathname.startsWith("/signup");
   const next = encodeURIComponent(onAuthPage ? "/account" : pathname || "/");
 
   return (
     <header className="sticky top-0 z-40 border-b border-silver bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
-      <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-4 px-4">
         <Link href="/" aria-label={t("U-Estate home")} className="rounded-md no-underline">
           <Logo />
         </Link>
 
-        <nav aria-label={t("Main")} className="hidden md:block">
-          <ul className="flex items-center gap-6">
+        <nav aria-label={t("Main")} className="hidden lg:block">
+          <ul className="flex items-center gap-5">
             {NAV.map((n) => (
               <li key={n.href}>
                 <Link href={n.href} className="nav-link" aria-current={n.match(pathname) ? "page" : undefined}><Label>{n.label}</Label></Link>
@@ -98,6 +100,10 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
         </nav>
 
         <div className="flex items-center gap-2">
+          <details className="utility-menu relative">
+            <summary className="cursor-pointer rounded-full px-3 py-2 text-sm" aria-label={t("Language")}>&#9678; <span className="hidden xl:inline">{t("Language")}</span></summary>
+            <div className="absolute end-0 top-12 w-72 rounded-2xl border border-line bg-white p-5 shadow-[var(--shadow)]"><LocaleSwitcher /></div>
+          </details>
           {notifications}
           {user ? (
             <div ref={menuRef} className="relative">
@@ -148,13 +154,13 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
           ) : (
             <>
               <Link href={`/signin?next=${next}`} className="btn btn-secondary hidden sm:inline-flex"><Text message="Sign in" /></Link>
-              <Link href={`/signup?next=${next}`} className="btn btn-primary"><Text message="Create account" /></Link>
+              <Link href={`/signup?next=${next}`} className="btn btn-primary hidden sm:inline-flex"><Text message="Create account" /></Link>
             </>
           )}
 
           <button
             type="button"
-            className="btn btn-secondary px-3 md:hidden"
+            className="btn btn-secondary px-3 lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             onClick={() => setMobileOpen((o) => !o)}
@@ -166,7 +172,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
       </div>
 
       {mobileOpen && (
-        <nav id="mobile-nav" aria-label={t("Main")} className="border-t border-silver bg-white px-4 pb-4 md:hidden">
+        <nav id="mobile-nav" aria-label={t("Main")} className="border-t border-silver bg-white px-4 pb-4 lg:hidden">
           <ul className="grid">
             {NAV.map((n) => (
               <li key={n.href}>
@@ -175,6 +181,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
                 </Link>
               </li>
             ))}
+            {!user && <li><Link href={`/signup?next=${next}`} className="btn btn-primary my-3"><Text message="Create account" /></Link></li>}
             {!user && (
               <li>
                 <Link href={`/signin?next=${next}`} className="flex min-h-12 items-center font-semibold no-underline"><Text message="Sign in" /></Link>

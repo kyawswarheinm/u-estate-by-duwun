@@ -67,13 +67,17 @@ export interface ListingSummary {
   url: string;
 }
 
+/** A budget this large is a purchase price, never a monthly rent, so it means "for sale" when kind isn't given. */
+export const SALE_BUDGET_THB = 500_000;
+
 export function searchListings(db: DB, f: SearchFilters, limit = 5): ListingSummary[] {
+  const kind = f.kind ?? (f.maxPriceThb && f.maxPriceThb >= SALE_BUDGET_THB ? "sale" : null);
   return db.listings
     .filter((l) => l.status === "active" && !l.archivedAt)
     .map((l) => ({ l, p: db.properties.find((x) => x.id === l.propertyId)! }))
     .filter(({ l, p }) =>
       (!f.type || p.type === f.type) &&
-      (!f.kind || l.kind === f.kind) &&
+      (!kind || l.kind === kind) &&
       (!f.maxPriceThb || l.askingPriceThb <= f.maxPriceThb) &&
       (!f.minSizeSqm || p.areaSqm >= f.minSizeSqm) &&
       (!f.district || `${p.district} ${p.province}`.toLowerCase().includes(f.district.toLowerCase())) &&

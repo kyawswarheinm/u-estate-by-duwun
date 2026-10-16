@@ -29,39 +29,26 @@ export default async function LedgerPage() {
   return (
     <article className="grid gap-4">
       <header>
-        <h1 className="text-3xl font-bold"><Text message="Transparency ledger" /></h1>
+        <h1 className="text-3xl font-bold"><Text message="ledgerTitle" /></h1>
         <p className="mt-1 max-w-3xl text-ink-soft">
           <Text message="What you see here is exactly what is (or would be) registered: co-owner shares, loans and accepted offers. There are no hidden owners and no side records. Entries can only be added, never edited. In this demo every entry is simulated and uses test money." />
         </p>
       </header>
 
+      <p className="rounded-2xl bg-ice p-5 text-sm text-muted"><Text message="ledgerLegal" /></p>
       <AnchorPanel latest={latest} configured={avalancheConfigured()} headHash={head.hash} entryCount={head.count} unanchored={db.ledger.filter((e) => e.id > anchoredUpTo).length} />
 
       {rows.length === 0 ? (
         <p className="rounded-lg bg-mist p-4"><Text message="No activity yet. Check a deed, make an offer or join a co-buy group." /></p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-start text-sm">
-            <caption className="sr-only"><Text message="All recorded actions, newest first" /></caption>
-            <thead><tr className="border-b border-line"><th scope="col" className="py-2">#</th><th scope="col"><Text message="Time" /></th><th scope="col"><Text message="Type" /></th><th scope="col"><Text message="Who" /></th><th scope="col"><Text message="Amount" /></th><th scope="col"><Text message="Details" /></th><th scope="col"><Text message="Fingerprint" /></th></tr></thead>
-            <tbody>
-              {rows.map((e) => (
-                <tr key={e.id} className="border-b border-line align-top">
-                  <td className="py-2">{e.id}</td>
-                  <td>{new Date(e.createdAt).toLocaleString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</td>
-                  <td className="font-semibold"><Label>{LABEL[e.entryType]}</Label></td>
-                  <td>{who(e.userId)}</td>
-                  <td>{e.amountThb ? thb(e.amountThb) : "—"}</td>
-                  <td>{e.details}{e.isSimulated && <span className="ms-2 rounded bg-amber-soft px-1 text-xs text-amber"><Text message="simulated" /></span>}</td>
-                  <td className="font-mono text-xs">
-                    {hashes.get(e.id)?.slice(0, 10)}…
-                    <span className="block font-sans text-ink-soft">{e.id <= anchoredUpTo ? "on Avalanche ✓" : "not yet published"}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ol className="ledger-timeline">
+          {rows.map(e => <li key={e.id} className="ledger-event">
+            <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold"><Label>{LABEL[e.entryType]}</Label></h2><time className="text-xs text-muted" dateTime={e.createdAt}>{new Date(e.createdAt).toLocaleString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</time></div>
+            <p className="mt-3 text-sm text-muted">{who(e.userId)} {e.amountThb ? thb(e.amountThb) : ""}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="pill bg-ice"><Text message={e.id <= anchoredUpTo ? "publishedRecord" : "localRecord"} /></span>{e.isSimulated && <span className="pill bg-amber-soft text-amber"><Text message="simulated" /></span>}</div>
+            <details className="mt-5"><summary><Text message="recordDetails" /></summary><p className="mt-3 text-sm">{e.details}</p><p className="mt-3 break-all font-mono text-xs text-muted">#{e.id} / {hashes.get(e.id)}</p></details>
+          </li>)}
+        </ol>
       )}
     </article>
   );

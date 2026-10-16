@@ -2,7 +2,7 @@ import { runTool, TOOL_NAMES } from "@/lib/assistant-tools";
 import { rateLimit } from "@/lib/ratelimit";
 
 // E3: the voice agent's client tools call this endpoint from the browser.
-// Read-only tools only (search, facts, fees, token unlocks, rules). Inputs are validated with zod.
+// Read-only tools only (search, facts, fees, token unlocks, rules, market data). Inputs are validated with zod.
 export async function POST(req: Request) {
   const limited = rateLimit(req, "agent-tools", 60);
   if (limited) return limited;

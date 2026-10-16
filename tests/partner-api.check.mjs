@@ -204,6 +204,48 @@ await check("Tools", "get_cobuy_rules states 49% quota, 15% cap, no nominees", a
   expect(/49%/.test(s) && /15%/.test(s) && /nominee/i.test(s), s.slice(0, 200));
 });
 
+// ---------- Market intelligence tools (P3T07, D-42) ----------
+// These check honesty rules and shapes, never specific values: P1/P2 replace the SAMPLE snapshots later.
+const tool = async (name, input) => (await call("/api/agent-tools", { method: "POST", body: { tool: name, input } })).json?.result;
+
+await check("Market", "search_market_listings: every result is external, linked, dated and labelled", async () => {
+  const r = await tool("search_market_listings", { type: "condo", kind: "sale", limit: 5 });
+  expect(Array.isArray(r.results) && typeof r.is_sample === "boolean", JSON.stringify(r).slice(0, 160));
+  expect(/not checked/i.test(r.note) && r.scraped_at, "missing 'not checked' note or scrape date");
+  for (const x of r.results) expect(/^ext-/.test(x.id) && /^https?:\/\//.test(x.source_url) && x.site && x.kind === "sale", `bad row ${JSON.stringify(x).slice(0, 120)}`);
+  return `${r.results.length} result(s), is_sample=${r.is_sample}`;
+});
+await check("Market", "get_market_stats: quartiles in order, asking prices labelled", async () => {
+  const r = await tool("get_market_stats", { type: "condo" });
+  const row = r.area ?? r.all_districts;
+  expect(/asking prices/i.test(r.note) && typeof r.is_sample === "boolean", "missing 'asking prices' note");
+  if (!row) return "no condo stats in this snapshot";
+  expect(row.count >= 1 && row.p25_price_per_sqm <= row.median_price_per_sqm && row.median_price_per_sqm <= row.p75_price_per_sqm, JSON.stringify(row));
+  return `${row.district}: ${row.count} listings`;
+});
+await check("Market", "get_price_forecast: p10 ≤ p50 ≤ p90, a range with model and source, not a guarantee", async () => {
+  const r = await tool("get_price_forecast", { type: "condo" });
+  if (!r.available) return `no condo series (${r.reason})`;
+  const f = r.forecast;
+  expect(f.p10 <= f.p50 && f.p50 <= f.p90 && r.change_pct.low <= r.change_pct.central && r.change_pct.central <= r.change_pct.high, JSON.stringify(f));
+  expect(/not a guarantee/i.test(r.note) && r.model && r.source, "missing note, model or source");
+  return `${r.model} · ${r.change_pct.low}% to ${r.change_pct.high}%`;
+});
+await check("Market", "compare_to_market: U-Estate listing vs asking prices; buildings and unknown ids handled", async () => {
+  const r = await tool("compare_to_market", { listing_id: "l-condo" });
+  expect(r.listing?.url?.startsWith("/listing/") && r.comparison, JSON.stringify(r).slice(0, 160));
+  if (r.comparison.available) expect(typeof r.comparison.diff_pct === "number" && r.comparison.listings_compared >= 1 && /asking prices/i.test(r.comparison.note), JSON.stringify(r.comparison));
+  const office = await tool("compare_to_market", { listing_id: "l-office" });
+  expect(office.error || office.comparison?.available === false, "a building must not get a market comparison");
+  const unknown = await tool("compare_to_market", { listing_id: "nope" });
+  expect(/No listing/.test(unknown.error ?? ""), "unknown id must return a clean error");
+  return r.comparison.available ? `${r.comparison.diff_pct}% vs ${r.comparison.compared_with}` : "no comparison data";
+});
+await check("Market", "/market page renders with the map container and provenance", async () => {
+  const { status, text } = await call("/market");
+  expect(status === 200 && /Explore the market|SAMPLE/.test(text) && /Data:/.test(text), `status ${status}`);
+});
+
 // ---------- AI fallbacks (no Anthropic key) ----------
 await check("AI", "assistant without key → 503 AI_NOT_CONFIGURED (or streams when live)", async () => {
   const { status, json } = await call("/api/assistant", { method: "POST", body: { locale: "en", messages: [{ role: "user", content: "fees on l-condo?" }] } });

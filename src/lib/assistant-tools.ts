@@ -9,6 +9,9 @@ import { agentSaleFee, COBUY, committedThb, foreignAreaInGroup, GOVERNANCE, rent
 import { parseQueryFallback, searchListings, SearchFiltersSchema } from "./search";
 import { assessTokenFunding, TOKEN_ADVICE } from "./token-risk";
 import { lookupToken } from "./tokenomist";
+import { compareToMarket, getMarketStats, getPriceForecast, MarketStatsSchema, PriceForecastSchema } from "./market-data/analytics";
+import { findMarketListings, MarketSearchSchema } from "./market-data/find";
+import { MarketType, provenance } from "./market-data";
 
 export const ToolInputs = {
   search_listings: SearchFiltersSchema.partial().extend({
@@ -22,6 +25,11 @@ export const ToolInputs = {
     pay_within_days: z.number().int().min(0).max(365).describe("Days until the user must pay"),
   }),
   get_cobuy_rules: z.object({}),
+  // Market intelligence (D-42): read-only, over the offline snapshots in src/data/market/. Schemas come from P1/P2's files.
+  search_market_listings: MarketSearchSchema,
+  get_market_stats: MarketStatsSchema,
+  get_price_forecast: PriceForecastSchema,
+  compare_to_market: z.object({ listing_id: z.string().max(40).describe("A U-Estate listing id or code, e.g. l-condo") }),
 } as const;
 export type ToolName = keyof typeof ToolInputs;
 export const TOOL_NAMES = Object.keys(ToolInputs) as ToolName[];
@@ -32,7 +40,36 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   compute_fees: "Compute U-Estate's fee for a sale or rental versus a typical agent. Buyers and tenants always pay 0.",
   check_token_unlocks: "Check whether paying a property deposit by selling a crypto token is risky because of upcoming token unlocks (Tokenomist data). Returns a risk level and a safety buffer. U-Estate never accepts crypto.",
   get_cobuy_rules: "Get the co-buy rules: who can join, the legal lanes for foreigners (condo co-ownership within the 49% quota, or lender at a fixed rate up to 15%), and the governance rules.",
+  search_market_listings: "Search EXTERNAL listings copied from other property websites (not U-Estate listings, not checked by U-Estate) by type, sale/rent, district, budget, size or distance. Each result has its site, source link and date. Set kind (sale or rent), or sale prices and monthly rents are mixed. Use search_listings first for U-Estate's own listings.",
+  get_market_stats: "Get asking-price statistics from listing websites for a property type and district: median, 25th and 75th percentile price per m², median price, median size and the number of listings. Asking prices, not sale prices.",
+  get_price_forecast: "Get the price-index forecast for a property type: the 80% range (p10 to p90) and central value months ahead, with the model name and the index source. A forecast, never a guarantee.",
+  compare_to_market: "Compare one U-Estate listing's asking price per m² with asking prices on listing websites in its district: the median, the difference in % and how many listings were compared.",
 };
+
+/** Finds a U-Estate listing by id or code, with its property. */
+async function findListing(listingId: string) {
+  const db = await readDb();
+  const listing = db.listings.find((l) => (l.id === listingId || l.code === listingId));
+  const property = listing ? db.properties.find((p) => p.id === listing.propertyId) : undefined;
+  return listing && property ? { db, listing, property } : null;
+}
+
+async function compareTool(listingId: string) {
+  const found = await findListing(listingId);
+  if (!found) return { error: `No listing with id ${listingId}` };
+  const { listing, property } = found;
+  const type = MarketType.safeParse(property.type);
+  const subject = {
+    listing_id: listing.id, url: `/listing/${listing.id}`, title: property.title, district: property.district,
+    type: property.type, kind: listing.kind, asking_price_thb: listing.askingPriceThb, area_sqm: property.areaSqm,
+  };
+  if (!type.success) return { listing: subject, comparison: { available: false, reason: `No market data for ${property.type}s` } };
+  return {
+    listing: subject,
+    comparison: compareToMarket({ priceThb: listing.askingPriceThb, areaSqm: property.areaSqm, district: property.district, type: type.data, kind: listing.kind }),
+    provenance: provenance().stats,
+  };
+}
 
 async function searchTool(i: z.infer<(typeof ToolInputs)["search_listings"]>) {
   const db = await readDb();
@@ -45,10 +82,9 @@ async function searchTool(i: z.infer<(typeof ToolInputs)["search_listings"]>) {
 }
 
 export async function listingFacts(listingId: string) {
-  const db = await readDb();
-  const listing = db.listings.find((l) => (l.id === listingId || l.code === listingId));
-  if (!listing) return { error: `No listing with id ${listingId}` };
-  const property = db.properties.find((p) => p.id === listing.propertyId)!;
+  const found = await findListing(listingId);
+  if (!found) return { error: `No listing with id ${listingId}` };
+  const { db, listing, property } = found;
   const comparables = db.listings
     .filter((l) => l.id !== listing.id && !l.archivedAt)
     .map((l) => ({ l, p: db.properties.find((x) => x.id === l.propertyId)! }))
@@ -145,5 +181,13 @@ export async function runTool(name: string, rawInput: unknown): Promise<unknown>
         governance: GOVERNANCE,
         demo: "Co-buy uses test money in this demo.",
       };
+    case "search_market_listings":
+      return { ...findMarketListings(input), provenance: provenance().listings };
+    case "get_market_stats":
+      return getMarketStats(input);
+    case "get_price_forecast":
+      return getPriceForecast(input);
+    case "compare_to_market":
+      return compareTool((input as { listing_id: string }).listing_id);
   }
 }
