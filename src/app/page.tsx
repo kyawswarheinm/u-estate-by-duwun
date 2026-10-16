@@ -59,7 +59,7 @@ export default async function Home() {
         {([["01", "trustTitle", "trustDescription"], ["02", "transparencyTitle", "transparencyDescription"], ["03", "inclusivityTitle", "inclusivityDescription"]] as const).map(([n, title, description]) => <div key={n}><span className="value-number" aria-hidden="true">{n} /</span><h2><Text message={title} /></h2><p><Text message={description} /></p></div>)}
       </section>
       <nav aria-labelledby="browse-title" className="mb-10 grid gap-3">
-        <h2 id="browse-title" className="text-2xl font-bold"><Text message="Browse by type" /></h2>
+        <h2 id="browse-title" className="section-title"><Text message="Browse by type" /></h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {([["condo", "Condo", "condo"], ["house", "House", "house"], ["townhouse", "Townhouse", "townhouse"], ["building", "Building", "office"]] as const).map(([type, label, art]) => (
             <li key={type}>
@@ -74,7 +74,7 @@ export default async function Home() {
 
       <section id="homes" aria-labelledby="homes-title" className="scroll-mt-24">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <h2 id="homes-title" className="text-2xl font-bold"><Text message="Homes on U-Estate" /></h2>
+          <h2 id="homes-title" className="section-title"><Text message="Homes on U-Estate" /></h2>
           <p className="flex flex-wrap items-center gap-3 text-sm text-deep">
             <Text message="{count} listings · demo data" values={{ count: active.length }} />
             <Link href="/market" className="font-semibold"><Text message="See them on the map" /></Link>
@@ -109,7 +109,7 @@ export default async function Home() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <VerificationBadge status={l.verificationStatus} />
-                  {l.cobuyEnabled && <span className="pill bg-blue/10 text-blue-ink"><Text message="Co-buy open to members" /></span>}
+                  {l.cobuyEnabled && <span className="pill bg-ice text-blue-ink"><Text message="Co-buy open to members" /></span>}
                 </div>
                 {l.kind === "sale" && (
                   <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-t border-ice pt-3 text-sm">

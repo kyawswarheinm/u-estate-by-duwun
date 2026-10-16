@@ -20,7 +20,8 @@ import { walletSummary } from "@/lib/wallet";
 import { resetDemo } from "./actions";
 import { signOut } from "./auth/actions";
 import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
-import { VoiceAgentDock } from "@/components/VoiceAgentDock";
+import { UPalProvider } from "@/components/upal/UPalProvider";
+import { UPalWidget } from "@/components/upal/UPalWidget";
 import { usesSupabase } from "@/lib/db/runtime";
 import { asThemePref, THEME_BOOT_SCRIPT, THEME_COOKIE } from "@/lib/theme";
 
@@ -76,12 +77,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="flex min-h-full flex-col">
         <I18nProvider locale={locale} currency={currency}>
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-3">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[var(--z-skip)] focus:rounded-lg focus:bg-paper focus:px-4 focus:py-3">
           <Text message="Skip to content" />
         </a>
         <SiteHeader user={headerUser} themePref={themePref} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
-        <main tabIndex={-1} id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
-        <VoiceAgentDock userName={me?.name ?? "there"} />
+        <UPalProvider userName={me?.name ?? "there"}>
+          <main tabIndex={-1} id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
+          <UPalWidget />
+        </UPalProvider>
         <footer className="band text-silver">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>
@@ -96,7 +99,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <li><Link className="text-silver hover:text-ice" href="/"><Text message="Find a home" /></Link></li>
                 <li><Link className="text-silver hover:text-ice" href="/sell"><Text message="Sell a property" /></Link></li>
                 <li><Link className="text-silver hover:text-ice" href="/ledger"><Text message="Transparency ledger" /></Link></li>
-                <li><Link className="text-silver hover:text-ice" href="/partners"><Text message="Partners and your data" /></Link></li>
               </ul>
             </nav>
             <div>

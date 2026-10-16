@@ -12,7 +12,7 @@ export function SellerFeePreview() {
   const valid = price !== "" && Number.isFinite(amount) && amount > 0 && amount <= 1e12;
   const money = (value: number) => formatMoneyRef(value, locale, currency);
   return <section className="panel grid gap-6 bg-ice p-6 sm:p-8 lg:grid-cols-2">
-    <div><h2 className="text-2xl font-semibold">{t("Same facts. Same fees. For every party.")}</h2>
+    <div><h2 className="section-title">{t("Same facts. Same fees. For every party.")}</h2>
       <label className="field mt-5 max-w-sm"><span>{t("feePrice")}</span><input className="input" type="number" min="1" max="1000000000000" step="1" value={price} onChange={e => setPrice(e.target.value)} /></label>
       <p className="mt-4 text-xs text-muted">{t("Excludes government transfer fees and taxes. Typical agent fee is common market practice, not a quote.")}</p>
     </div>

@@ -17,7 +17,7 @@ export default async function ThreadPage({params}:{params:Promise<{id:string}>})
  if(error)throw new Error("Conversation unavailable.");if(!thread)notFound();
  const {data:messages,error:messageError}=await client.from("messages").select("id,sender_id,body_original,lang_original,created_at").eq("conversation_id",id).order("created_at",{ascending:false}).order("id").limit(100);
  if(messageError)throw new Error("Messages unavailable.");
- return <section dir={me.locale==="ar"?"rtl":undefined} className="mx-auto grid max-w-3xl gap-4"><Link href="/messages" className="underline">{t.back}</Link><h1 className="text-3xl font-bold">{t.messages}</h1><Link href={`/listing/${thread.listing_id}`} className="underline">{t.listing}</Link>
+ return <section dir={me.locale==="ar"?"rtl":undefined} className="mx-auto grid max-w-3xl gap-4"><Link href="/messages" className="underline">{t.back}</Link><h1 className="page-title">{t.messages}</h1><Link href={`/listing/${thread.listing_id}`} className="underline">{t.listing}</Link>
  <LiveRefresh table="messages" filter={`conversation_id=eq.${id}`} locale={me.locale}/>
  <p className="text-sm text-deep">{t.recent}</p><ol className="grid gap-3">{messages?.toReversed().map(m=><li key={m.id} className={`panel max-w-[90%] whitespace-pre-wrap break-words p-4 ${m.sender_id===me.id?"ms-auto bg-ice":"me-auto"}`}><p lang={m.lang_original??undefined} dir="auto">{m.body_original}</p><p className="mt-2 text-xs text-deep">{t.original} · {new Date(m.created_at).toLocaleString(me.locale??"en")}</p></li>)}</ol>
  <form action={markThreadRead}><input type="hidden" name="conversationId" value={id}/><button className="btn btn-secondary">{t.read}</button></form>

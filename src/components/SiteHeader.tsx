@@ -25,9 +25,7 @@ const NAV = [
   { href: "/", label: "Find a home", match: (p: string) => p === "/" || p.startsWith("/listing") || p.startsWith("/cobuy") },
   { href: "/market", label: "Market", match: (p: string) => p.startsWith("/market") },
   { href: "/sell", label: "Sell", match: (p: string) => p.startsWith("/sell") },
-  { href: "/assistant", label: "Ask AI", match: (p: string) => p.startsWith("/assistant") },
   { href: "/ledger", label: "Ledger", match: (p: string) => p.startsWith("/ledger") },
-  { href: "/partners", label: "Partners", match: (p: string) => p.startsWith("/partners") },
 ];
 
 const ACCOUNT_LINKS = [
@@ -75,7 +73,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
     const trigger = mobileTrigger.current;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const wide = window.matchMedia("(min-width: 1280px)");
+    const wide = window.matchMedia("(min-width: 1152px)");
     const closeOnWide = () => { if (wide.matches) setMobileOpen(false); };
     wide.addEventListener("change", closeOnWide);
     return () => {
@@ -109,14 +107,15 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
   const next = encodeURIComponent(onAuthPage ? "/account" : pathname || "/");
 
   return (
-    <header className="site-header sticky top-0 z-40 border-b border-silver bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
-      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-4 px-4">
-        <Link href="/" aria-label={t("U-Estate home")} className="rounded-md no-underline">
+    <header className="site-header sticky top-0 z-[var(--z-header)] border-b border-silver bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
+      {/* Three regions: logo (start), nav centred on the viewport, actions (end). The equal 1fr side columns keep the nav at the true centre. */}
+      <div className="site-header-bar">
+        <Link href="/" aria-label={t("U-Estate home")} className="justify-self-start rounded-md no-underline">
           <Logo />
         </Link>
 
-        <nav aria-label={t("Main")} className="hidden xl:block">
-          <ul className="flex items-center gap-5">
+        <nav aria-label={t("Main")} className="site-nav">
+          <ul className="flex items-center gap-7">
             {NAV.map((n) => (
               <li key={n.href}>
                 <Link href={n.href} className="nav-link" aria-current={n.match(pathname) ? "page" : undefined}><Label>{n.label}</Label></Link>
@@ -125,7 +124,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
           </ul>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-self-end gap-2">
           <div className="hidden items-center gap-1.5 sm:flex">
             <LanguageMenu />
             <CurrencyMenu />
@@ -188,7 +187,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications, theme
           <button
             ref={mobileTrigger}
             type="button"
-            className="btn btn-secondary px-3 xl:hidden"
+            className="btn btn-secondary px-3 site-nav-toggle"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             onClick={() => { setMobileOpen((o) => !o); setMenuOpen(false); }}

@@ -21,7 +21,7 @@ export function ListingForm() {
         <legend className="mb-1 font-semibold"><Text message="I want to" /></legend>
         <div className="flex flex-wrap gap-2">
           {[{ v: "sale", l: "Sell" }, { v: "rent", l: "Rent out" }].map((o) => (
-            <label key={o.v} className="panel flex min-h-11 cursor-pointer items-center gap-2 px-4 has-[:checked]:border-blue has-[:checked]:bg-blue/10">
+            <label key={o.v} className="panel flex min-h-11 cursor-pointer items-center gap-2 px-4 has-[:checked]:border-blue has-[:checked]:bg-ice">
               <input type="radio" name="kind" value={o.v} checked={kind === o.v} onChange={() => setKind(o.v)} className="size-4" />
               {o.l}
             </label>

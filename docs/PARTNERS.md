@@ -57,14 +57,14 @@
 ### E3: Live voice conversation (ElevenLabs Agents)
 
 ```
-Browser (VoiceAgentDock, in the root layout so it survives navigation)
+Browser (UPalProvider + UPalWidget, in the root layout so it survives navigation)
   ├─ GET /api/voice/agent-token  → server calls ElevenLabs /v1/convai/conversation/token (API key never reaches the browser)
   ├─ WebRTC session ⇄ ElevenLabs agent (ASR → LLM → TTS, interruptible)
   └─ agent calls client tools → browser → POST /api/agent-tools {tool, input} → lib/assistant-tools.ts (zod-validated, read-only)
                                  └─ open_page {path} → router.push (whitelisted paths only)
 ```
 
-**Tools** (names must match in 3 places: `scripts/create-voice-agent.mjs`, `VoiceAgentDock.tsx`, `lib/assistant-tools.ts`):
+**Tools** (names must match in 3 places: `scripts/create-voice-agent.mjs`, `components/upal/UPalProvider.tsx`, `lib/assistant-tools.ts`):
 
 | Tool | Purpose |
 |---|---|

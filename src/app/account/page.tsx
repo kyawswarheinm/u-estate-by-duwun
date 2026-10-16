@@ -23,7 +23,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </p>
       )}
       <header>
-        <h1 className="font-display text-4xl font-semibold"><Text message="Hello, {name}" values={{ name: me.name }} /></h1>
+        <h1 className="page-title"><Text message="Hello, {name}" values={{ name: me.name }} /></h1>
         <p className="mt-1 text-deep"><Text message="Everything you own, sell or have committed on U-Estate." /></p>
       </header>
 
@@ -47,7 +47,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
       <section aria-labelledby="props-title" className="grid gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="props-title" className="text-2xl font-bold"><Text message="Your properties" /></h2>
+          <h2 id="props-title" className="section-title"><Text message="Your properties" /></h2>
           <Link href="/sell" className="btn btn-primary"><Text message="List a property" /></Link>
         </div>
         <MyProperties db={db} userId={me.id} compact />

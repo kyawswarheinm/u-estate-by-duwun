@@ -10,16 +10,18 @@ import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { formatNumber, translator, formatMoneyRef } from "@/i18n";
 import { useI18n } from "@/i18n/provider";
-import { BANGKOK_CENTRE, safeSourceUrl } from "@/lib/market-data/district-centres";
+import { BANGKOK_CENTRE } from "@/lib/market-data/district-centres";
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const BUILDINGS_3D = "ue-3d-buildings";
 
+/** A third-party listing (real, imported with permission) or a SAMPLE row. `approximate` = a district-centre point. */
 export type MapExternalListing = {
-  id: string; site: string; sourceUrl: string; kind: "sale" | "rent"; type: string; project: string | null; district: string;
-  lat: number; lng: number; priceThb: number; areaSqm: number; pricePerSqm: number; listedAt: string | null;
+  id: string; origin: "listed" | "sample"; title: string; sourceName: string; kind: "sale" | "rent"; district: string;
+  lat: number; lng: number; approximate: boolean; priceThb: number; areaSqm: number | null; pricePerSqm: number | null; updatedAt: string | null;
+  mapsUrl: string | null; originalUrl: string | null; detailHref: string | null;
 };
-export type MapUEstateListing = { id: string; title: string; district: string; kind: "sale" | "rent"; priceThb: number; areaSqm: number; lat: number; lng: number };
+export type MapUEstateListing = { id: string; title: string; district: string; kind: "sale" | "rent"; priceThb: number; areaSqm: number; lat: number; lng: number; mapsUrl: string | null };
 
 // Two shapes so the legend never relies on colour alone: brand-colour square = U-Estate, neutral circle = other websites.
 export const MARKER_STYLE = {
@@ -83,8 +85,8 @@ function set3D(map: maplibregl.Map, on: boolean) {
   map.easeTo({ pitch: on ? 60 : 0, bearing: on ? -20 : 0, zoom: on ? Math.max(map.getZoom(), 14.5) : map.getZoom(), duration: reducedMotion() ? 0 : 800 });
 }
 
-export function MarketMap({ external, uestate, isSample, selectedId = null, onSelect }: {
-  external: MapExternalListing[]; uestate: MapUEstateListing[]; isSample: boolean; selectedId?: string | null; onSelect?: (id: string) => void;
+export function MarketMap({ external, uestate, isSample, selectedId = null, hoveredId = null, onSelect }: {
+  external: MapExternalListing[]; uestate: MapUEstateListing[]; isSample: boolean; selectedId?: string | null; hoveredId?: string | null; onSelect?: (id: string) => void;
 }) {
   const { t, locale, currency } = useI18n(); // t for the JSX below; the effect builds its own from locale (t changes every render)
   const container = useRef<HTMLDivElement>(null);
@@ -185,16 +187,26 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
     };
     const box = container.current;
     box.addEventListener("keydown", onKey);
+    // The map can start hidden (phones show List or Map): redraw when its box gets a size.
+    const resized = new ResizeObserver(() => map.resize());
+    resized.observe(box);
 
+    const link = (href: string, label: string, external = true) =>
+      el("a", { href, className: "font-semibold underline", ...(external ? { target: "_blank", rel: "noopener noreferrer" } : {}) }, label);
     for (const l of placed.filter((x) => x.source === "external") as (MapExternalListing & { at: [number, number]; offset: [number, number] })[]) {
-      addMarker(l.id, l.at, l.offset, MARKER_STYLE.external, `${t("Other website listing")}: ${money(l.priceThb)}${perMonth(l.kind)}, ${formatNumber(l.areaSqm, locale)} m², ${l.district}`,
+      const size = l.areaSqm != null ? `${formatNumber(l.areaSqm, locale)} m²` : null;
+      addMarker(l.id, l.at, l.offset, MARKER_STYLE.external, `${l.origin === "sample" ? "SAMPLE" : t("Third-party listing")}: ${l.title}, ${money(l.priceThb)}${perMonth(l.kind)}${size ? `, ${size}` : ""}, ${l.district}`,
         el("div", { className: "grid gap-1 text-sm text-ink" },
           el("strong", {}, `${money(l.priceThb)}${perMonth(l.kind)}`),
-          el("span", {}, `${formatNumber(l.areaSqm, locale)} m² · ${money(l.pricePerSqm)}/m²`),
-          el("span", {}, [l.project, l.district].filter(Boolean).join(", ")),
-          el("span", { className: "text-xs text-ink-soft" }, t("{site}, listed {date}", { site: l.site, date: l.listedAt ?? "—" })),
-          el("span", { className: "text-xs text-amber" }, isSample ? `${t("Not checked by U-Estate")} · SAMPLE` : t("Not checked by U-Estate")),
-          ...(safeSourceUrl(l.sourceUrl) ? [el("a", { href: safeSourceUrl(l.sourceUrl)!, target: "_blank", rel: "noopener noreferrer", className: "font-semibold underline" }, t("Open source ↗"))] : []),
+          el("span", {}, l.title),
+          ...(size ? [el("span", {}, [size, l.pricePerSqm ? `${money(l.pricePerSqm)}/m²` : null].filter(Boolean).join(" · "))] : []),
+          el("span", {}, l.district),
+          el("span", { className: "text-xs text-ink-soft" }, [t("Source: {name}", { name: l.sourceName }), l.updatedAt ? t("Updated {date}", { date: l.updatedAt }) : null].filter(Boolean).join(" · ")),
+          el("span", { className: "text-xs text-amber" }, l.origin === "sample" ? t("Synthetic, not a real listing") : t("Not independently verified")),
+          ...(l.approximate ? [el("span", { className: "text-xs text-ink-soft" }, t("Shown at the district centre ({district})", { district: l.district }))] : []),
+          ...(l.detailHref ? [link(l.detailHref, t("View details"), false)] : []),
+          ...(l.mapsUrl ? [link(l.mapsUrl, `${t("Google Maps")} ↗`)] : []),
+          ...(l.originalUrl ? [link(l.originalUrl, `${t("View original listing")} ↗`)] : []),
         ));
     }
     for (const l of placed.filter((x) => x.source === "uestate") as (MapUEstateListing & { at: [number, number]; offset: [number, number] })[]) {
@@ -203,13 +215,15 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
           el("strong", {}, l.title),
           el("span", {}, `${money(l.priceThb)}${perMonth(l.kind)} · ${formatNumber(l.areaSqm, locale)} m²`),
           el("span", { className: "text-xs text-ink-soft" }, t("Shown at the district centre ({district})", { district: l.district })),
-          el("a", { href: `/listing/${l.id}`, className: "font-semibold underline" }, t("View listing")),
+          link(`/listing/${l.id}`, t("View listing"), false),
+          ...(l.mapsUrl ? [link(l.mapsUrl, `${t("Area on Google Maps")} ↗`)] : []),
         ));
     }
 
     if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 48, maxZoom: 13, duration: 0 });
     return () => {
       box.removeEventListener("keydown", onKey);
+      resized.disconnect();
       registry.clear();
       mapRef.current = null;
       map.remove();
@@ -219,7 +233,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
   // A card asked for a listing: fly there and open it (skipped when the click came from the marker itself).
   useEffect(() => {
     const map = mapRef.current;
-    for (const [id, m] of markers.current) m.highlight(id === selectedId);
+    for (const [id, m] of markers.current) m.highlight(id === selectedId || id === hoveredId);
     if (fromMap.current === selectedId) {
       fromMap.current = null; // the marker already opened itself; a later card click flies again
       return;
@@ -229,7 +243,13 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
     if (!m) return;
     map.easeTo({ center: m.at, zoom: Math.max(map.getZoom(), 14), duration: reducedMotion() ? 0 : 700 });
     m.open();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hover is handled by the effect below; this one flies on selection only
   }, [selectedId]);
+
+  // Hovering a card rings its marker without moving the map.
+  useEffect(() => {
+    for (const [id, m] of markers.current) m.highlight(id === selectedId || id === hoveredId);
+  }, [hoveredId, selectedId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -243,7 +263,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
     <section aria-label={t("Market map")} className="grid gap-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.uestate} />{t("U-Estate listings")}</span>
-        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.external} />{isSample ? t("Sample listings (synthetic, not real)") : t("Other websites (not checked by U-Estate)")}</span>
+        <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.external} />{isSample ? t("Third-party and SAMPLE listings") : t("Third-party listings (not checked by U-Estate)")}</span>
         {!failed && (
           <button type="button" aria-pressed={threeD} onClick={() => setThreeD((v) => !v)} className="ms-auto min-h-11 rounded-lg border border-line bg-paper px-3 font-semibold">
             {threeD ? t("2D view") : t("3D view")}

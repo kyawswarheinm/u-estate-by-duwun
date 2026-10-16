@@ -30,7 +30,7 @@ export default async function WalletPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="font-display text-4xl font-semibold"><Text message="Wallet" /></h1>
+        <h1 className="page-title"><Text message="Wallet" /></h1>
         <p className="mt-1 max-w-2xl text-deep">
           <Text message="Test money for the demo: use it to commit to co-buy groups." /> <strong><Text message="No real money, bank account or crypto" /></strong> <Text message="is connected." />
         </p>

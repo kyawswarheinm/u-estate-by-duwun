@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <h1 className="font-display text-4xl font-semibold"><Text message="Account settings" /></h1>
+        <h1 className="page-title"><Text message="Account settings" /></h1>
         <p className="mt-1 text-deep"><Text message="Your profile, sign-in details and U-topia membership." /></p>
       </header>
 

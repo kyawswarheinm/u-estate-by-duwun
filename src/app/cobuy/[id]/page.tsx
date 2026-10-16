@@ -41,7 +41,7 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
     <article className="grid gap-5">
       <header>
         <p className="text-sm text-ink-soft"><Link href={`/listing/${listing.id}`} className="underline"><span aria-hidden="true" className="inline-block rtl:-scale-x-100">←</span> <bdi>{property.title}</bdi></Link></p>
-        <h1 className="text-3xl font-bold"><Text message="Co-buy group" /></h1>
+        <h1 className="page-title"><Text message="Co-buy group" /></h1>
         <p className="mt-1 text-ink-soft"><Text message="Target {amount} · {type} · status: {status}" values={{ amount: formatMoneyRef(group.targetThb, locale, currency), type: translateLabel(locale, property.type), status: translateLabel(locale, group.status) }} /> · <span className="font-semibold text-amber"><Text message="TEST MONEY ONLY" /></span></p>
       </header>
 

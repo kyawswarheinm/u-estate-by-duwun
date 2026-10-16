@@ -72,7 +72,7 @@ Env vars: see `.env.example`. Never commit `.env.local`.
 ## Non-negotiable rules
 
 - **No crypto payments, tokens, NFTs, smart contracts or user wallets** (D-01 as amended). The **only** chain use is the A1 ledger fingerprint on **Avalanche Fuji** (D-33). The only crypto data is read-only Tokenomist unlocks for T1 (D-34). **Scraping only as D-02 is amended:** a demo snapshot under [docs/TECH_STACK.md](docs/TECH_STACK.md) §4 (no bypass, facts only, no personal data, always labelled external). The design's "testnet invest" stays **co-buy** (D-24).
-- **Voice agent and chat share one read-only tool layer** (`src/lib/assistant-tools.ts`, D-36). Tool names must match in `scripts/create-voice-agent.mjs` and `VoiceAgentDock.tsx`. Tools never write money, ownership or ledger data.
+- **Voice agent and chat share one read-only tool layer** (`src/lib/assistant-tools.ts`, D-36). Tool names must match in `scripts/create-voice-agent.mjs` and `src/components/upal/UPalProvider.tsx`. Tools never write money, ownership or ledger data.
 - **Partners degrade to labelled fallbacks** (D-37). Never fake a "Live" status or a partner result; SAMPLE data stays labelled.
 - **Code computes every rule and number** (`src/lib/rules.ts`, `src/lib/valuation/*`, `src/lib/market/*`, SQL `cobuy_commit`). AI only reads, explains, translates and summarises (D-32). Never let AI output decide money, ownership, eligibility or fees.
 - **Never fabricate metrics or statistics.** The Model Card shows only numbers produced by the eval script (D-25). Label SAMPLE / SYNTHETIC / test money everywhere it applies.
