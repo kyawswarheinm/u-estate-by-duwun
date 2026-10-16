@@ -6,7 +6,8 @@ export const ELEVENLABS = {
   voiceId: () => process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM",
   ttsModel: () => process.env.ELEVENLABS_MODEL_ID || "eleven_v3",
   sttModel: () => process.env.ELEVENLABS_STT_MODEL || "scribe_v2",
-  agentId: () => process.env.ELEVENLABS_AGENT_ID,
+  // Trim spaces and a trailing "/" (copied from a dashboard URL): the token endpoint rejects them as invalid_agent_id.
+  agentId: () => process.env.ELEVENLABS_AGENT_ID?.trim().replace(/\/+$/, "") || undefined,
 };
 
 export function partnerStatus() {

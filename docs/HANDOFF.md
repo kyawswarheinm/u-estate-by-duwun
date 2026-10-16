@@ -1,8 +1,8 @@
 # HANDOFF: status, who does what, what to do next
 
-**Updated:** Fri 16 Oct 2026, ~06:00 ICT (all three branches merged into `main`). **Update this file when you finish a task** (status table + "Last changes").
+**Updated:** Fri 16 Oct 2026, ~10:20 ICT (P1, P2 and P3 market-intelligence work merged into `main`). **Update this file when you finish a task** (status table + "Last changes").
 
-> **Now (16 Oct ~05:00): three developers work in parallel on market intelligence.** Read [WORKPLAN.md](WORKPLAN.md) (P1/P2/P3 tasks, file ownership, merge at 10:30) and [TECH_STACK.md](TECH_STACK.md) (user → AI → engines → data diagram).
+> **Now (16 Oct ~10:20): the P1/P2/P3 market-intelligence work is merged into `main`** (see §8). Architecture: [TECH_STACK.md](TECH_STACK.md). Analytics model card: [MARKET_ANALYTICS.md](MARKET_ANALYTICS.md). New work: branch from `main`.
 
 **Event:** U-Hackathon 2026, AI track (Bangkok).
 
@@ -107,6 +107,29 @@ Stop and ask the core team if a change would touch their folders, or if a legal 
   - The Avalanche wallet must be a throwaway Fuji wallet with faucet AVAX.
 
 ## 8. Last changes
+
+- 16 Oct ~10:20, **final merge into `main`** of P1 (`P1`), P2 (`p2/market-analytics`, PR #1) and P3 (`feat/premium-ui-redesign`, which contains `P3`). No merge conflicts.
+  - **P1 data:** Thai portals blocked crawlers and their terms forbid extraction, so none were scraped (`pipeline/scraper/SOURCES.md`). Listings are 1,200 SYNTHETIC condo sales, labelled SAMPLE. Real OpenStreetMap places (ODbL) come from an extract. A permission-gated adapter is ready for a licensed source.
+  - **P2 analytics:** real Bank of Thailand price index (EC_EI_008_S4). 12-month forecast = average of TimesFM 2.5 and a trend line; backtest MAPE 1.31% vs trend 1.28% vs TimesFM 1.61%. The real index also drives the price panel and the valuation; model card from `eval:valuation`: median error 4.8%, within ±10% 83%.
+  - **P3 experience:** 4 market tools in voice + chat, `/market` (OpenFreeMap map, stats, forecast chart, location search, 3D), listing-page market comparison, 6 new SAMPLE listings, premium UI redesign (Unsplash photos credited in `public/photography/README.md`), Gemini chat fallback for development only (D-43).
+  - **Integrator fixes:**
+    - Regenerated synthetic listings + stats after the BOT index switch (M03).
+    - P1's geocoding lock now works on Windows (was Unix-only `fcntl`).
+    - ESLint ignores `pipeline/**`.
+    - The ElevenLabs agent ID is trimmed of a trailing `/`, which made the voice token fail.
+    - The market page and map legend say "Sample listings (synthetic, not real)" instead of "other websites" while the data is SAMPLE (5 languages).
+    - API checks follow the data's SAMPLE label; D-42 corrected, D-43 added; `.env.example` lists the dev-only Gemini keys.
+  - **Verified on the merged code:**
+    - `npm run check`: 138 tests + 103 DB checks + secret scan.
+    - `npm run build`.
+    - Partner/market API checks 39/39, including a live ElevenLabs voice token.
+    - Two-browser Supabase flow, all steps (QA fixtures archived).
+    - `/market` in the browser: map + 27 markers, labels, no console errors; Arabic RTL.
+  - **Open:**
+    - `npm run db:seed` on hosted Supabase for P3's 6 new SAMPLE listings (team decision).
+    - `.env.local` / Vercel: remove the trailing `/` from `ELEVENLABS_AGENT_ID` (the code now tolerates it).
+    - Vercel deployment.
+    - Hosted demo reset only when the team agrees.
 
 - 16 Oct ~05:00, **three-developer split** (branch `plan/three-dev-split`):
   - [TECH_STACK.md](TECH_STACK.md): diagrams for user → voice/chat/map → tools → engines → data, plus the offline pipeline (Scrapy → pandas/DuckDB → TimesFM).

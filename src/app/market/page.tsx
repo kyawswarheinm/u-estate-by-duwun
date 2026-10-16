@@ -103,7 +103,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           <h1 className="font-display text-4xl font-semibold">{t("Explore the market")}</h1>
           {anySample && <span className="rounded-full bg-amber-soft px-3 py-1 text-xs font-semibold text-amber">SAMPLE</span>}
         </div>
-        <p className="max-w-3xl text-deep">{t("U-Estate listings first, then asking prices on other websites, with a price forecast.")}</p>
+        <p className="max-w-3xl text-deep">{MARKET_LISTINGS.meta.is_sample ? t("U-Estate listings first, then sample market listings, with a price forecast.") : t("U-Estate listings first, then asking prices on other websites, with a price forecast.")}</p>
       </header>
 
       <form method="get" className="grid gap-3 rounded-[14px] border border-line bg-white p-4 shadow-[var(--shadow)] md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto] md:items-end">
@@ -144,7 +144,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       <MarketExplorer cards={cards} total={ours.length + allTheirs.length} external={external} uestate={uestate} isSample={MARKET_LISTINGS.meta.is_sample} />
       {allTheirs.length > PAGE_SIZE && (
         <nav aria-label={t("Market listings pages")} className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-deep">{t("Other websites: {from}–{to} of {total}", { from: (pageNo - 1) * PAGE_SIZE + 1, to: (pageNo - 1) * PAGE_SIZE + theirs.length, total: allTheirs.length })}</span>
+          <span className="text-sm text-deep">{t(MARKET_LISTINGS.meta.is_sample ? "Sample listings: {from}–{to} of {total}" : "Other websites: {from}–{to} of {total}", { from: (pageNo - 1) * PAGE_SIZE + 1, to: (pageNo - 1) * PAGE_SIZE + theirs.length, total: allTheirs.length })}</span>
           {pageNo > 1 && <Link href={pageHref(pageNo - 1)} className="btn btn-secondary" rel="prev">{t("Previous page")}</Link>}
           {pageNo < pages && <Link href={pageHref(pageNo + 1)} className="btn btn-secondary" rel="next">{t("Next page")}</Link>}
         </nav>
@@ -194,7 +194,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
 
       {theirs.length > 0 && (
         <section aria-labelledby="external-title" className="grid gap-3">
-          <h2 id="external-title" className="text-2xl font-bold">{t("Listings on other websites")}</h2>
+          <h2 id="external-title" className="text-2xl font-bold">{MARKET_LISTINGS.meta.is_sample ? t("Sample listings (synthetic, not real)") : t("Listings on other websites")}</h2>
           <p className="text-sm text-amber">{t("Not checked by U-Estate")}{MARKET_LISTINGS.meta.is_sample ? " · SAMPLE" : ""}</p>
           <div className="overflow-x-auto rounded-[14px] border border-line bg-white">
             <table className="w-full min-w-[720px] text-sm">

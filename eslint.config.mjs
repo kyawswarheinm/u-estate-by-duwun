@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "tmp/**",
     "next-env.d.ts",
+    // Offline Python pipelines: their venvs bundle third-party JS (e.g. torch) that is not ours to lint.
+    "pipeline/**",
   ]),
 ]);
 

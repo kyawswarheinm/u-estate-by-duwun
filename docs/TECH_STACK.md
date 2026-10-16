@@ -26,9 +26,9 @@ flowchart TB
   CB --> TL
   TL["Shared read-only AI tools<br/>src/lib/assistant-tools.ts · /api/agent-tools<br/>same answers by voice and by text"]
 
-  TL --> FIND["Property finding<br/>search_market_listings<br/>scraped listings, labelled external"]
+  TL --> FIND["Property finding<br/>search_market_listings<br/>SYNTHETIC listings today, labelled SAMPLE"]
   TL --> MA["Descriptive market analysis<br/>get_market_stats · compare_to_market<br/>median + quartile price per m² by district"]
-  TL --> FC["Price forecast<br/>get_price_forecast<br/>Google TimesFM 3.0 · p10 / p50 / p90"]
+  TL --> FC["Price forecast<br/>get_price_forecast<br/>TimesFM 2.5 + trend average · p10 / p50 / p90"]
   TL --> CORE["Existing engines<br/>search_listings · get_listing_facts · fees<br/>valuation · FairOffer · co-buy · scam rules"]
   MAP --> FIND
   MAP --> MA
@@ -61,11 +61,11 @@ flowchart TB
 ```mermaid
 flowchart LR
   subgraph P1["P1 · Data"]
-    S["Scrapy spiders<br/>public listing pages<br/>robots.txt obeyed · 1 request / 2 s"] --> C["Clean + dedupe<br/>facts only, personal data dropped"] --> G["Geocode<br/>page coordinates → Nominatim → district centre"]
+    S["Scrapy pipeline<br/>OpenStreetMap places · licensed-source adapter<br/>portals refused: synthetic listings"] --> C["Clean + dedupe<br/>facts only, personal data dropped"] --> G["Geocode<br/>page coordinates → Nominatim → district centre"]
   end
   subgraph P2["P2 · Analytics"]
     D["pandas / DuckDB<br/>descriptive stats by district × type"]
-    B["Bank of Thailand<br/>residential price index"] --> T["TimesFM 3.0<br/>12-month forecast + backtest"]
+    B["Bank of Thailand<br/>residential price index"] --> T["TimesFM 2.5 + trend<br/>12-month forecast + backtest"]
   end
   G --> L[("listings.json")]
   L --> D --> ST[("stats.json")]
@@ -76,7 +76,7 @@ flowchart LR
 ```
 
 **Why offline:**
-- TimesFM needs PyTorch and a ~330M-parameter checkpoint, so it can't run in a Vercel function.
+- TimesFM needs PyTorch and a ~200M-parameter checkpoint (925 MB), so it can't run in a Vercel function.
 - Scraping during judging would be slow, fragile and impolite to the source sites.
 - The pipeline writes three small JSON snapshots into `src/data/market/`. They are validated against one contract (`src/lib/market-data/types.ts`) and committed. The app only reads them.
 - The judge story: "a snapshot from 16 Oct; in production this runs nightly on licensed feeds".
@@ -89,7 +89,7 @@ flowchart LR
 | Chat | **Claude API** (`claude-opus-5-5`) via the Anthropic SDK tool runner | Paid API | Typed chat over the same tools (existing) |
 | Scraping | **Scrapy 2.19** | Free · BSD-3-Clause | Spiders for public listing pages (P1) |
 | Cleaning + analysis | **pandas**, **DuckDB** | Free · BSD-3 / MIT | Clean, dedupe, medians and quartiles (P1, P2) |
-| Forecast | **Google TimesFM 3.0** (`pip install "timesfm[torch]"` 3.0.2; checkpoint `google/timesfm-3.0-pytorch`) | Free · Apache-2.0 | Zero-shot price-index forecast with quantiles (P2) |
+| Forecast | **Google TimesFM 2.5** (`pip install "timesfm[torch]"` 3.0.2; checkpoint `google/timesfm-2.5-200m-pytorch`), averaged with a log-linear trend | Free · Apache-2.0 (the 3.0 checkpoint is non-commercial, so not used) | Zero-shot price-index forecast with quantiles; backtest in `docs/MARKET_ANALYTICS.md` (P2) |
 | Map | **MapLibre GL JS 6.14.0** | Free · BSD-3-Clause | Interactive map component (P3) |
 | Map tiles | **OpenFreeMap** (`https://tiles.openfreemap.org/styles/liberty`) | Free, no key · OpenStreetMap data (ODbL) | Base map. **Keep the attribution visible** (P3) |
 | Geocoding | **Nominatim** (OpenStreetMap) public API | Free · max 1 request/s, cache results | Project or district → coordinates (P1) |
@@ -97,6 +97,8 @@ flowchart LR
 | App | Next.js 16, React 19, Tailwind 4, zod 4, Supabase | Free · MIT / Apache-2.0 | Existing |
 
 ## 4. Data rules for scraping (D-02 as amended, demo only)
+
+**Outcome (16 Oct):** the four Thai portals checked (DDproperty, Hipflat, FazWaz, Livinginsider) blocked an honest crawler and their terms forbid extraction, so none was scraped (`pipeline/scraper/SOURCES.md`). Market listings are SYNTHETIC and labelled SAMPLE. The Scrapy pipeline runs on OpenStreetMap data (ODbL) and keeps a permission-gated adapter for a licensed source. The rules below still apply to any future source.
 
 1. **Public pages only.** No login, paywall, CAPTCHA or anti-bot bypass. If a site blocks us, stop and pick another site.
 2. **Check before crawling.** Read `robots.txt` and the site's terms, then record the result and date in `pipeline/scraper/SOURCES.md`. Scrapy runs with `ROBOTSTXT_OBEY = True`.

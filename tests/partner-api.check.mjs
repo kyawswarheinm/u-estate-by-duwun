@@ -215,10 +215,12 @@ await check("Market", "search_market_listings: every result is external, linked,
   for (const x of r.results) expect(/^ext-/.test(x.id) && /^https?:\/\//.test(x.source_url) && x.site && x.kind === "sale", `bad row ${JSON.stringify(x).slice(0, 120)}`);
   return `${r.results.length} result(s), is_sample=${r.is_sample}`;
 });
-await check("Market", "get_market_stats: quartiles in order, asking prices labelled", async () => {
+// Notes follow the data's own label: SAMPLE data says so; real snapshots say "asking prices" (P2, D-42).
+const labelled = (note, isSample) => (isSample ? /SAMPLE/.test(note ?? "") : /asking prices/i.test(note ?? ""));
+await check("Market", "get_market_stats: quartiles in order, labelled SAMPLE or asking prices", async () => {
   const r = await tool("get_market_stats", { type: "condo" });
   const row = r.area ?? r.all_districts;
-  expect(/asking prices/i.test(r.note) && typeof r.is_sample === "boolean", "missing 'asking prices' note");
+  expect(typeof r.is_sample === "boolean" && labelled(r.note, r.is_sample), `note doesn't match is_sample=${r.is_sample}: ${r.note}`);
   if (!row) return "no condo stats in this snapshot";
   expect(row.count >= 1 && row.p25_price_per_sqm <= row.median_price_per_sqm && row.median_price_per_sqm <= row.p75_price_per_sqm, JSON.stringify(row));
   return `${row.district}: ${row.count} listings`;
@@ -234,7 +236,7 @@ await check("Market", "get_price_forecast: p10 ≤ p50 ≤ p90, a range with mod
 await check("Market", "compare_to_market: U-Estate listing vs asking prices; buildings and unknown ids handled", async () => {
   const r = await tool("compare_to_market", { listing_id: "l-condo" });
   expect(r.listing?.url?.startsWith("/listing/") && r.comparison, JSON.stringify(r).slice(0, 160));
-  if (r.comparison.available) expect(typeof r.comparison.diff_pct === "number" && r.comparison.listings_compared >= 1 && /asking prices/i.test(r.comparison.note), JSON.stringify(r.comparison));
+  if (r.comparison.available) expect(typeof r.comparison.diff_pct === "number" && r.comparison.listings_compared >= 1 && labelled(r.comparison.note, r.comparison.is_sample), JSON.stringify(r.comparison));
   const office = await tool("compare_to_market", { listing_id: "l-office" });
   expect(office.error || office.comparison?.available === false, "a building must not get a market comparison");
   const unknown = await tool("compare_to_market", { listing_id: "nope" });
@@ -257,7 +259,8 @@ await check("AI", "explain l-condo → template with numbers (no key) or AI text
   const { status, json } = await call("/api/explain", { method: "POST", body: { listingId: "l-condo", lang: "th" } });
   expect(status === 200 && json.text.length > 20, `status ${status}`);
   expect(["template", "ai", "cache"].includes(json.source), json.source);
-  if (json.source === "template") expect(/SAMPLE/.test(json.text), "template text should label SAMPLE index data");
+  // The template must name the index source: SAMPLE data, or the real Bank of Thailand index (P2T07).
+  if (json.source === "template") expect(/Index source: (SAMPLE|Bank of Thailand)/.test(json.text), "template text should name the index source");
   return `source=${json.source}`;
 });
 await check("AI", "explain unknown listing → 404", async () => {
