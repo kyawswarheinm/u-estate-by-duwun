@@ -466,5 +466,12 @@ export const zhHant = {
   "3D view": "3D 檢視",
   "Browse by type": "依類型瀏覽",
   "See them on the map": "在地圖上查看",
-  "Where do you want to live?": "您想住在哪裡？"
+  "Where do you want to live?": "您想住在哪裡？",
+  "Market comparison": "與市場比較",
+  "Compared with {count} asking prices in {district}: {pct}% above the median.": "與{district}的 {count} 筆開價相比：高於中位數 {pct}%。",
+  "Compared with {count} asking prices in {district}: {pct}% below the median.": "與{district}的 {count} 筆開價相比：低於中位數 {pct}%。",
+  "Compared with {count} asking prices in {district}: at the median.": "與{district}的 {count} 筆開價相比：等於中位數。",
+  "Price per m² here: {mine}. Median on listing websites: {median}.": "此物件每平方公尺：{mine}。刊登網站中位數：{median}。",
+  "Asking prices on listing websites, not sale prices.": "為刊登網站上的開價，並非成交價。",
+  "Confirm ownership at the Land Office before any money moves.": "在任何款項支付前，請先到土地廳確認產權。"
 } satisfies Dictionary;

@@ -466,5 +466,12 @@ export const ar = {
   "3D view": "عرض ثلاثي الأبعاد",
   "Browse by type": "تصفح حسب النوع",
   "See them on the map": "شاهدها على الخريطة",
-  "Where do you want to live?": "أين تريد أن تسكن؟"
+  "Where do you want to live?": "أين تريد أن تسكن؟",
+  "Market comparison": "مقارنة بالسوق",
+  "Compared with {count} asking prices in {district}: {pct}% above the median.": "مقارنةً بـ{count} من الأسعار المطلوبة في {district}: أعلى من الوسيط بنسبة {pct}%.",
+  "Compared with {count} asking prices in {district}: {pct}% below the median.": "مقارنةً بـ{count} من الأسعار المطلوبة في {district}: أقل من الوسيط بنسبة {pct}%.",
+  "Compared with {count} asking prices in {district}: at the median.": "مقارنةً بـ{count} من الأسعار المطلوبة في {district}: عند الوسيط.",
+  "Price per m² here: {mine}. Median on listing websites: {median}.": "سعر المتر المربع هنا: {mine}. الوسيط على مواقع الإعلانات: {median}.",
+  "Asking prices on listing websites, not sale prices.": "أسعار مطلوبة على مواقع الإعلانات، وليست أسعار بيع.",
+  "Confirm ownership at the Land Office before any money moves.": "تحقق من الملكية في مكتب الأراضي قبل دفع أي مبلغ."
 } satisfies Dictionary;

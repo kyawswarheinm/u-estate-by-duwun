@@ -466,5 +466,12 @@ export const th = {
   "3D view": "มุมมอง 3D",
   "Browse by type": "เลือกดูตามประเภท",
   "See them on the map": "ดูบนแผนที่",
-  "Where do you want to live?": "อยากอยู่ที่ไหน"
+  "Where do you want to live?": "อยากอยู่ที่ไหน",
+  "Market comparison": "เทียบกับตลาด",
+  "Compared with {count} asking prices in {district}: {pct}% above the median.": "เทียบกับราคาที่ประกาศขาย {count} รายการใน{district}: สูงกว่าค่ากลาง {pct}%",
+  "Compared with {count} asking prices in {district}: {pct}% below the median.": "เทียบกับราคาที่ประกาศขาย {count} รายการใน{district}: ต่ำกว่าค่ากลาง {pct}%",
+  "Compared with {count} asking prices in {district}: at the median.": "เทียบกับราคาที่ประกาศขาย {count} รายการใน{district}: เท่ากับค่ากลาง",
+  "Price per m² here: {mine}. Median on listing websites: {median}.": "ราคาต่อ ตร.ม. ของที่นี่: {mine} ค่ากลางบนเว็บไซต์ประกาศ: {median}",
+  "Asking prices on listing websites, not sale prices.": "ราคาที่ประกาศบนเว็บไซต์ ไม่ใช่ราคาขายจริง",
+  "Confirm ownership at the Land Office before any money moves.": "ตรวจสอบกรรมสิทธิ์ที่สำนักงานที่ดินก่อนจ่ายเงินใดๆ"
 } satisfies Dictionary;

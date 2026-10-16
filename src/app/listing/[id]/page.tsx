@@ -18,6 +18,11 @@ import { IndexChart } from "@/components/IndexChart";
 import { ExplainVoice } from "@/components/ExplainVoice";
 import { createCobuyGroup } from "@/app/actions";
 import { openOfferRound } from "@/app/sell/actions";
+import { compareToMarket } from "@/lib/market-data/analytics";
+import { MarketType } from "@/lib/market-data";
+
+// A median of one or two asking prices says nothing useful, so the comparison needs at least three.
+const MIN_MARKET_COMPARE = 3;
 
 export default async function ListingPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cobuyError?: string; created?: string }> }) {
   const { locale } = await getPreferences();
@@ -39,6 +44,11 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   const round = db.offerRounds.find((r) => r.listingId === listing.id);
   const isOwner = me?.id === listing.sellerId;
   const offerCount = round ? round.offerCount ?? db.offers.filter((o) => o.roundId === round.id).length : 0;
+  // P3T05: where this asking price per m² sits against asking prices on listing websites (code computes it, D-32).
+  const marketType = MarketType.safeParse(property.type);
+  const market = marketType.success
+    ? compareToMarket({ priceThb: listing.askingPriceThb, areaSqm: property.areaSqm, district: property.district, type: marketType.data, kind: listing.kind })
+    : null;
 
   return (
     <article className="grid gap-5">
@@ -72,7 +82,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
           <VerificationBadge status={listing.verificationStatus} />
           <span className="text-sm text-ink-soft"><Text message="Seller: {name} · Deed type: {deed}" values={{ name: seller.name, deed: property.deedType }} /></span>
         </div>
-        <p className="mt-1 text-sm text-ink-soft">Confirm ownership at the Land Office before any money moves.</p>
+        <p className="mt-1 text-sm text-ink-soft"><Text message="Confirm ownership at the Land Office before any money moves." /></p>
         {listing.verificationReasons.length > 0 && (
           <ul className="mt-2 list-inside list-disc text-sm text-amber">
             {listing.verificationReasons.map((r) => <li key={r}>{r}</li>)}
@@ -111,6 +121,28 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             )}
           </div>
         </dl>
+        {market?.available && market.listings_compared >= MIN_MARKET_COMPARE && (
+          <section aria-labelledby="market-compare" className="mt-4 rounded-lg border border-line p-4">
+            <h3 id="market-compare" className="text-sm font-semibold text-deep">
+              <Text message="Market comparison" /> {market.is_sample && <SampleTag />}
+            </h3>
+            <p className="mt-1 font-semibold">
+              {(() => {
+                const values = { count: market.listings_compared, district: market.compared_with === "all districts" ? t("Bangkok and vicinity") : market.compared_with, pct: Math.abs(market.diff_pct) };
+                return market.diff_pct > 0
+                  ? t("Compared with {count} asking prices in {district}: {pct}% above the median.", values)
+                  : market.diff_pct < 0
+                    ? t("Compared with {count} asking prices in {district}: {pct}% below the median.", values)
+                    : t("Compared with {count} asking prices in {district}: at the median.", values);
+              })()}
+            </p>
+            <p className="text-sm text-deep"><Text message="Price per m² here: {mine}. Median on listing websites: {median}." values={{ mine: formatMoney(market.price_per_sqm, locale), median: formatMoney(market.median_price_per_sqm, locale) }} /></p>
+            <p className="mt-1 text-xs text-ink-soft">
+              <Text message="Asking prices on listing websites, not sale prices." />{" "}
+              <Link href={`/market?district=${encodeURIComponent(property.district)}`} className="font-semibold"><Text message="Explore the market" /></Link>
+            </p>
+          </section>
+        )}
         <div className="mt-5">
           <IndexChart series={indexSeries(property.indexSeries)} isSample={panel.index.isSample} title={`Price index: ${property.type}s, Bangkok area`} />
           <p className="mt-1 text-xs text-ink-soft"><Text message="Source: {source} · latest {month}" values={{ source: panel.index.source, month: panel.index.latestMonth }} /></p>
@@ -135,16 +167,18 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
 
         <Card>
           <h2 className="text-xl font-bold"><Text message="Who pays what" /></h2>
-          <table className="mt-3 w-full text-start text-sm">
-            <caption className="sr-only"><Text message="Fees for this listing" /></caption>
-            <thead>
-              <tr className="border-b border-line"><th scope="col" className="py-2"><Text message="Party" /></th><th scope="col">U-Estate</th><th scope="col"><Text message="U-topia member" /></th><th scope="col"><Text message="Typical agent" /></th></tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-line"><th scope="row" className="py-2"><Text message="Seller (on success)" /></th><td><Money amount={sellerFee(listing.askingPriceThb, false)} /> (1.5%)</td><td><Money amount={sellerFee(listing.askingPriceThb, true)} /> (0.75%)</td><td><Money amount={agentSaleFee(listing.askingPriceThb)} /> (3%)</td></tr>
-              <tr><th scope="row" className="py-2"><Text message="Buyer" /></th><td>฿0</td><td>฿0</td><td><Text message="varies" /></td></tr>
-            </tbody>
-          </table>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-start text-sm">
+              <caption className="sr-only"><Text message="Fees for this listing" /></caption>
+              <thead>
+                <tr className="border-b border-line"><th scope="col" className="py-2"><Text message="Party" /></th><th scope="col">U-Estate</th><th scope="col"><Text message="U-topia member" /></th><th scope="col"><Text message="Typical agent" /></th></tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-line"><th scope="row" className="py-2"><Text message="Seller (on success)" /></th><td><Money amount={sellerFee(listing.askingPriceThb, false)} /> (1.5%)</td><td><Money amount={sellerFee(listing.askingPriceThb, true)} /> (0.75%)</td><td><Money amount={agentSaleFee(listing.askingPriceThb)} /> (3%)</td></tr>
+                <tr><th scope="row" className="py-2"><Text message="Buyer" /></th><td>฿0</td><td>฿0</td><td><Text message="varies" /></td></tr>
+              </tbody>
+            </table>
+          </div>
           <p className="mt-2 text-xs text-ink-soft"><Text message="Excludes government transfer fees and taxes. Optional paid checks (inspection, legal check) are priced separately and shown before you buy them. Typical agent fee = common market practice, not a quote." /></p>
         </Card>
       </div>

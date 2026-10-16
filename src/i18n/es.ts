@@ -466,5 +466,12 @@ export const es = {
   "3D view": "Vista 3D",
   "Browse by type": "Explorar por tipo",
   "See them on the map": "Verlos en el mapa",
-  "Where do you want to live?": "¿Dónde quieres vivir?"
+  "Where do you want to live?": "¿Dónde quieres vivir?",
+  "Market comparison": "Comparación con el mercado",
+  "Compared with {count} asking prices in {district}: {pct}% above the median.": "Comparado con {count} precios pedidos en {district}: {pct}% por encima de la mediana.",
+  "Compared with {count} asking prices in {district}: {pct}% below the median.": "Comparado con {count} precios pedidos en {district}: {pct}% por debajo de la mediana.",
+  "Compared with {count} asking prices in {district}: at the median.": "Comparado con {count} precios pedidos en {district}: en la mediana.",
+  "Price per m² here: {mine}. Median on listing websites: {median}.": "Precio por m² aquí: {mine}. Mediana en sitios de anuncios: {median}.",
+  "Asking prices on listing websites, not sale prices.": "Precios pedidos en sitios de anuncios, no precios de venta.",
+  "Confirm ownership at the Land Office before any money moves.": "Confirma la propiedad en la Oficina de Tierras antes de mover dinero."
 } satisfies Dictionary;
