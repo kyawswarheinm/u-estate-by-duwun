@@ -279,9 +279,100 @@ await as(P.reviewer,()=>q("select demo_reset($1)",[resetRequest]));
 check("reset retry cannot create another demo generation",(await one("select id from listings where code='l-condo'")).id===freshCondo);
 check("archived listings cannot open co-buy",await fails(()=>as(P.somchai,()=>q("select cobuy_create_group($1)",[CONDO])),"NOT_ENABLED"));
 
+// ---------- Premium and Co-Invest (migration 0700, D-44) ----------
+// A building with little foreign quota left (49% of 1,000 m² = 490 m², 470 m² used), a condo and a house offering.
+const CI_B = id(980), CI_CONDO = id(981), CI_HOUSE = id(982), CI_BIG = id(983), CI_CONDO2 = id(984), CI_L2 = id(985);
+const OFF_C = id(986), OFF_H = id(987), OFF_BIG = id(988);
+await insert("buildings", { id: CI_B, owner_id: P.malee, name: "Co-Invest test tower", district: "Sathorn", province: "Bangkok", total_floor_area_sqm: 1000, foreign_area_used_sqm: 470, build_year: 2020 });
+await insert("properties", { id: CI_CONDO, owner_id: P.malee, type: "condo", building_id: CI_B, title: "Co-Invest test condo", district: "Sathorn", province: "Bangkok", area_sqm: 100, index_series: "condo_bkk" });
+await insert("properties", { id: CI_HOUSE, owner_id: P.malee, type: "house", title: "Co-Invest test house", district: "Bang Yai", province: "Nonthaburi", area_sqm: 150, index_series: "house_bkk" });
+await insert("properties", { id: CI_BIG, owner_id: P.malee, type: "house", title: "Co-Invest test villa", district: "Bang Yai", province: "Nonthaburi", area_sqm: 400, index_series: "house_bkk" });
+await insert("properties", { id: CI_CONDO2, owner_id: P.malee, type: "condo", building_id: CI_B, title: "Co-buy test condo (same tower)", district: "Sathorn", province: "Bangkok", area_sqm: 50, index_series: "condo_bkk" });
+await insert("listings", { id: CI_L2, property_id: CI_CONDO2, seller_id: P.malee, kind: "sale", asking_price_thb: 1000000, cobuy_enabled: true });
+const offering = (oid, prop, units, par) => insert("coinvest_offerings", { id: oid, code: `t-${oid.slice(-4)}`, property_id: prop, total_units: units, unit_par_thb: par, target_thb: units * par, base_value_thb: units * par, base_month: "2026-08", current_value_thb: units * par, valued_month: "2026-08" });
+await offering(OFF_C, CI_CONDO, 100, 10000);
+await offering(OFF_H, CI_HOUSE, 100, 20000);
+await offering(OFF_BIG, CI_BIG, 100, 100000);
+const thai = id(990), thai2 = id(991);
+await db.query("insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)", [thai, "premium.test@example.com", JSON.stringify({ name: "Premium Test", nationality: "Thai" })]);
+await db.query("insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)", [thai2, "premium.test2@example.com", JSON.stringify({ name: "Premium Test 2", nationality: "Thai" })]);
+const avail = async (uid) => Number((await as(uid, () => one("select available_thb from wallet_balances"))).available_thb);
+const outstanding = async (oid) => (await one("select units_outstanding from coinvest_offerings where id = $1", [oid])).units_outstanding;
+
+await as(null, async () => {
+  check("guest sees Co-Invest offerings and their funding progress", (await q("select id, units_outstanding from coinvest_offerings")).length === 3);
+  check("guest cannot read holdings or trades", (await fails(() => q("select * from coinvest_holdings"))) && (await fails(() => q("select * from coinvest_trades"))));
+  check("guest cannot upgrade or trade", (await fails(() => q("select premium_upgrade()"))) && (await fails(() => q("select coinvest_buy($1, 1)", [OFF_C]))));
+});
+check("standard member cannot buy units", await fails(() => as(thai, () => q("select coinvest_buy($1, 1)", [OFF_C])), "PREMIUM_ONLY"));
+check("member cannot make self premium", await fails(() => as(thai, () => q("update profiles set premium = true where id = $1", [thai])), "permission denied"));
+const upReq = id(992);
+await as(thai, () => q("select premium_upgrade($1)", [upReq]));
+check("premium upgrade pays 9,900 THB test money once", (await avail(thai)) === 5000000 - 9900 && (await one("select premium from profiles where id = $1", [thai])).premium === true);
+await as(thai, () => q("select premium_upgrade($1)", [upReq]));
+check("upgrade retry with the same request charges nothing more", (await avail(thai)) === 5000000 - 9900);
+check("second upgrade is refused", await fails(() => as(thai, () => q("select premium_upgrade()")), "ALREADY_PREMIUM"));
+
+const buyReq = id(993);
+const bought = (await as(thai, () => one("select coinvest_buy($1, 30, $2) r", [OFF_C, buyReq]))).r;
+check("premium member buys 30 units at the funding price", bought.ok === true && Number(bought.amount_thb) === 300000 && (await avail(thai)) === 5000000 - 9900 - 300000);
+check("purchase writes trade, holding, wallet debit and ledger entry together",
+  (await one("select count(*)::int n from coinvest_trades where request_id = $1", [buyReq])).n === 1 &&
+  (await one("select units from coinvest_holdings where offering_id = $1 and user_id = $2", [OFF_C, thai])).units === 30 &&
+  Number((await one("select amount_thb from wallet_transactions where user_id = $1 and kind = 'share_purchase'", [thai])).amount_thb) === -300000 &&
+  (await one("select count(*)::int n from ledger_entries where entry_type = 'share_transfer' and user_id = $1", [thai])).n === 1 &&
+  (await outstanding(OFF_C)) === 30);
+await as(thai, () => q("select coinvest_buy($1, 30, $2)", [OFF_C, buyReq]));
+check("buy retry with the same request creates no second trade", (await one("select count(*)::int n from coinvest_trades where user_id = $1", [thai])).n === 1 && (await outstanding(OFF_C)) === 30);
+check("same request with different units is refused", await fails(() => as(thai, () => q("select coinvest_buy($1, 31, $2)", [OFF_C, buyReq])), "REQUEST_MISMATCH"));
+check("cannot sell more units than held", await fails(() => as(thai, () => q("select coinvest_sell($1, 31)", [OFF_C])), "NOT_ENOUGH_UNITS"));
+check("cannot buy more units than the pool holds", await fails(() => as(thai, () => q("select coinvest_buy($1, 71)", [OFF_C])), "NOT_ENOUGH_UNITS"));
+const tradesBefore = (await one("select count(*)::int n from coinvest_trades")).n;
+check("wallet balance enforced for units", await fails(() => as(thai, () => q("select coinvest_buy($1, 60)", [OFF_BIG])), "WALLET_BALANCE"));
+check("a refused purchase writes nothing", (await one("select count(*)::int n from coinvest_trades")).n === tradesBefore && (await outstanding(OFF_BIG)) === 0);
+
+await q("select demo_seed_premium($1, now())", [P.daniel]);
+check("foreign member cannot hold house units", await fails(() => as(P.daniel, () => q("select coinvest_buy($1, 5)", [OFF_H])), "FOREIGN_LAND"));
+await as(P.daniel, () => q("select coinvest_buy($1, 10)", [OFF_C]));
+check("foreign member holds condo units within the quota, FET flagged", (await one("select fet_required from coinvest_holdings where offering_id = $1 and user_id = $2", [OFF_C, P.daniel])).fet_required === true);
+check("condo foreign quota counts Co-Invest units", await fails(() => as(P.daniel, () => q("select coinvest_buy($1, 15)", [OFF_C])), "FOREIGN_QUOTA"));
+const quotaGroup = (await as(P.daniel, () => one("select cobuy_create_group($1) as g", [CI_L2]))).g;
+check("co-buy foreign quota also counts Co-Invest units", await fails(() => as(P.daniel, () => q("select cobuy_commit($1, 'co_owner', 300000)", [quotaGroup])), "FOREIGN_QUOTA"));
+
+await q("select demo_seed_premium($1, now())", [thai2]);
+const funded = (await as(thai2, () => one("select coinvest_buy($1, 60) r", [OFF_C]))).r;
+check("last units fund the offering: status active", funded.funded === true && (await one("select status from coinvest_offerings where id = $1", [OFF_C])).status === "active");
+check("no units left in the pool after funding", await fails(() => as(thai2, () => q("select coinvest_buy($1, 1)", [OFF_C])), "POOL_EMPTY"));
+await q("select coinvest_revalue($1, 1200000, '2026-09')", [OFF_C]);
+const before = await avail(thai);
+await as(thai, () => q("select coinvest_sell($1, 10)", [OFF_C]));
+const holdingAfter = await one("select units, cost_thb from coinvest_holdings where offering_id = $1 and user_id = $2", [OFF_C, thai]);
+check("sale at the index-tracked unit value credits the wallet", (await avail(thai)) === before + 120000 && Number((await one("select amount_thb from wallet_transactions where user_id = $1 and kind = 'share_sale'", [thai])).amount_thb) === 120000);
+check("sale reduces units and cost basis proportionally", holdingAfter.units === 20 && Number(holdingAfter.cost_thb) === 200000 && (await outstanding(OFF_C)) === 90);
+await as(thai2, () => q("select coinvest_buy($1, 5)", [OFF_H]));
+await as(thai2, () => q("select coinvest_sell($1, 2)", [OFF_H]));
+check("withdrawing during funding is a refund at the funding price", Number((await one("select amount_thb from wallet_transactions where user_id = $1 and kind = 'refund'", [thai2])).amount_thb) === 40000);
+
+await as(P.narin, async () => check("standard member sees no one else's holdings", (await q("select user_id from coinvest_holdings")).length === 0));
+await as(thai, async () => check("premium member sees co-owners for the ownership graph", (await q("select user_id from coinvest_holdings where offering_id = $1", [OFF_C])).length === 3));
+check("units cannot be written directly", await fails(() => as(thai, () => q("insert into coinvest_holdings (offering_id, user_id, units) values ($1, $2, 100)", [OFF_BIG, thai]))));
+check("unit trades are append-only", await fails(() => q("update coinvest_trades set units = 1"), "APPEND_ONLY"));
+check("members cannot call the seed functions", await fails(() => as(thai, () => q("select demo_seed_trade($1, $2, 'buy', 1, gen_random_uuid(), now(), null)", [thai, OFF_H]))));
+const seedReq = id(994);
+await q("select demo_seed_trade($1, $2, 'buy', 3, $3, now(), null)", [thai, OFF_H, seedReq]);
+await q("select demo_seed_trade($1, $2, 'buy', 3, $3, now(), null)", [thai, OFF_H, seedReq]);
+check("seed replay is idempotent", (await one("select count(*)::int n from coinvest_trades where request_id = $1", [seedReq])).n === 1);
+check("holder units always add up to units outstanding", (await q("select o.id from coinvest_offerings o where o.units_outstanding <> coalesce((select sum(units) from coinvest_holdings h where h.offering_id = o.id), 0)")).length === 0);
+check("no member has a negative test-money balance", (await q("select user_id from wallet_balances where available_thb < 0")).length === 0);
+check("signed wallet kinds are enforced", await fails(() => q("insert into wallet_transactions (user_id, kind, amount_thb) values ($1, 'share_purchase', 100)", [thai])));
+await as(thai, () => q("select wallet_top_up()"));
+check("top-up still works after spending (cap counts grants and top-ups only)", (await one("select count(*)::int n from wallet_transactions where user_id = $1 and kind = 'top_up'", [thai])).n === 1);
+check("nationality cannot change while holding units", await fails(() => as(thai2, () => q("update profiles set nationality = 'Japanese' where id = $1", [thai2])), "HOLDINGS_LOCK_NATIONALITY"));
+
+
 // ---------- realtime ----------
 const pub = (await q("select tablename from pg_publication_tables where pubname = 'supabase_realtime'")).map((r) => r.tablename);
-check("realtime streams messages, notifications, listings, co-buy and ledger", ["messages", "notifications", "listings", "cobuy_participants", "ledger_entries"].every((t) => pub.includes(t)));
+check("realtime streams messages, notifications, listings, co-buy, Co-Invest funding and ledger", ["messages", "notifications", "listings", "cobuy_participants", "coinvest_offerings", "ledger_entries"].every((t) => pub.includes(t)));
 check("realtime never streams sealed offers", !pub.includes("offers"));
 check("RLS is on for every public table", (await q("select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity")).length === 0);
 

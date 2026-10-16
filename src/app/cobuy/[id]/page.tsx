@@ -1,5 +1,6 @@
+import { RecordCell } from "@/components/RecordCell";
 import { randomUUID } from "node:crypto";
-import { formatMoney, translateLabel } from "@/i18n";
+import { translateLabel, formatMoneyRef } from "@/i18n";
 import { getPreferences } from "@/i18n/server";
 import { Label, Text } from "@/i18n/Text";
 import { Money } from "@/components/Money";
@@ -19,7 +20,7 @@ function daysUntil(iso: string) {
 }
 
 export default async function CobuyPage({ params }: { params: Promise<{ id: string }> }) {
-  const { locale } = await getPreferences();
+  const { locale, currency } = await getPreferences();
   const { id } = await params;
   const [db, me] = await Promise.all([readDb(), currentUser()]);
   const group = db.cobuyGroups.find((g) => g.id === id);
@@ -40,13 +41,13 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
     <article className="grid gap-5">
       <header>
         <p className="text-sm text-ink-soft"><Link href={`/listing/${listing.id}`} className="underline"><span aria-hidden="true" className="inline-block rtl:-scale-x-100">←</span> <bdi>{property.title}</bdi></Link></p>
-        <h1 className="text-3xl font-bold"><Text message="Co-buy group" /></h1>
-        <p className="mt-1 text-ink-soft"><Text message="Target {amount} · {type} · status: {status}" values={{ amount: formatMoney(group.targetThb, locale), type: translateLabel(locale, property.type), status: translateLabel(locale, group.status) }} /> · <span className="font-semibold text-amber"><Text message="TEST MONEY ONLY" /></span></p>
+        <h1 className="page-title"><Text message="Co-buy group" /></h1>
+        <p className="mt-1 text-ink-soft"><Text message="Target {amount} · {type} · status: {status}" values={{ amount: formatMoneyRef(group.targetThb, locale, currency), type: translateLabel(locale, property.type), status: translateLabel(locale, group.status) }} /> · <span className="font-semibold text-amber"><Text message="TEST MONEY ONLY" /></span></p>
       </header>
 
       <Card>
         <h2 className="text-xl font-bold"><Text message="Funding progress" /></h2>
-        <label htmlFor="funding" className="mt-2 block"><Text message="{committed} of {target} committed ({percent}%)" values={{ committed: formatMoney(committed, locale), target: formatMoney(group.targetThb, locale), percent: Math.round((committed / group.targetThb) * 100) }} /></label>
+        <label htmlFor="funding" className="mt-2 block"><Text message="{committed} of {target} committed ({percent}%)" values={{ committed: formatMoneyRef(committed, locale, currency), target: formatMoneyRef(group.targetThb, locale, currency), percent: Math.round((committed / group.targetThb) * 100) }} /></label>
         <progress id="funding" max={group.targetThb} value={committed} className="mt-2 h-4 w-full">{Math.round((committed / group.targetThb) * 100)}%</progress>
         {isCondo && building && (
           <div className="mt-4">
@@ -62,7 +63,7 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
           {participants.length === 0 ? (
             <p className="mt-2 text-ink-soft"><Text message="No one has joined yet." /></p>
           ) : (
-            <table className="mt-3 w-full text-start text-sm">
+            <table role="table" className="record-table mt-3 w-full text-start text-sm">
               <caption className="sr-only"><Text message="Participants and their registered rights" /></caption>
               <thead><tr className="border-b border-line"><th scope="col" className="py-2"><Text message="Member" /></th><th scope="col"><Text message="Role" /></th><th scope="col"><Text message="Amount" /></th><th scope="col"><Text message="Registered right" /></th></tr></thead>
               <tbody>
@@ -71,13 +72,13 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
                   const share = shares.find((s) => s.userId === p.userId);
                   return (
                     <tr key={p.id} className="border-b border-line align-top">
-                      <th scope="row" className="py-2 font-semibold">{prof.name}<br /><span className="font-normal text-ink-soft">{prof.isThai ? "Thai" : prof.nationality}</span></th>
-                      <td><Label>{p.lane === "lender" ? "Lender" : "Co-owner"}</Label></td>
-                      <td><Money amount={p.amountThb} /></td>
-                      <td>
+                      <th scope="row" className="py-2 font-semibold"><span className="record-label" aria-hidden="true"><Text message="Member" /></span><div>{prof.name}<br /><span className="font-normal text-ink-soft">{prof.isThai ? "Thai" : prof.nationality}</span></div></th>
+                      <RecordCell label="Role"><Label>{p.lane === "lender" ? "Lender" : "Co-owner"}</Label></RecordCell>
+                      <RecordCell label="Amount"><Money amount={p.amountThb} /></RecordCell>
+                      <RecordCell label="Registered right">
                         {p.lane === "lender" ? <Text message="Mortgage loan, {rate}% fixed" values={{ rate: p.interestRatePct ?? 0 }} /> : <Text message="{share}% of title" values={{ share: share?.sharePct ?? 0 }} />}
                         {p.fetRequired && <span className="block text-xs text-amber"><Text message="Funds must come from abroad (FET form)" /></span>}
-                      </td>
+                      </RecordCell>
                     </tr>
                   );
                 })}
@@ -112,7 +113,7 @@ export default async function CobuyPage({ params }: { params: Promise<{ id: stri
               <h2 className="text-xl font-bold"><Text message="Join as {name}" values={{ name: me.name }} /></h2>
               <p className="mt-1 text-sm text-ink-soft">
                 {me.isThai ? <Text message="Thai national" /> : <Text message="{nationality} national" values={{ nationality: me.nationality }} />} · {me.utopiaMember ? <Text message="U-topia member" /> : <Text message="Not a U-topia member" />} ·{" "}
-                <Link href="/account/wallet" className="underline"><Text message="{amount} test money available" values={{ amount: formatMoney(walletSummary(db, me.id).availableThb, locale) }} /></Link>
+                <Link href="/account/wallet" className="underline"><Text message="{amount} test money available" values={{ amount: formatMoneyRef(walletSummary(db, me.id).availableThb, locale, currency) }} /></Link>
               </p>
               {group.status === "forming" ? (
                 <div className="mt-3">

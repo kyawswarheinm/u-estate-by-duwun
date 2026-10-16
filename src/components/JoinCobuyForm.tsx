@@ -1,6 +1,6 @@
 "use client";
 import { useI18n } from "@/i18n/provider";
-import { formatMoney } from "@/i18n";
+import { formatMoneyRef } from "@/i18n";
 import { Label, Text } from "@/i18n/Text";
 
 import { useActionState, useState } from "react";
@@ -9,7 +9,7 @@ import { joinCobuy, type FormState } from "@/app/actions";
 export function JoinCobuyForm({ requestId, groupId, isCondo, isThai, remainingThb, maxRate, defaultRate }: {
   requestId: string; groupId: string; isCondo: boolean; isThai: boolean; remainingThb: number; maxRate: number; defaultRate: number;
 }) {
-  const { locale } = useI18n();
+  const { locale, currency } = useI18n();
   const [state, action, pending] = useActionState<FormState, FormData>(joinCobuy, null);
   const defaultLane = !isCondo && !isThai ? "lender" : "co_owner";
   const [lane, setLane] = useState<"co_owner" | "lender">(defaultLane);
@@ -36,7 +36,7 @@ export function JoinCobuyForm({ requestId, groupId, isCondo, isThai, remainingTh
         <label htmlFor="amountThb" className="font-semibold"><Text message="Amount (THB, test money)" /></label>
         <input id="amountThb" name="amountThb" inputMode="numeric" required pattern="[0-9,]+" aria-describedby="amount-help"
           defaultValue={Math.min(remainingThb, 1_000_000)} className="rounded border border-line px-3 py-3" />
-        <p id="amount-help" className="text-sm text-ink-soft"><Text message="Still needed: {amount}" values={{ amount: formatMoney(remainingThb, locale) }} /></p>
+        <p id="amount-help" className="text-sm text-ink-soft"><Text message="Still needed: {amount}" values={{ amount: formatMoneyRef(remainingThb, locale, currency) }} /></p>
       </div>
 
       {lane === "lender" && (

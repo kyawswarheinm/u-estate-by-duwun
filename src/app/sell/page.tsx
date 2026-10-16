@@ -9,6 +9,8 @@ import { currentUser } from "@/lib/session";
 import { DeedCheckForm } from "@/components/DeedCheckForm";
 import { ListingForm } from "@/components/ListingForm";
 import { MyProperties } from "@/components/MyProperties";
+import { FEES } from "@/lib/rules";
+import { UPalPageContext } from "@/components/upal/UPalProvider";
 
 export const metadata = { title: "Sell a property | U-Estate" };
 
@@ -19,8 +21,9 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
   if (!me) {
     return (
       <div className="grid gap-6">
+        <UPalPageContext facts={{ step: "sign in or create an account to list", signed_in: false, ...feeFacts }} />
         <header className="max-w-2xl">
-          <h1 className="font-display text-5xl font-semibold"><Text message="sellTitle" /></h1>
+          <h1 className="page-title"><Text message="sellTitle" /></h1>
           <p className="mt-3 text-lg text-deep"><Text message="List your property, check your deed, and compare offers by rules you publish before any offer arrives. Your fee: 1.5% (0.75% for U-topia members), against a typical 3%." /></p>
         </header>
         <SellerSteps />
@@ -38,10 +41,13 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
     .filter((l) => l.sellerId === me.id && !l.archivedAt)
     .map((l) => ({ id: l.id, title: db.properties.find((p) => p.id === l.propertyId)!.title }));
 
+  const unchecked = db.listings.filter((l) => l.sellerId === me.id && !l.archivedAt && l.verificationStatus === "unverified").length;
+  const step = mine.length === 0 ? "publish a first listing" : unchecked > 0 ? "check the title deed" : "open the offer room and compare offers";
   return (
     <div className="grid gap-8">
+      <UPalPageContext facts={{ step, signed_in: true, active_listings: mine.length, listings_without_deed_check: unchecked, utopia_member: me.utopiaMember, ...feeFacts }} />
       <header className="max-w-2xl">
-        <h1 className="font-display text-5xl font-semibold"><Text message="sellTitle" /></h1>
+        <h1 className="page-title"><Text message="sellTitle" /></h1>
         <p className="mt-2 text-lg text-deep"><Text message="Publish your listing, then check the deed so buyers see a verified badge." /></p>
       </header>
 
@@ -66,7 +72,7 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
             <Text message="AI reads the deed type, owner name and warning signs. Code then checks the name against your account and applies Thai deed rules. AI flags are indicators, not proof. Ownership is only confirmed at the Land Office." />
           </p>
         </div>
-        {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber">AI is not connected on this server yet (ANTHROPIC_API_KEY). The check will show an error.</p>}
+        {!aiConfigured() && <p role="alert" className="rounded-[10px] bg-amber-soft p-3 text-amber"><Text message="The AI document check is not available right now. You can still list your property; the deed check can run later." /></p>}
         <p className="text-sm">
           Sample deeds to try: <a className="underline" href="/samples/deed-chanote-malee.png" download>clean Chanote (house)</a>,{" "}
           <a className="underline" href="/samples/deed-condo-malee.png" download>condo title</a>,{" "}
@@ -83,6 +89,8 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
     </div>
   );
 }
+
+const feeFacts = { seller_fee_pct: FEES.saleStandard * 100, seller_fee_pct_utopia_member: FEES.saleMember * 100, typical_agent_fee_pct: FEES.agentSaleTypical * 100 };
 
 function SellerSteps() {
   return <ol className="seller-steps">{(["stepProperty", "stepVerify", "stepValue", "stepPublish", "stepOffers"] as const).map((key,i) => <li key={key}><span>{String(i+1).padStart(2,"0")}</span><Text message={key} /></li>)}</ol>;

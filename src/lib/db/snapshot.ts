@@ -21,12 +21,23 @@ export async function readSupabaseDb(): Promise<DB> {
     documentChecks: "documents", offerRounds: "offer_rounds", offers: "offers", cobuyGroups: "cobuy_groups",
     cobuyParticipants: "cobuy_participants", ledger: "ledger_entries", anchors: "ledger_anchors",
     walletTxns: "wallet_transactions", settings: "profile_settings",
+    coinvestOfferings: "coinvest_offerings", coinvestHoldings: "coinvest_holdings", coinvestTrades: "coinvest_trades",
   };
+  // Guests have no access to who holds Co-Invest units (RLS + grants): those reads come back empty for them.
+  const signedInOnly = new Set(["coinvest_holdings", "coinvest_trades"]);
+  // Until migration 0700 is applied to a hosted project, its tables do not exist: the rest of the app keeps working
+  // and Co-Invest shows no offerings (logged once per request on the server, never shown to users).
+  const optional = new Set(["coinvest_offerings", "coinvest_holdings", "coinvest_trades"]);
   const entries = await Promise.all(Object.entries(tables).map(async ([key, table]) => {
     const rows: Row[] = [];
-    const order = table === "profile_settings" ? "user_id" : "id";
+    const order = table === "profile_settings" ? "user_id" : table === "coinvest_holdings" ? "offering_id" : "id";
     for (let from = 0; ; from += 500) {
       const { data, error } = await client.from(table).select("*").order(order).range(from, from + 499);
+      if (error && signedInOnly.has(table) && error.code === "42501") break;
+      if (error && optional.has(table) && (error.code === "PGRST205" || error.code === "42P01")) {
+        console.warn(`[db] ${table} is missing: apply supabase/migrations/20261016000700_premium_coinvest.sql`);
+        break;
+      }
       if (error) throw new Error(`Database read failed: ${table} (${error.code})`);
       rows.push(...data);
       if (data.length < 500) break;
@@ -52,6 +63,12 @@ export async function readSupabaseDb(): Promise<DB> {
     entryType: e.entryType, amountThb: e.amountThb, listingId: e.listingId,
     groupId: e.groupId, details: e.details, isSimulated: e.isSimulated }));
   mapped.anchors = mapped.anchors.map((a) => ({ ...a, network: "Avalanche Fuji C-Chain (testnet)" }));
+  // numeric columns: PostgREST returns them as JSON numbers, but keep money arithmetic safe if a string slips through
+  const num = (v: unknown) => (v === undefined ? v : Number(v));
+  mapped.walletTxns = mapped.walletTxns.map((w) => ({ ...w, amountThb: num(w.amountThb) }));
+  mapped.coinvestOfferings = mapped.coinvestOfferings.map((o) => ({ ...o, unitParThb: num(o.unitParThb), targetThb: num(o.targetThb), baseValueThb: num(o.baseValueThb), currentValueThb: num(o.currentValueThb), grossYieldPct: num(o.grossYieldPct) }));
+  mapped.coinvestHoldings = mapped.coinvestHoldings.map((h) => ({ ...h, costThb: num(h.costThb), areaSqmAttributed: num(h.areaSqmAttributed) }));
+  mapped.coinvestTrades = mapped.coinvestTrades.map((t) => ({ ...t, unitPriceThb: num(t.unitPriceThb), amountThb: num(t.amountThb) }));
   mapped.anchors.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   // Auth owns credentials. There are no synthetic credential records in this view.
   return { ...mapped, accounts: [], sessions: [] } as unknown as DB;

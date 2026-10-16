@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "updated_at": "2026-10-16",
+    "note": "Real listings U-Estate has permission to publish (owners, agencies, licensed feeds), imported with npm run listings:import. Empty until a permitted source supplies rows: the four large Thai portals are off-limits (pipeline/scraper/SOURCES.md)."
+  },
+  "listings": []
+}

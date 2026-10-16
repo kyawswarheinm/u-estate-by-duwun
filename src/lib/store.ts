@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { seed } from "./seed";
+import { baseSeed, seed, seedCoinvest } from "./seed";
 import type { DB } from "./types";
 import { usesSupabase } from "./db/runtime";
 import { readSupabaseDb } from "./db/snapshot";
@@ -10,9 +10,12 @@ import { readSupabaseDb } from "./db/snapshot";
 // Offline JSON-file store; configured Supabase is the default runtime backend.
 // Local: .data/db.json. On Vercel the project dir is read-only, so /tmp is used (resets on cold start).
 // Set DEMO_OFFLINE=true only when explicitly exercising the offline prototype.
-const FILE = process.env.VERCEL
-  ? "/tmp/u-estate-db.json"
-  : path.join(process.cwd(), ".data", "db.json");
+// DEMO_DATA_FILE: an isolated file for automated QA (scripts/start-offline.mjs --data=...), never the hosted database.
+const FILE = process.env.DEMO_DATA_FILE
+  ? path.resolve(process.env.DEMO_DATA_FILE)
+  : process.env.VERCEL
+    ? "/tmp/u-estate-db.json"
+    : path.join(process.cwd(), ".data", "db.json");
 
 let queue: Promise<unknown> = Promise.resolve();
 
@@ -27,6 +30,9 @@ async function load(): Promise<DB> {
       db.accounts ??= [];
       db.sessions ??= [];
       db.walletTxns ??= [];
+      db.coinvestOfferings ??= [];
+      db.coinvestHoldings ??= [];
+      db.coinvestTrades ??= [];
       migrateSeedData(db);
       return db;
     } catch (e) {
@@ -43,11 +49,13 @@ async function load(): Promise<DB> {
 
 /** Data files from before demo personas and wallets existed: flag the personas and add their test-money grants. */
 function migrateSeedData(db: DB) {
-  const fresh = seed();
+  const fresh = baseSeed();
   const personaIds = new Set(fresh.profiles.filter((p) => p.isDemoPersona).map((p) => p.id));
   for (const p of db.profiles) if (personaIds.has(p.id)) p.isDemoPersona = true;
   const have = new Set(db.walletTxns.map((t) => t.id));
-  for (const t of fresh.walletTxns) if (!have.has(t.id) && db.profiles.some((p) => p.id === t.userId)) db.walletTxns.push(t);
+  for (const t of fresh.walletTxns) if (!have.has(t.id) && db.profiles.some((p) => p.id === t.userId) && t.kind === "demo_grant") db.walletTxns.push(t);
+  // Files from before Co-Invest: add the demo population and its history once (idempotent by fixed ids).
+  if (db.coinvestOfferings.length === 0) seedCoinvest(db);
 }
 
 /** Atomic write: a reader never sees a half-written file. */
@@ -84,7 +92,9 @@ export function updateDb<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
 export async function resetDb() {
   return updateDb((db) => {
     const fresh = seed();
-    const realUsers = db.profiles.filter((p) => !p.isDemoPersona);
+    const seeded = new Set(fresh.profiles.map((p) => p.id));
+    // Signed-up people (not personas, not the demo population) keep their accounts, wallets and listings.
+    const realUsers = db.profiles.filter((p) => !p.isDemoPersona && !seeded.has(p.id));
     const realIds = new Set(realUsers.map((p) => p.id));
     const ownListings = db.listings.filter((l) => realIds.has(l.sellerId));
     const ownPropertyIds = new Set(ownListings.map((l) => l.propertyId));
@@ -94,7 +104,8 @@ export async function resetDb() {
       profiles: [...fresh.profiles, ...realUsers],
       accounts: db.accounts,
       sessions: db.sessions,
-      walletTxns: [...fresh.walletTxns, ...db.walletTxns.filter((t) => realIds.has(t.userId))],
+      // Co-Invest returns to the seed, so their unit purchases and sales are undone with it (refunded in full).
+      walletTxns: [...fresh.walletTxns, ...db.walletTxns.filter((t) => realIds.has(t.userId) && !t.tradeId)],
       buildings: [...fresh.buildings, ...db.buildings.filter((b) => ownBuildingIds.has(b.id))],
       properties: [...fresh.properties, ...ownProperties],
       listings: [...fresh.listings, ...ownListings.map((l) => ({ ...l, status: "active" as const }))],

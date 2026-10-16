@@ -14,7 +14,7 @@ const str = (description) => ({ type: "string", description });
 const num = (description) => ({ type: "number", description });
 const bool = (description) => ({ type: "boolean", description });
 
-// Names and parameters must match src/lib/assistant-tools.ts and src/components/VoiceAgentDock.tsx.
+// Names and parameters must match src/lib/assistant-tools.ts and src/components/upal/UPalProvider.tsx.
 const TOOLS = [
   {
     name: "search_listings",
@@ -67,7 +67,7 @@ const TOOLS = [
   },
   {
     name: "open_page",
-    description: "Open a page in the user's browser, e.g. /listing/l-condo, /listing/l-condo/offers, /cobuy/<group id>, /ledger, /partners, /market (the market map). Use after you mention a listing or the market the user wants to see.",
+    description: "Open a page in the user's browser, e.g. /listing/l-condo, /listing/l-condo/offers, /cobuy/<group id>, /ledger, /market (the market map), /market/<third-party listing id>. Use after you mention a listing or the market the user wants to see.",
     parameters: { type: "object", required: ["path"], properties: { path: str("Path starting with /") } },
   },
   // Market intelligence (D-42). Parameters mirror the zod schemas in src/lib/market-data/find.ts and analytics.ts.
@@ -112,18 +112,50 @@ const TOOLS = [
     description: "Compare one U-Estate listing's asking price per m² with asking prices on listing websites in its district: the median, the difference in % and how many listings were compared.",
     parameters: { type: "object", required: ["listing_id"], properties: { listing_id: str("A U-Estate listing id or code, e.g. l-condo") } },
   },
+  {
+    name: "get_coinvest_offerings",
+    description: "Get Co-Invest (premium) opportunities: SAMPLE properties split into units of simulated co-ownership, with status, unit price, funding progress, the index-tracked value estimate, the 12-month forecast range and the rental-yield assumption. Test money only.",
+    parameters: { type: "object", required: [], properties: { code: str("One offering code, e.g. ci-lumpini; omit for all") } },
+  },
+  {
+    name: "get_my_account",
+    description: "Get the signed-in user's own plan, test-money wallet, co-buy commitments and Co-Invest portfolio. Returns signed_in false for guests. Never shows anyone else's data.",
+    parameters: { type: "object", required: [], properties: {} },
+  },
+  {
+    name: "get_ledger_status",
+    description: "Get how many ledger entries are verified on Avalanche, pending network anchoring or recorded in the U-Estate ledger only, and whether the network is available.",
+    parameters: { type: "object", required: [], properties: {} },
+  },
+  {
+    name: "search_real_listings",
+    description: "Search real third-party listings (owners, agencies, licensed feeds) by sale/rent, type, area, budget, bedrooms, furnishing or amenities. Returns stated facts only, with source, original link, Google Maps link and availability. Never say a listing is available unless availability is 'available'.",
+    parameters: {
+      type: "object",
+      required: [],
+      properties: {
+        kind: str("sale or rent"),
+        district: str("District, neighbourhood or project words, e.g. Bang Kapi"),
+        max_price_thb: num("Budget ceiling in THB; monthly when kind is rent"),
+        min_bedrooms: num("Minimum bedrooms"),
+      },
+    },
+  },
 ];
 
-const PROMPT = `You are U-Estate's voice assistant: a transparent property marketplace in Thailand where every party sees the same facts and fees.
+const PROMPT = `You are U-Pal, U-Estate's voice assistant. U-Estate is a transparent property marketplace in Thailand where every party sees the same facts and fees.
 You are talking with {{user_name}}. They are on the page {{current_page}}. Speak {{locale_name}} unless they switch language.
 Rules:
 - Use tools for every number (prices, fees, ranges, quotas, unlocks). Say numbers exactly as the tools return them, with their source. Never invent numbers.
 - Keep each reply under 3 short sentences; this is a voice call. Offer to open the page when you mention a listing.
 - Say clearly when data is SAMPLE or test money. Ownership must be confirmed at the Land Office.
 - General information only, not financial, legal or investment advice.
+- Third-party listings (search_real_listings): mention only listings a tool returned, name their source, and never say one is available unless availability is "available". Distance to BTS/MRT is not recorded.
 - Foreigners: condos only, within the 49% foreign quota, funds from abroad with an FET form; on houses and land they can only lend at a fixed rate of at most 15% a year. Never suggest nominee arrangements.
 - U-Estate never accepts crypto. If someone will sell crypto for a deposit, use check_token_unlocks and explain the safety buffer.
 - You cannot move money, make offers or sign anything. Tell the user to use the buttons on the page.
+- For the user's own wallet, plan or portfolio use get_my_account; never guess a balance. Co-Invest is premium-only, uses test money and SAMPLE properties, and its units are simulated co-ownership (get_coinvest_offerings).
+- Ledger: an entry is "verified on Avalanche" only when get_ledger_status says a published fingerprint covers it; otherwise say it is recorded or pending anchoring.
 - Never ask for passwords, bank details or ID numbers. Warn the user if anyone asks them to pay a deposit outside U-Estate.
 Market questions (search_market_listings, get_market_stats, get_price_forecast, compare_to_market):
 - Mention U-Estate listings first (search_listings); other websites' listings only after them, or when asked about the wider market.
@@ -147,10 +179,10 @@ for (const t of TOOLS) {
 }
 
 const agent = {
-  name: "U-Estate voice assistant (hackathon demo)",
+  name: "U-Pal - U-Estate voice assistant (hackathon demo)",
   conversation_config: {
     agent: {
-      first_message: "Hi {{user_name}}, I'm U-Estate's assistant. What kind of home are you looking for?",
+      first_message: "Hi {{user_name}}, I'm U-Pal, U-Estate's assistant. What kind of home are you looking for?",
       language: "en",
       prompt: { prompt: PROMPT, tool_ids: toolIds, temperature: 0.2 },
     },

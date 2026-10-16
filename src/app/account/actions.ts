@@ -25,6 +25,10 @@ export async function updateProfile(_prev: AuthState, formData: FormData): Promi
   if (me.isDemoPersona && parsed.data.nationality !== me.nationality) {
     return { ok: false, message: "Demo personas keep their nationality so the co-buy rules demo stays the same.", fieldErrors: { nationality: "Fixed for demo personas." } };
   }
+  if (parsed.data.nationality !== me.nationality && (await readDb()).coinvestHoldings.some((h) => h.userId === me.id && h.units > 0)) {
+    // The legal lanes depend on nationality (D-14): sell your Co-Invest units before changing it.
+    return { ok: false, message: "Sell your Co-Invest units before changing your nationality.", fieldErrors: { nationality: "Locked while you hold Co-Invest units." } };
+  }
   if (usesSupabase()) {
     const { error } = await (await supabaseServer()).from("profiles").update({ display_name: parsed.data.name, nationality: parsed.data.nationality, locale: parsed.data.locale }).eq("id", me.id);
     if (error) return { ok: false, message: dbMessage(error) };

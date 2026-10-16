@@ -147,3 +147,22 @@ export const config = { matcher: ["/((?!_next/static|_next/image|brand/|samples/
   - write `security definer` functions with `set search_path = public`
 - Add checks for the new behaviour to `scripts/db/verify.mjs`, then run `npm run db:verify`.
 - Never put personal data, keys or passwords in migrations, seeds or tests. Demo emails use `@example.com`.
+
+## 7. Premium and Co-Invest (migration 0700, D-44)
+
+`20261016000700_premium_coinvest.sql` adds, without changing older migrations:
+
+- `profiles.premium`, `premium_since` (protected: only `premium_upgrade` or the service role change them) and `app_settings.premium.fee_thb` (9,900 test money).
+- Signed wallet movements: `wallet_transactions.kind` gains `premium_fee`, `share_purchase` (negative), `share_sale`, `refund` (positive); `request_id`, `offering_id`, `trade_id`. `wallet_available(user)` = all movements − co-buy holds. The top-up cap counts grants and top-ups only.
+- `coinvest_offerings` (public read, realtime), `coinvest_holdings` and `coinvest_trades` (append-only); read by the member themself or by premium members; no direct writes.
+- RPCs (authenticated): `premium_upgrade(request)`, `coinvest_buy(offering, units, request)`, `coinvest_sell(offering, units, request)`. One internal function, `coinvest_apply_trade`, does every check and write in one transaction: lock order profile → offering → building, units ≤ pool / ≤ held, max holders, legal lanes and the 49% quota (`foreign_area_committed` now also used by `cobuy_commit`), wallet balance, ledger entry `share_transfer`, funded → active.
+- Service role only: `demo_seed_premium`, `demo_seed_trade`, `coinvest_revalue` (used by `scripts/db/seed-population.ts`).
+
+Apply it in the SQL editor of the hosted project **before** deploying the code that reads it (until then the app keeps working and Co-Invest shows no offerings). Then seed the demo population:
+
+```bash
+npx --yes tsx@4.20.6 scripts/db/seed-population.ts            # dry run
+npx --yes tsx@4.20.6 scripts/db/seed-population.ts --apply    # idempotent; never deletes
+```
+
+Checks: `npm run db:verify` (Co-Invest RPCs, RLS and invariants) and `npx --yes tsx@4.20.6 scripts/db/verify-population.ts` (the population replayed through SQL matches the TypeScript engine unit for unit).

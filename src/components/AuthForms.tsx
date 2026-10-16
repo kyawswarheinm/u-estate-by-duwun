@@ -36,7 +36,7 @@ export function SignInForm({ next }: { next: string }) {
     <form action={action} className="grid gap-4" noValidate>
       <input type="hidden" name="next" value={next} />
       <Field id="email" label="Email" hint="The made-up email you signed up with, e.g. anythings@example.com" error={fe.email}>
-        <input {...describe("email", fe.email, true)} type="email" required autoComplete="email" defaultValue={state?.values?.email} className="input" />
+        <input {...describe("email", fe.email, true)} type="email" autoCapitalize="none" spellCheck={false} required autoComplete="email" defaultValue={state?.values?.email} className="input" />
       </Field>
       <Field id="password" label="Password" error={fe.password}>
         <PasswordInput id="password" error={fe.password} autoComplete="current-password" />
@@ -62,7 +62,7 @@ export function SignUpForm({ next }: { next: string }) {
         <input {...describe("name", fe.name, true)} required maxLength={60} autoComplete="name" defaultValue={v.name} className="input" />
       </Field>
       <Field id="email" label="Email" hint="Any non-real email to demo, e.g. anythings@example.com. Real inboxes like Gmail are refused." error={fe.email}>
-        <input {...describe("email", fe.email, true)} type="email" required autoComplete="email" placeholder="anythings@example.com" defaultValue={v.email} className="input" />
+        <input {...describe("email", fe.email, true)} type="email" autoCapitalize="none" spellCheck={false} required autoComplete="email" placeholder="anythings@example.com" defaultValue={v.email} className="input" />
       </Field>
       <Field id="password" label="Password" hint="At least 8 characters. We store only a secure hash, never the password. Don't reuse a real password." error={fe.password}>
         <PasswordInput id="password" error={fe.password} hint autoComplete="new-password" />

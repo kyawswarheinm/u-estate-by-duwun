@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const key = ELEVENLABS.apiKey();
   const agentId = ELEVENLABS.agentId();
   if (!key || !agentId) {
-    return Response.json({ code: "AGENT_NOT_CONFIGURED", message: "The live voice agent is not connected (ELEVENLABS_API_KEY / ELEVENLABS_AGENT_ID)." }, { status: 501 });
+    return Response.json({ code: "AGENT_NOT_CONFIGURED", message: "Voice is not available right now. You can keep typing." }, { status: 501 });
   }
   const limited = rateLimit(req, "agent-token", 6);
   if (limited) return limited;

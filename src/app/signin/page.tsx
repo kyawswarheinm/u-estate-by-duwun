@@ -29,7 +29,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <div className="grid gap-8 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-start">
       <section aria-labelledby="signin-title" className="panel p-6 sm:p-8">
         <Image src="/brand/u-estate-app-icon-512.png" alt="" width={48} height={48} className="mb-4 rounded-[12px]" />
-        <h1 id="signin-title" className="font-display text-4xl font-semibold"><Text message="Welcome back" /></h1>
+        <h1 id="signin-title" className="page-title"><Text message="Welcome back" /></h1>
         <p className="mb-6 mt-2 text-deep"><Text message="Sign in to see your properties, your wallet and your offers." /></p>
         {me && <p className="mb-4 rounded-[10px] bg-ice px-4 py-3 text-sm">You are signed in as <strong>{me.name}</strong>. Signing in again switches account.</p>}
         <SignInForm next={next} />
@@ -38,7 +38,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       {demoMode() && (
         <section id="personas" aria-labelledby="personas-title" className="grid gap-4">
           <div>
-            <h2 id="personas-title" className="text-2xl font-bold"><Text message="Or try a demo persona" /></h2>
+            <h2 id="personas-title" className="section-title"><Text message="Or try a demo persona" /></h2>
             <p className="mt-1 max-w-xl text-deep"><Text message="One click, no password. Use these to show the co-buy rules, FairOffer and the seller view during the demo." /></p>
           </div>
           <ul className="grid gap-3 sm:grid-cols-2">

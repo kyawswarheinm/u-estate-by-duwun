@@ -16,6 +16,16 @@ export function avalancheConfigured() {
   return Boolean(process.env.AVALANCHE_PRIVATE_KEY);
 }
 
+/** True when the Fuji RPC answers with the right chain id within a few seconds. */
+export async function avalancheReachable() {
+  try {
+    const client = createPublicClient({ chain: avalancheFuji, transport: http(rpc(), { timeout: 4_000, retryCount: 0 }) });
+    return (await client.getChainId()) === AVALANCHE_CHAIN_ID;
+  } catch {
+    return false;
+  }
+}
+
 export function explorerTxUrl(txHash: string) {
   return `${avalancheFuji.blockExplorers.default.url}/tx/${txHash}`;
 }

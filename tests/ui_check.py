@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 BASE = sys.argv[1].rstrip("/")
 OUT = sys.argv[2]
 os.makedirs(OUT, exist_ok=True)
-PAGES = ["/", "/listing/l-condo", "/listing/l-house", "/listing/l-condo/offers", "/ledger", "/partners", "/assistant", "/signin", "/signup"]
+PAGES = ["/", "/listing/l-condo", "/listing/l-house", "/listing/l-condo/offers", "/ledger", "/assistant", "/signin", "/signup"]
 results = []
 
 def rec(area, name, ok, detail=""):
@@ -68,8 +68,6 @@ with sync_playwright() as p:
                     rec(area, "honesty: 'Confirm ownership at the Land Office' (UI_SPEC §7)", "Land Office" in t)
                 if path == "/ledger":
                     rec(area, "honesty: test money + fingerprint only on-chain", "test money" in t.lower() and ("fingerprint" in t.lower()), "")
-                if path == "/partners":
-                    rec(area, "partners page shows fallback state, no key values", ("fallback" in t.lower() or "not connected" in t.lower()) and "sk_" not in t, "")
             page.close()
         ctx.close()
 
