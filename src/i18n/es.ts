@@ -1089,5 +1089,7 @@ export const es = {
   "Sell 1 unit": "Vender 1 unidad",
   "Checked Co-Invest opportunities": "Oportunidades de Co-Invest consultadas",
   "Checked your account": "Cuenta consultada",
-  "Checked the ledger status": "Estado del libro consultado"
+  "Checked the ledger status": "Estado del libro consultado",
+  "Home": "Inicio",
+  "Quick navigation": "Navegación rápida"
 } satisfies Dictionary;

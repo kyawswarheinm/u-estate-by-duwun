@@ -14,6 +14,7 @@ import { CloseIcon, UPalAvatar } from "./icons";
 // Mounted once in the root layout (through UPalProvider), rendered into <body> so no page container can clip it.
 
 const BUBBLE_DELAY_MS = 1200;
+const PHONE_BUBBLE_MS = 12_000;
 const MAX_DISMISSALS = 3; // after three "not now"s, stop offering questions for the rest of the session
 const DISMISSED_KEY = "upal:dismissed";
 const lastKey = (kind: string) => `upal:last:${kind}`;
@@ -65,6 +66,13 @@ export function UPalWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionKey]);
   const shownBubble = bubble?.key === questionKey && !open ? bubble.text : null;
+
+  // Phones have little room: the question steps aside after a while (not counted as a dismissal).
+  useEffect(() => {
+    if (!shownBubble || !matchMedia("(max-width: 639px)").matches) return;
+    const timer = setTimeout(() => setBubble(null), PHONE_BUBBLE_MS);
+    return () => clearTimeout(timer);
+  }, [shownBubble]);
 
   // The modal: a real <dialog> (top layer, focus kept inside, page inert behind it). State lives in the provider.
   useEffect(() => {

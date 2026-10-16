@@ -57,7 +57,7 @@ export default async function OfferingPage({ params }: { params: Promise<{ code:
         <p className="lead"><bdi>{property.district}, {property.province}</bdi> · {property.areaSqm} m² · {property.deedType}</p>
       </header>
 
-      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="grid gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
         <div className="stat-tile"><dt>{o.status === "funding" ? t("Funding price per unit") : t("Unit value now")}</dt><dd className="price">{money(price)}</dd><dd className="caption">{t("{count} units in total", { count: o.totalUnits })}</dd></div>
         <div className="stat-tile">
           <dt>{o.status === "funding" ? t("Funding progress") : t("Units available from the pool")}</dt>

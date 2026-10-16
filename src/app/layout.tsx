@@ -22,6 +22,7 @@ import { signOut } from "./auth/actions";
 import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 import { UPalProvider } from "@/components/upal/UPalProvider";
 import { UPalWidget } from "@/components/upal/UPalWidget";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { usesSupabase } from "@/lib/db/runtime";
 import { asTheme, THEME_BOOT_SCRIPT, THEME_COOKIE } from "@/lib/theme";
 
@@ -85,6 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <main tabIndex={-1} id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
           <UPalWidget />
         </UPalProvider>
+        <MobileTabBar signedIn={Boolean(me)} />
         <footer className="band text-silver">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>

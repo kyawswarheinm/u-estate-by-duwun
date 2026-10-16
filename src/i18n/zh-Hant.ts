@@ -1089,5 +1089,7 @@ export const zhHant = {
   "Sell 1 unit": "賣出 1 個單位",
   "Checked Co-Invest opportunities": "已查看 Co-Invest 機會",
   "Checked your account": "已查看您的帳戶",
-  "Checked the ledger status": "已查看帳本狀態"
+  "Checked the ledger status": "已查看帳本狀態",
+  "Home": "首頁",
+  "Quick navigation": "快速導覽"
 } satisfies Dictionary;

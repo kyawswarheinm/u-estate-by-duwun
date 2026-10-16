@@ -529,6 +529,25 @@ html:has(dialog.upal-dialog[open]) { overflow: hidden; }
   .upal-launcher, .upal-ask, .upal-dialog[open], .upal-dialog::backdrop { transition: none; animation: none; }
   .upal-typing i, .upal-live-dot, .upal-launcher-live { animation: none; }
 }
+/* ---------- Phone tab bar (D-46): the main places one thumb away; U-Pal floats above it ---------- */
+.tab-bar { display: none; }
+@media (max-width: 767px) {
+  .tab-bar {
+    display: block; position: fixed; inset-inline: 0; inset-block-end: 0; z-index: var(--z-header);
+    padding-block-end: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--paper) 94%, transparent);
+    border-block-start: 1px solid var(--silver); backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
+  }
+  .tab-bar ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 560px; margin-inline: auto; }
+  .tab-bar-link { display: grid; justify-items: center; gap: 2px; min-height: 58px; padding-block: 8px 6px; font-size: 11px; font-weight: 600; color: var(--blue-grey); text-decoration: none; }
+  .tab-bar-link span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 4px; }
+  .tab-bar-link[aria-current="page"] { color: var(--midnight); }
+  .tab-bar-link[aria-current="page"] svg { stroke-width: 2.2; }
+  .upal-root { inset-block-end: calc(58px + 14px + env(safe-area-inset-bottom, 0px)); }
+  body > footer { padding-block-end: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  /* While typing, the keyboard needs the room. */
+  body:has(main input:focus, main textarea:focus, main select:focus) .tab-bar { display: none; }
+}
+
 /* ---------- Header: logo | centred nav | actions ---------- */
 :root { --header-h: 72px; }
 .site-header-bar {

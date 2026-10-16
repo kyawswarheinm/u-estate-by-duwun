@@ -135,7 +135,7 @@ export default async function CoinvestPage() {
         <Link href="/account/wallet" className="btn btn-secondary">{t("Wallet: {amount}", { amount: money(wallet) })}</Link>
       </header>
 
-      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <dl className="grid gap-3 min-[420px]:grid-cols-2 xl:grid-cols-5">
         <div className="stat-tile"><dt>{t("Portfolio value")}</dt><dd className="price">{money(p.totals.valueThb)}</dd></div>
         <div className="stat-tile"><dt>{t("Invested")}</dt><dd className="price">{money(p.totals.costThb)}</dd></div>
         <div className="stat-tile"><dt>{t("Gain or loss")}</dt><dd className={`price ${p.totals.gainThb >= 0 ? "text-teal" : "text-red"}`}>{p.totals.gainThb >= 0 ? "+" : "−"}{money(Math.abs(p.totals.gainThb))}</dd><dd className="caption">{p.totals.gainPct >= 0 ? "+" : "−"}{Math.abs(p.totals.gainPct)}%</dd></div>

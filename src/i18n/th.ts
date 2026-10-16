@@ -1089,5 +1089,7 @@ export const th = {
   "Sell 1 unit": "ขาย 1 หน่วย",
   "Checked Co-Invest opportunities": "ตรวจโอกาส Co-Invest แล้ว",
   "Checked your account": "ตรวจบัญชีของคุณแล้ว",
-  "Checked the ledger status": "ตรวจสถานะบัญชีโปร่งใสแล้ว"
+  "Checked the ledger status": "ตรวจสถานะบัญชีโปร่งใสแล้ว",
+  "Home": "หน้าแรก",
+  "Quick navigation": "เมนูลัด"
 } satisfies Dictionary;

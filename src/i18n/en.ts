@@ -1087,7 +1087,9 @@ export const en = {
   "Sell 1 unit": "Sell 1 unit",
   "Checked Co-Invest opportunities": "Checked Co-Invest opportunities",
   "Checked your account": "Checked your account",
-  "Checked the ledger status": "Checked the ledger status"
+  "Checked the ledger status": "Checked the ledger status",
+  "Home": "Home",
+  "Quick navigation": "Quick navigation"
 } as const;
 export type MessageKey = keyof typeof en;
 export type Dictionary = { [K in MessageKey]: string };

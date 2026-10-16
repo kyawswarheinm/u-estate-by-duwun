@@ -1089,5 +1089,7 @@ export const ar = {
   "Sell 1 unit": "بيع وحدة واحدة",
   "Checked Co-Invest opportunities": "تم التحقق من فرص Co-Invest",
   "Checked your account": "تم التحقق من حسابك",
-  "Checked the ledger status": "تم التحقق من حالة السجل"
+  "Checked the ledger status": "تم التحقق من حالة السجل",
+  "Home": "الرئيسية",
+  "Quick navigation": "تنقل سريع"
 } satisfies Dictionary;
