@@ -1,33 +1,24 @@
-// ⚠️ SAMPLE INDEX VALUES FOR THE DEMO — NOT REAL DATA.
-// Replace with the Bank of Thailand Residential Property Price Index (monthly, by type/region):
-// download the series from the BOT statistics portal, save it as a CSV, and update INDEX_SOURCE.
-// The app shows "SAMPLE" on every chart until isSample is false.
-
-export const INDEX_SOURCE = {
-  label: "SAMPLE index (replace with Bank of Thailand Residential Property Price Index)",
-  isSample: true,
-};
+// Price index for the price panel, the listing chart and the valuation (P2T07, 16 Oct 2026).
+// REAL DATA: Bank of Thailand Residential Property Price Index (table EC_EI_008_S4), Bangkok and vicinities,
+// 2011 = 100, monthly. Downloaded by pipeline/analytics/fetch_bot.py (see pipeline/analytics/data/SOURCE.md);
+// the history is read from src/data/market/forecast.json so the app and the forecast share one copy.
+// The file keeps its old name because many modules import it.
+import forecastJson from "./market/forecast.json";
 
 type Point = { month: string; value: number };
 
-function build(start: number, monthlyGrowth: number, wobble: number): Point[] {
-  const out: Point[] = [];
-  let v = start;
-  for (let y = 2019; y <= 2026; y++) {
-    for (let m = 1; m <= 12; m++) {
-      if (y === 2026 && m > 9) break;
-      const k = out.length;
-      v = v * (1 + monthlyGrowth) + Math.sin(k / 5) * wobble; // deterministic, no randomness
-      out.push({ month: `${y}-${String(m).padStart(2, "0")}`, value: Math.round(v * 10) / 10 });
-    }
-  }
-  return out;
-}
+const BOT = forecastJson.series;
 
-const SERIES: Record<string, Point[]> = {
-  condo_bkk: build(150, 0.0025, 0.35),
-  house_bkk: build(140, 0.003, 0.25),
+export const INDEX_SOURCE = {
+  label: `${forecastJson.meta.series_source} (2011 = 100)`,
+  isSample: forecastJson.meta.is_sample,
 };
+
+const SERIES: Record<string, Point[]> = Object.fromEntries(
+  BOT.map((s) => [s.key, s.history.map((p) => ({ month: p.period, value: p.value }))]),
+);
+
+if (!SERIES.condo_bkk || !SERIES.house_bkk) throw new Error("forecast.json must contain condo_bkk and house_bkk");
 
 export function indexSeries(key: string): Point[] {
   return SERIES[key] ?? SERIES.condo_bkk;

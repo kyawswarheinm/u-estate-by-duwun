@@ -1,0 +1,5 @@
+# P2 analytics pipeline (docs/WORKPLAN.md §5). Python 3.11, CPU only.
+timesfm[torch]==3.0.2
+pandas==3.0.6
+openpyxl==3.1.5
+matplotlib==3.11.2
