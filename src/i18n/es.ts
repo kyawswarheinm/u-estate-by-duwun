@@ -463,5 +463,8 @@ export const es = {
   "How are {type} prices in {area}?": "¿Cómo están los precios de {type} en {area}?",
   "Bangkok and vicinity": "Bangkok y alrededores",
   "2D view": "Vista 2D",
-  "3D view": "Vista 3D"
+  "3D view": "Vista 3D",
+  "Browse by type": "Explorar por tipo",
+  "See them on the map": "Verlos en el mapa",
+  "Where do you want to live?": "¿Dónde quieres vivir?"
 } satisfies Dictionary;

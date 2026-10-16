@@ -461,7 +461,10 @@ export const en = {
   "How are {type} prices in {area}?": "How are {type} prices in {area}?",
   "Bangkok and vicinity": "Bangkok and vicinity",
   "2D view": "2D view",
-  "3D view": "3D view"
+  "3D view": "3D view",
+  "Browse by type": "Browse by type",
+  "See them on the map": "See them on the map",
+  "Where do you want to live?": "Where do you want to live?"
 } as const;
 export type MessageKey = keyof typeof en;
 export type Dictionary = { [K in MessageKey]: string };

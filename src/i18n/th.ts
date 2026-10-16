@@ -463,5 +463,8 @@ export const th = {
   "How are {type} prices in {area}?": "ราคา{type}ใน{area}เป็นอย่างไร",
   "Bangkok and vicinity": "กรุงเทพฯ และปริมณฑล",
   "2D view": "มุมมอง 2D",
-  "3D view": "มุมมอง 3D"
+  "3D view": "มุมมอง 3D",
+  "Browse by type": "เลือกดูตามประเภท",
+  "See them on the map": "ดูบนแผนที่",
+  "Where do you want to live?": "อยากอยู่ที่ไหน"
 } satisfies Dictionary;

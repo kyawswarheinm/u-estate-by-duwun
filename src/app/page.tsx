@@ -8,6 +8,9 @@ import { currentUser } from "@/lib/session";
 import { agentSaleFee, sellerFee } from "@/lib/rules";
 import { VerificationBadge } from "@/components/ui";
 import { VoiceSearch } from "@/components/VoiceSearch";
+import Image from "next/image";
+import { MarketPropertyArt, artVariant } from "@/components/MarketPropertyArt";
+import { coverPhotos } from "@/app/market/cover-photos";
 
 const EXAMPLE_PRICE = 4_000_000;
 
@@ -16,6 +19,8 @@ export default async function Home() {
   const t = translator(locale);
   const [db, me] = await Promise.all([readDb(), currentUser()]);
   const active = db.listings.filter((l) => l.status !== "sold" && !l.archivedAt);
+  const photos = await coverPhotos(active.map((l) => l.id));
+  const districts = [...new Set(db.properties.map((p) => p.district))].sort();
 
   // The hero's centrepiece: the real fee rule on a ฿4M sale, computed by the same code as every listing.
   const fees = [
@@ -35,7 +40,16 @@ export default async function Home() {
             <p className="mt-5 max-w-xl text-lg leading-8 text-silver">
               <Text message="homeDescription" />
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            {/* Location search: opens the market map and cards at that place (works without JavaScript). */}
+            <form action="/market" method="get" role="search" className="mt-7 grid max-w-xl gap-2">
+              <label htmlFor="hero-q" className="font-semibold text-white"><Text message="Where do you want to live?" /></label>
+              <div className="flex gap-2 rounded-[14px] bg-white p-1.5 shadow-[0_15px_40px_rgba(0,0,0,.25)]">
+                <input id="hero-q" name="q" list="hero-places" autoComplete="off" placeholder={t("District or project, e.g. Sathorn")} className="min-h-12 min-w-0 flex-1 rounded-[10px] px-3 text-midnight outline-offset-2" />
+                <datalist id="hero-places">{districts.map((d) => <option key={d} value={d} />)}</datalist>
+                <button type="submit" className="btn btn-primary"><Text message="Search" /></button>
+              </div>
+            </form>
+            <div className="mt-6 flex flex-wrap gap-3">
               <a href="#homes" className="btn btn-on-dark"><Text message="Find a home" /></a>
               <Link href="/sell" className="btn btn-ghost-dark"><Text message="Sell a property" /></Link>
               {!me && <Link href="/signup" className="btn btn-ghost-dark"><Text message="Create account" /></Link>}
@@ -69,17 +83,44 @@ export default async function Home() {
         <VoiceSearch />
       </div>
 
+      <nav aria-labelledby="browse-title" className="mb-10 grid gap-3">
+        <h2 id="browse-title" className="text-2xl font-bold"><Text message="Browse by type" /></h2>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {([["condo", "Condo", "condo"], ["house", "House", "house"], ["townhouse", "Townhouse", "townhouse"], ["building", "Building", "office"]] as const).map(([type, label, art]) => (
+            <li key={type}>
+              <Link href={`/market?type=${type}`} className="panel block overflow-hidden no-underline transition-colors hover:border-deep">
+                <MarketPropertyArt variant={art} className="aspect-[16/9] h-auto w-full" />
+                <span className="block p-3 font-semibold"><Label>{label}</Label></span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       <section id="homes" aria-labelledby="homes-title" className="scroll-mt-24">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <h2 id="homes-title" className="text-2xl font-bold"><Text message="Homes on U-Estate" /></h2>
-          <p className="text-sm text-deep"><Text message="{count} listings · demo data" values={{ count: active.length }} /></p>
+          <p className="flex flex-wrap items-center gap-3 text-sm text-deep">
+            <Text message="{count} listings · demo data" values={{ count: active.length }} />
+            <Link href="/market" className="font-semibold"><Text message="See them on the map" /></Link>
+          </p>
         </div>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {active.map((l) => {
             const p = db.properties.find((x) => x.id === l.propertyId)!;
             const mine = me?.id === l.sellerId;
             return (
-              <li key={l.id} className="panel relative flex flex-col p-5 transition-colors hover:border-deep">
+              <li key={l.id} className="panel relative flex flex-col overflow-hidden p-5 transition-colors hover:border-deep">
+                <div className="relative -mx-5 -mt-5 mb-4 aspect-[16/10] bg-ice">
+                  {photos[l.id] ? (
+                    <Image src={photos[l.id]} alt="" fill unoptimized sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+                  ) : (
+                    <>
+                      <MarketPropertyArt variant={artVariant(p.type, p.title)} className="h-full w-full" />
+                      <span className="absolute bottom-2 start-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-deep"><Text message="Illustration" /></span>
+                    </>
+                  )}
+                </div>
                 <div className="flex items-center justify-between gap-2 text-sm text-deep">
                   <span className="capitalize"><Text message="{type} for {kind}" values={{ type: t(p.type), kind: t(l.kind) }} /></span>
                   {mine && <span className="pill bg-ice text-midnight"><Text message="Your listing" /></span>}

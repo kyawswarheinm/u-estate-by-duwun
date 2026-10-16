@@ -463,5 +463,8 @@ export const ar = {
   "How are {type} prices in {area}?": "كيف هي أسعار {type} في {area}؟",
   "Bangkok and vicinity": "بانكوك وضواحيها",
   "2D view": "عرض ثنائي الأبعاد",
-  "3D view": "عرض ثلاثي الأبعاد"
+  "3D view": "عرض ثلاثي الأبعاد",
+  "Browse by type": "تصفح حسب النوع",
+  "See them on the map": "شاهدها على الخريطة",
+  "Where do you want to live?": "أين تريد أن تسكن؟"
 } satisfies Dictionary;

@@ -463,5 +463,8 @@ export const zhHant = {
   "How are {type} prices in {area}?": "{area}的{type}價格如何？",
   "Bangkok and vicinity": "曼谷及周邊",
   "2D view": "2D 檢視",
-  "3D view": "3D 檢視"
+  "3D view": "3D 檢視",
+  "Browse by type": "依類型瀏覽",
+  "See them on the map": "在地圖上查看",
+  "Where do you want to live?": "您想住在哪裡？"
 } satisfies Dictionary;
