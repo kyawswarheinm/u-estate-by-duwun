@@ -1,5 +1,6 @@
 "use client";
-import { LocaleSwitcher } from "./LocaleSwitcher";
+import { CurrencyMenu, LanguageMenu, ThemeMenu, useSystemThemeSync } from "./preferences/PreferenceMenus";
+import type { ThemePref } from "@/lib/theme";
 import { useI18n } from "@/i18n/provider";
 
 import { Label, Text } from "@/i18n/Text";
@@ -41,24 +42,49 @@ const ACCOUNT_LINKS = [
 export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2.5 text-xl font-bold tracking-tight ${inverse ? "text-ice" : "text-midnight"}`}>
-      <Image
-        src={inverse ? "/brand/u-estate-mark-white.png" : "/brand/u-estate-mark-midnight.png"}
-        alt=""
-        width={26}
-        height={32}
-        priority={!inverse}
-      />
+      {inverse ? (
+        <Image src="/brand/u-estate-mark-white.png" alt="" width={26} height={32} />
+      ) : (
+        <>
+          {/* The navy mark disappears on a dark header, so dark mode shows the white mark. */}
+          <Image src="/brand/u-estate-mark-midnight.png" alt="" width={26} height={32} priority className="dark:hidden" />
+          <Image src="/brand/u-estate-mark-white.png" alt="" width={26} height={32} className="hidden dark:block" />
+        </>
+      )}
       U-Estate
     </span>
   );
 }
 
-export function SiteHeader({ user, demoMode, signOutAction, notifications }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void> }) {
+export function SiteHeader({ user, demoMode, signOutAction, notifications, themePref: initialThemePref }: { notifications?: React.ReactNode; user: HeaderUser; demoMode: boolean; signOutAction: () => Promise<void>; themePref: ThemePref }) {
   const { t } = useI18n();
+  const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
+  useSystemThemeSync(themePref);
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false); // account menu
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDialogElement>(null);
+  const mobileTrigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const dialog = mobileRef.current;
+    if (!dialog) return;
+    if (!mobileOpen) { dialog.close(); return; }
+    dialog.showModal();
+    const trigger = mobileTrigger.current;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const wide = window.matchMedia("(min-width: 1280px)");
+    const closeOnWide = () => { if (wide.matches) setMobileOpen(false); };
+    wide.addEventListener("change", closeOnWide);
+    return () => {
+      document.body.style.overflow = previous;
+      wide.removeEventListener("change", closeOnWide);
+      dialog.close();
+      trigger?.focus({ preventScroll: true });
+    };
+  }, [mobileOpen]);
 
   // Close menus on navigation (reset during render, the React-recommended pattern), outside click and Escape.
   const [lastPath, setLastPath] = useState(pathname);
@@ -70,7 +96,7 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
   useEffect(() => {
     if (!menuOpen && !mobileOpen) return;
     const onClick = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenuOpen(false);
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setMenuOpen(false); setMobileOpen(false); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !mobileOpen) { setMenuOpen(false); menuRef.current?.querySelector("button")?.focus(); } };
     document.addEventListener("click", onClick);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -83,13 +109,13 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
   const next = encodeURIComponent(onAuthPage ? "/account" : pathname || "/");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-silver bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
+    <header className="site-header sticky top-0 z-40 border-b border-silver bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
       <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-4 px-4">
         <Link href="/" aria-label={t("U-Estate home")} className="rounded-md no-underline">
           <Logo />
         </Link>
 
-        <nav aria-label={t("Main")} className="hidden lg:block">
+        <nav aria-label={t("Main")} className="hidden xl:block">
           <ul className="flex items-center gap-5">
             {NAV.map((n) => (
               <li key={n.href}>
@@ -100,29 +126,30 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
         </nav>
 
         <div className="flex items-center gap-2">
-          <details className="utility-menu relative">
-            <summary className="cursor-pointer rounded-full px-3 py-2 text-sm" aria-label={t("Language")}>&#9678; <span className="hidden xl:inline">{t("Language")}</span></summary>
-            <div className="absolute end-0 top-12 w-72 rounded-2xl border border-line bg-white p-5 shadow-[var(--shadow)]"><LocaleSwitcher /></div>
-          </details>
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <LanguageMenu />
+            <CurrencyMenu />
+            <ThemeMenu pref={themePref} onChange={setThemePref} />
+          </div>
           {notifications}
           {user ? (
             <div ref={menuRef} className="relative">
               <button
                 type="button"
-                onClick={() => setMenuOpen((o) => !o)}
+                onClick={() => { setMenuOpen((o) => !o); setMobileOpen(false); }}
                 aria-expanded={menuOpen}
                 aria-controls="account-menu"
                 aria-label={`${t("Account menu")}: ${user.name}`}
-                className="flex min-h-11 items-center gap-2 rounded-full border border-silver bg-white py-1 ps-1 pe-3 hover:border-deep"
+                className="flex min-h-11 items-center gap-2 rounded-full border border-silver bg-paper py-1 ps-1 pe-3 hover:border-deep"
               >
                 <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-midnight text-sm font-bold text-ice">{user.initials}</span>
-                <span className="hidden text-start leading-tight sm:block">
+                <span className="hidden max-w-32 truncate text-start leading-tight 2xl:block">
                   <span className="block text-sm font-semibold">{user.name}</span>
                   <span className="block text-xs text-muted"><Money amount={user.availableThb} /> <Text message="test money" /></span>
                 </span>
               </button>
               {menuOpen && (
-                <div id="account-menu" className="absolute end-0 top-[calc(100%+8px)] w-72 rounded-[14px] border border-silver bg-white p-2 shadow-[var(--shadow)]">
+                <div id="account-menu" className="account-menu absolute end-0 top-[calc(100%+8px)] w-72 rounded-[14px] border border-silver bg-paper p-2 shadow-[var(--shadow)]">
                   <div className="border-b border-silver px-3 pb-3 pt-2">
                     <p className="font-semibold">{user.name}</p>
                     <p className="text-sm text-muted">{user.isDemoPersona ? <Text message="Demo persona" /> : user.email}</p>
@@ -159,11 +186,12 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
           )}
 
           <button
+            ref={mobileTrigger}
             type="button"
-            className="btn btn-secondary px-3 lg:hidden"
+            className="btn btn-secondary px-3 xl:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            onClick={() => setMobileOpen((o) => !o)}
+            onClick={() => { setMobileOpen((o) => !o); setMenuOpen(false); }}
           >
             <span aria-hidden="true">☰</span>
             <span className="sr-only"><Text message="Menu" /></span>
@@ -171,8 +199,19 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
         </div>
       </div>
 
-      {mobileOpen && (
-        <nav id="mobile-nav" aria-label={t("Main")} className="border-t border-silver bg-white px-4 pb-4 lg:hidden">
+      <dialog ref={mobileRef} className="mobile-menu" aria-label={t("Menu")} onCancel={() => setMobileOpen(false)} onClick={(e) => { if (e.target === e.currentTarget) setMobileOpen(false); }}
+        onKeyDown={(e) => {
+          if (e.key !== "Tab") return;
+          const controls = [...e.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), [tabindex="0"]')].filter(el => el.getClientRects().length);
+          const first = controls[0], last = controls.at(-1);
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+        }}>
+        <div className="mobile-menu-heading">
+          <Logo />
+          <button type="button" className="btn btn-secondary" onClick={() => setMobileOpen(false)}>{t("Close")}</button>
+        </div>
+        <nav id="mobile-nav" aria-label={t("Main")} className="px-4 pb-4" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setMobileOpen(false); }}>
           <ul className="grid">
             {NAV.map((n) => (
               <li key={n.href}>
@@ -188,8 +227,14 @@ export function SiteHeader({ user, demoMode, signOutAction, notifications }: { n
               </li>
             )}
           </ul>
+          <section aria-label={t("Preferences")} className="mt-2 grid gap-2 border-t border-silver pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("Preferences")}</p>
+            <LanguageMenu block />
+            <CurrencyMenu block />
+            <ThemeMenu block pref={themePref} onChange={setThemePref} />
+          </section>
         </nav>
-      )}
+      </dialog>
     </header>
   );
 }

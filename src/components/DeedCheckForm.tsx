@@ -70,7 +70,7 @@ export function DeedCheckForm({ listings, defaultListingId }: { listings: { id: 
             {data.outcome === "verified_sample" ? "✓ Deed checked (sample): no blocking issues found" : "! Needs human review"}
           </h2>
           <p className="mt-1">{data.result.summary}</p>
-          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dl className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-x-4 gap-y-1 text-sm">
             <dt className="text-ink-soft"><Text message="Deed type" /></dt><dd>{data.result.deed_type_label}</dd>
             <dt className="text-ink-soft"><Text message="Owner name" /></dt><dd>{data.result.owner_name ?? "Not readable"}</dd>
             <dt className="text-ink-soft"><Text message="Area" /></dt><dd>{data.result.area_text ?? "Not readable"}</dd>

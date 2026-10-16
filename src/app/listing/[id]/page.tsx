@@ -1,8 +1,9 @@
+import { RecordCell } from "@/components/RecordCell";
 import { ListingPhotos } from "@/components/ListingPhotos";
 import { startConversation } from "@/app/messages/actions";
 import { usesSupabase } from "@/lib/db/runtime";
 import { backendText } from "@/i18n/backend";
-import { formatMoney, translator, translateLabel } from "@/i18n";
+import { translator, translateLabel, formatMoneyRef } from "@/i18n";
 import { getPreferences } from "@/i18n/server";
 import { Text } from "@/i18n/Text";
 import { Money } from "@/components/Money";
@@ -24,7 +25,7 @@ import { MARKET_FORECAST, MarketType } from "@/lib/market-data";
 const MIN_MARKET_COMPARE = 3;
 
 export default async function ListingPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cobuyError?: string; created?: string }> }) {
-  const { locale } = await getPreferences();
+  const { locale, currency } = await getPreferences();
   const t = translator(locale);
   const { id } = await params;
   const { cobuyError, created } = await searchParams;
@@ -61,7 +62,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   return (
     <article className="grid gap-5">
       {isOwner && (
-        <section aria-label="Your listing" className="grid gap-3 rounded-[14px] bg-midnight p-5 text-ice sm:grid-cols-[1fr_auto] sm:items-center">
+        <section aria-label="Your listing" className="band grid gap-3 rounded-[14px] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
           <div>
             <p className="font-semibold">{created ? <Text message="Your listing is live." /> : <Text message="This is your listing." />}</p>
             <p className="text-sm text-silver"><Text message="Buyers see exactly what you see on this page, including your fee." /></p>
@@ -106,7 +107,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             <dd className="text-2xl font-bold"><Money amount={panel.askingThb} /></dd>
           </div>
           <div className="rounded-lg bg-mist p-4">
-            <dt className="text-sm text-ink-soft">Official appraisal {/sample/i.test(panel.appraisal.source) && <SampleTag />}</dt>
+            <dt className="text-sm text-ink-soft"><Text message="Official appraisal" /> {/sample/i.test(panel.appraisal.source) && <SampleTag />}</dt>
             {panel.appraisal.thb > 0 ? (
               <>
                 <dd className="text-2xl font-bold"><Money amount={panel.appraisal.thb} /></dd>
@@ -121,8 +122,8 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             {panel.estimate.thb !== null ? (
               <>
                 <dd className="text-2xl font-bold"><Money amount={panel.estimate.thb} /></dd>
-                <dd className="text-sm"><Text message="Range {low} – {high}" values={{ low: formatMoney(panel.estimate.lowThb, locale), high: formatMoney(panel.estimate.highThb, locale) }} /></dd>
-                <dd className="text-xs text-ink-soft">{panel.estimate.basis}</dd>
+                <dd className="text-sm"><Text message="Range {low} – {high}" values={{ low: formatMoneyRef(panel.estimate.lowThb, locale, currency), high: formatMoneyRef(panel.estimate.highThb, locale, currency) }} /></dd>
+                <dd className="text-xs text-ink-soft">{t("Last sale {price} in {month}; index {from} → {to}", { price: formatMoneyRef(panel.estimate.basisValues.priceThb, locale, currency), month: panel.estimate.basisValues.month, from: panel.estimate.basisValues.from, to: panel.estimate.basisValues.to })}</dd>
               </>
             ) : (
               <dd className="text-sm font-semibold">{panel.estimate.reason}</dd>
@@ -151,7 +152,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
                     : t("Compared with {count} asking prices in {district}: at the median.", values);
               })()}
             </p>
-            <p className="text-sm text-deep"><Text message={market.is_sample ? "Price per m² here: {mine}. Median of the sample listings: {median}." : "Price per m² here: {mine}. Median on listing websites: {median}."} values={{ mine: formatMoney(market.price_per_sqm, locale), median: formatMoney(market.median_price_per_sqm, locale) }} /></p>
+            <p className="text-sm text-deep"><Text message={market.is_sample ? "Price per m² here: {mine}. Median of the sample listings: {median}." : "Price per m² here: {mine}. Median on listing websites: {median}."} values={{ mine: formatMoneyRef(market.price_per_sqm, locale, currency), median: formatMoneyRef(market.median_price_per_sqm, locale, currency) }} /></p>
             <p className="mt-1 text-xs text-ink-soft">
               <Text message={market.is_sample ? "Sample listings are synthetic, not real prices." : "Asking prices on listing websites, not sale prices."} />{" "}
               <Link href={`/market?district=${encodeURIComponent(property.district)}`} className="font-semibold"><Text message="Explore the market" /></Link>
@@ -170,7 +171,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
           />
           <p className="text-sm font-semibold text-deep">{outlook}</p>
           {homeBase !== null && (
-            <p className="text-sm text-deep">{t("If this home's value moves with the index: {value} in 12 months (range {low} – {high}).", { value: formatMoney(homeAt(endIdx.p50), locale), low: formatMoney(homeAt(endIdx.p10), locale), high: formatMoney(homeAt(endIdx.p90), locale) })}</p>
+            <p className="text-sm text-deep">{t("If this home's value moves with the index: {value} in 12 months (range {low} – {high}).", { value: formatMoneyRef(homeAt(endIdx.p50), locale, currency), low: formatMoneyRef(homeAt(endIdx.p10), locale, currency), high: formatMoneyRef(homeAt(endIdx.p90), locale, currency) })}</p>
           )}
           <p className="text-xs text-ink-soft">
             {t("Forecast model: {model}", { model: MARKET_FORECAST.meta.model })} · <Text message="Source: {source} · latest {month}" values={{ source: panel.index.source, month: panel.index.latestMonth }} />
@@ -188,7 +189,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
             {panel.risks.map((r) => (
               <li key={r.label} className="flex gap-2">
                 <RiskIcon level={r.level} />
-                <span><strong>{r.label}:</strong> {r.detail}</span>
+                <span><strong>{t(r.label)}:</strong> {t(r.msg.key, r.msg.values)}</span>
               </li>
             ))}
           </ul>
@@ -197,14 +198,14 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
         <Card>
           <h2 className="text-xl font-bold"><Text message="Who pays what" /></h2>
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-start text-sm">
+            <table role="table" className="record-table w-full text-start text-sm">
               <caption className="sr-only"><Text message="Fees for this listing" /></caption>
               <thead>
                 <tr className="border-b border-line"><th scope="col" className="py-2"><Text message="Party" /></th><th scope="col">U-Estate</th><th scope="col"><Text message="U-topia member" /></th><th scope="col"><Text message="Typical agent" /></th></tr>
               </thead>
               <tbody>
-                <tr className="border-b border-line"><th scope="row" className="py-2"><Text message="Seller (on success)" /></th><td><Money amount={sellerFee(listing.askingPriceThb, false)} /> (1.5%)</td><td><Money amount={sellerFee(listing.askingPriceThb, true)} /> (0.75%)</td><td><Money amount={agentSaleFee(listing.askingPriceThb)} /> (3%)</td></tr>
-                <tr><th scope="row" className="py-2"><Text message="Buyer" /></th><td>฿0</td><td>฿0</td><td><Text message="varies" /></td></tr>
+                <tr className="border-b border-line"><th scope="row" className="py-2"><span className="record-label" aria-hidden="true"><Text message="Party" /></span><Text message="Seller (on success)" /></th><RecordCell label="U-Estate"><Money amount={sellerFee(listing.askingPriceThb, false)} /> (1.5%)</RecordCell><RecordCell label="U-topia member"><Money amount={sellerFee(listing.askingPriceThb, true)} /> (0.75%)</RecordCell><RecordCell label="Typical agent"><Money amount={agentSaleFee(listing.askingPriceThb)} /> (3%)</RecordCell></tr>
+                <tr><th scope="row" className="py-2"><span className="record-label" aria-hidden="true"><Text message="Party" /></span><Text message="Buyer" /></th><RecordCell label="U-Estate">฿0</RecordCell><RecordCell label="U-topia member">฿0</RecordCell><RecordCell label="Typical agent"><Text message="varies" /></RecordCell></tr>
               </tbody>
             </table>
           </div>

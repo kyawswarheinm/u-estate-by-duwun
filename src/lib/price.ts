@@ -1,16 +1,20 @@
 // Honest price method (decision D-13, build spec §8). Code computes every number; AI only explains them.
 import { INDEX_SOURCE, indexSeries } from "@/data/index-sample";
 import type { Listing, Property } from "./types";
+import type { MessageKey } from "@/i18n";
+
+/** A UI message: dictionary key + values, so pages can show the same sentence in the reader's language. */
+export type Msg = { key: MessageKey; values?: Record<string, string | number> };
 
 export interface PricePanel {
   askingThb: number;
   appraisal: { thb: number; source: string; date: string };
   estimate:
-    | { thb: number; lowThb: number; highThb: number; method: string; basis: string }
+    | { thb: number; lowThb: number; highThb: number; method: string; basis: string; basisValues: { priceThb: number; month: string; from: number; to: number } }
     | { thb: null; reason: string };
   index: { latestMonth: string; latestValue: number; source: string; isSample: boolean };
   askingVsEstimatePct: number | null;
-  risks: { level: "ok" | "warning" | "unknown"; label: string; detail: string }[];
+  risks: { level: "ok" | "warning" | "unknown"; label: MessageKey; detail: string; msg: Msg }[];
 }
 
 function valueAt(series: { month: string; value: number }[], month: string) {
@@ -39,6 +43,7 @@ export function pricePanel(listing: Listing, property: Property, comparables: { 
         highThb: Math.round(est * (1 + spreadPct)),
         method: "Index-adjusted: last sale price × (index now ÷ index at last sale)",
         basis: `Last sale ฿${property.lastSalePriceThb.toLocaleString("en-US")} in ${property.lastSaleDate}; index ${then} → ${latest.value}`,
+        basisValues: { priceThb: property.lastSalePriceThb, month: property.lastSaleDate, from: then, to: latest.value },
       };
     }
   }
@@ -49,19 +54,19 @@ export function pricePanel(listing: Listing, property: Property, comparables: { 
   const age = property.buildYear ? new Date().getFullYear() - property.buildYear : null;
   const risks: PricePanel["risks"] = [
     askingVsEstimatePct === null
-      ? { level: "unknown", label: "Price check", detail: "Not enough data to compare the asking price." }
+      ? { level: "unknown", label: "Price check", detail: "Not enough data to compare the asking price.", msg: { key: "Not enough data to compare the asking price." } }
       : askingVsEstimatePct > 15
-        ? { level: "warning", label: "Price check", detail: `Asking price is ${askingVsEstimatePct}% above the index-adjusted estimate. Ask the seller why.` }
-        : { level: "ok", label: "Price check", detail: `Asking price is ${askingVsEstimatePct > 0 ? "+" : ""}${askingVsEstimatePct}% vs the index-adjusted estimate.` },
+        ? { level: "warning", label: "Price check", detail: `Asking price is ${askingVsEstimatePct}% above the index-adjusted estimate. Ask the seller why.`, msg: { key: "Asking price is {pct}% above the index-adjusted estimate. Ask the seller why.", values: { pct: askingVsEstimatePct } } }
+        : { level: "ok", label: "Price check", detail: `Asking price is ${askingVsEstimatePct > 0 ? "+" : ""}${askingVsEstimatePct}% vs the index-adjusted estimate.`, msg: { key: "Asking price is {pct}% vs the index-adjusted estimate.", values: { pct: `${askingVsEstimatePct > 0 ? "+" : ""}${askingVsEstimatePct}` } } },
     listing.verificationStatus === "verified_sample"
-      ? { level: "ok", label: "Documents", detail: "Deed checked by AI (sample). Ownership must still be confirmed at the Land Office." }
+      ? { level: "ok", label: "Documents", detail: "Deed checked by AI (sample). Ownership must still be confirmed at the Land Office.", msg: { key: "Deed checked by AI (sample). Ownership must still be confirmed at the Land Office." } }
       : listing.verificationStatus === "needs_review"
-        ? { level: "warning", label: "Documents", detail: "The document check found issues that need human review." }
-        : { level: "unknown", label: "Documents", detail: "No document checked yet." },
+        ? { level: "warning", label: "Documents", detail: "The document check found issues that need human review.", msg: { key: "The document check found issues that need human review." } }
+        : { level: "unknown", label: "Documents", detail: "No document checked yet.", msg: { key: "No document checked yet." } },
     age === null
-      ? { level: "unknown", label: "Building age", detail: "Build year not provided." }
-      : { level: age > 25 ? "warning" : "ok", label: "Building age", detail: `${age} years old${age > 25 ? ": ask for an inspection report" : ""}.` },
-    { level: "unknown", label: "Flood risk", detail: "No flood data source connected yet. We do not guess." },
+      ? { level: "unknown", label: "Building age", detail: "Build year not provided.", msg: { key: "Build year not provided." } }
+      : { level: age > 25 ? "warning" : "ok", label: "Building age", detail: `${age} years old${age > 25 ? ": ask for an inspection report" : ""}.`, msg: { key: age > 25 ? "{age} years old: ask for an inspection report." : "{age} years old.", values: { age } } },
+    { level: "unknown", label: "Flood risk", detail: "No flood data source connected yet. We do not guess.", msg: { key: "No flood data source connected yet. We do not guess." } },
   ];
 
   return {

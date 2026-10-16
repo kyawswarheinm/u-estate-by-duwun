@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionaries, LOCALES, resolveLocale, translator, formatMoney, formatNumber, FX_RATES, translateLabel } from "./index";
+import { CURRENCIES, CURRENCY_ISSUER, currencyName, currencySymbol, dictionaries, LOCALES, resolveLocale, translator, formatMoney, formatMoneyRef, formatNumber, FX_DATE, FX_RATES, translateLabel } from "./index";
 import { en } from "./en";
 import { LOCALE_INFO } from "../lib/locale";
 
@@ -32,8 +32,21 @@ describe("five-locale dictionaries", () => {
     for (const locale of LOCALES) {
       expect(formatNumber(123, locale)).toBe("123");
       expect(formatMoney(123456, locale).replace(/[^0-9]/g, "")).toBe("123456");
-      expect(formatMoney(1000, locale, "USD")).toContain("29");
+      expect(formatMoney(1000, locale, "USD")).toContain(String(Math.round(1000 * FX_RATES.USD)));
+      // THB stays first and real; other currencies are an approximate reference next to it.
+      expect(formatMoneyRef(1000, locale, "THB")).toBe(formatMoney(1000, locale));
+      expect(formatMoneyRef(1000, locale, "EUR")).toBe(`\u2068${formatMoney(1000, locale)} (≈ ${formatMoney(1000, locale, "EUR")})\u2069`);
     }
     expect(FX_RATES.THB).toBe(1);
+    expect(FX_DATE).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+  it("names every currency, gives it a symbol and an issuer flag", () => {
+    for (const c of CURRENCIES) {
+      expect(currencyName(c, "en").length).toBeGreaterThan(2);
+      expect(currencySymbol(c, "en").length).toBeGreaterThan(0);
+      expect(CURRENCY_ISSUER[c]).toMatch(/^[A-Z]{2}$/);
+    }
+    expect(currencySymbol("THB", "en")).toBe("฿");
+    expect(CURRENCY_ISSUER.EUR).toBe("EU");
   });
 });

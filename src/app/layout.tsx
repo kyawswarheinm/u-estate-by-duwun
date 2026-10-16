@@ -7,10 +7,12 @@ import { I18nProvider } from "@/i18n/provider";
 import { LOCALE_INFO } from "@/lib/locale";
 
 import { Text } from "@/i18n/Text";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Inter, Noto_Sans_Thai, Noto_Sans_Arabic, Noto_Sans_TC } from "next/font/google";
 import "./globals.css";
+import "./responsive.css";
 import { readDb } from "@/lib/store";
 import { currentUser, demoMode } from "@/lib/session";
 import { initials } from "@/lib/auth-rules";
@@ -20,22 +22,35 @@ import { signOut } from "./auth/actions";
 import { Logo, SiteHeader, type HeaderUser } from "@/components/SiteHeader";
 import { VoiceAgentDock } from "@/components/VoiceAgentDock";
 import { usesSupabase } from "@/lib/db/runtime";
+import { asThemePref, THEME_BOOT_SCRIPT, THEME_COOKIE } from "@/lib/theme";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const notoThai = Noto_Sans_Thai({ variable: "--font-noto-thai", subsets: ["thai"], weight: ["400", "600", "700"] });
+const notoThai = Noto_Sans_Thai({ variable: "--font-noto-thai", subsets: ["thai"], display: "swap", weight: ["400", "600", "700"] });
 
-const notoArabic = Noto_Sans_Arabic({ variable: "--font-noto-arabic", subsets: ["arabic"], weight: ["400", "600"] });
-const notoTc = Noto_Sans_TC({ variable: "--font-noto-tc", subsets: ["latin"], weight: ["400", "600"] });
+const notoArabic = Noto_Sans_Arabic({ variable: "--font-noto-arabic", subsets: ["arabic"], display: "swap", weight: ["400", "600"] });
+const notoTc = Noto_Sans_TC({ variable: "--font-noto-tc", subsets: ["latin"], display: "swap", weight: ["400", "600"] });
 
 export const metadata: Metadata = {
   title: "U-Estate — transparent property, for every party",
   description: "AI-guided Thai property marketplace: verified listings, honest prices, fair offers and legal co-buying.",
 };
 
+// "light dark" tells browsers the site has its own dark theme, so they don't auto-darken it.
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
+  ],
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { locale, currency } = await getPreferences();
   const t = translator(locale);
-  const [db, me] = await Promise.all([readDb(), currentUser()]);
+  const [db, me, jar] = await Promise.all([readDb(), currentUser(), cookies()]);
+  const themePref = asThemePref(jar.get(THEME_COOKIE)?.value);
   const headerUser: HeaderUser = me
     ? {
         name: me.name,
@@ -48,16 +63,26 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : null;
 
   return (
-    <html lang={locale} dir={LOCALE_INFO[locale].dir} className={`${inter.variable} ${notoThai.variable} ${notoArabic.variable} ${notoTc.variable} h-full antialiased`}>
+    <html
+      lang={locale}
+      dir={LOCALE_INFO[locale].dir}
+      data-theme-pref={themePref}
+      data-theme={themePref === "system" ? undefined : themePref}
+      suppressHydrationWarning /* the boot script sets data-theme for "system" before hydration */
+      className={`${inter.variable} ${notoThai.variable} ${notoArabic.variable} ${notoTc.variable} h-full antialiased`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <I18nProvider locale={locale} currency={currency}>
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-3">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-3">
           <Text message="Skip to content" />
         </a>
-        <SiteHeader user={headerUser} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
-        <main id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
+        <SiteHeader user={headerUser} themePref={themePref} demoMode={demoMode()} signOutAction={signOut} notifications={me && usesSupabase() ? <NotificationBell key={me.id} userId={me.id} locale={me.locale} /> : null} />
+        <main tabIndex={-1} id="main" className="mx-auto w-full max-w-[1440px] flex-1 px-5 pb-28 pt-10 sm:px-8 lg:px-12">{children}</main>
         <VoiceAgentDock userName={me?.name ?? "there"} />
-        <footer className="bg-midnight text-silver">
+        <footer className="band text-silver">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>
               <Logo inverse />

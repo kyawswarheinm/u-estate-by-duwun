@@ -8,7 +8,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { formatMoney, formatNumber, translator } from "@/i18n";
+import { formatNumber, translator, formatMoneyRef } from "@/i18n";
 import { useI18n } from "@/i18n/provider";
 import { BANGKOK_CENTRE, safeSourceUrl } from "@/lib/market-data/district-centres";
 
@@ -23,8 +23,8 @@ export type MapUEstateListing = { id: string; title: string; district: string; k
 
 // Two shapes so the legend never relies on colour alone: brand-colour square = U-Estate, neutral circle = other websites.
 export const MARKER_STYLE = {
-  uestate: { width: "18px", height: "18px", borderRadius: "4px", background: "var(--midnight)", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--midnight)" },
-  external: { width: "14px", height: "14px", borderRadius: "50%", background: "var(--blue-grey)", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--blue-grey)" },
+  uestate: { width: "18px", height: "18px", borderRadius: "4px", background: "var(--brand-navy)", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--brand-navy)" },
+  external: { width: "14px", height: "14px", borderRadius: "50%", background: "#5f6b7a", border: "2px solid #fff", boxShadow: "0 0 0 1px #5f6b7a" },
 } as const;
 const SELECTED_RING = "0 0 0 3px var(--blue)";
 
@@ -39,7 +39,7 @@ function spread<T extends { lat: number; lng: number }>(points: T[]): (T & { at:
     const k = seen.get(key) ?? 0;
     seen.set(key, k + 1);
     const angle = k * 2.4; // golden-angle steps, so markers don't line up
-    const r = k === 0 ? 0 : 16 * Math.sqrt(k);
+    const r = k === 0 ? 0 : 44 * Math.sqrt(k);
     return { ...p, at: [p.lng, p.lat], offset: [Math.round(r * Math.cos(angle)), Math.round(r * Math.sin(angle))] };
   });
 }
@@ -113,6 +113,17 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
         zoom: 10,
         attributionControl: { compact: false },
         cooperativeGestures: true, // page scroll isn't hijacked on phones
+        locale: (() => {
+          const tr = translator(locale);
+          return {
+            "CooperativeGesturesHandler.WindowsHelpText": tr("Use Ctrl + scroll to zoom the map"),
+            "CooperativeGesturesHandler.MacHelpText": tr("Use ⌘ + scroll to zoom the map"),
+            "CooperativeGesturesHandler.MobileHelpText": tr("Use two fingers to move the map"),
+            "NavigationControl.ZoomIn": tr("Zoom in"),
+            "NavigationControl.ZoomOut": tr("Zoom out"),
+            "NavigationControl.ResetBearing": tr("Reset bearing to north"),
+          };
+        })(),
       });
     } catch {
       queueMicrotask(() => setFailed(true)); // the tables on the page still show everything
@@ -125,7 +136,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
     });
 
     const t = translator(locale);
-    const money = (thb: number) => formatMoney(thb, locale, currency);
+    const money = (thb: number) => formatMoneyRef(thb, locale, currency);
     const perMonth = (kind: string) => (kind === "rent" ? ` ${t("per month")}` : "");
     const bounds = new maplibregl.LngLatBounds();
     const registry = markers.current;
@@ -137,8 +148,10 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
     // Esc closes the open popup and puts focus back on its marker.
     let open: { popup: maplibregl.Popup; button: HTMLButtonElement } | null = null;
     const addMarker = (id: string, at: [number, number], offset: [number, number], style: Partial<CSSStyleDeclaration>, label: string, content: HTMLElement) => {
-      const button = el("button", { type: "button", className: "cursor-pointer" });
-      Object.assign(button.style, style);
+      const dot = el("span");
+      Object.assign(dot.style, style);
+      dot.setAttribute("aria-hidden", "true");
+      const button = el("button", { type: "button", className: "map-marker-target" }, dot);
       button.setAttribute("aria-label", label);
       button.setAttribute("aria-expanded", "false");
       const popup = new maplibregl.Popup({ offset: popupOffset(offset), maxWidth: "260px" }).setDOMContent(content);
@@ -161,7 +174,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
         onSelectRef.current?.(id);
       });
       new maplibregl.Marker({ element: button, offset }).setLngLat(at).addTo(map);
-      registry.set(id, { at, open: show, highlight: (on) => void (button.style.boxShadow = on ? SELECTED_RING : (style.boxShadow ?? "")) });
+      registry.set(id, { at, open: show, highlight: (on) => void (dot.style.boxShadow = on ? SELECTED_RING : (style.boxShadow ?? "")) });
       bounds.extend(at);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -232,7 +245,7 @@ export function MarketMap({ external, uestate, isSample, selectedId = null, onSe
         <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.uestate} />{t("U-Estate listings")}</span>
         <span className="inline-flex items-center gap-2"><span aria-hidden="true" className="inline-block" style={MARKER_STYLE.external} />{isSample ? t("Sample listings (synthetic, not real)") : t("Other websites (not checked by U-Estate)")}</span>
         {!failed && (
-          <button type="button" aria-pressed={threeD} onClick={() => setThreeD((v) => !v)} className="ms-auto min-h-11 rounded-lg border border-line bg-white px-3 font-semibold">
+          <button type="button" aria-pressed={threeD} onClick={() => setThreeD((v) => !v)} className="ms-auto min-h-11 rounded-lg border border-line bg-paper px-3 font-semibold">
             {threeD ? t("2D view") : t("3D view")}
           </button>
         )}

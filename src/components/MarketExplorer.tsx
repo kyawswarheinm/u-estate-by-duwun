@@ -5,8 +5,8 @@
 import { FavoriteButton } from "./FavoriteButton";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
-import { formatMoney, formatNumber } from "@/i18n";
+import { useCallback, useState, useSyncExternalStore } from "react";
+import { formatNumber, formatMoneyRef } from "@/i18n";
 import { useI18n } from "@/i18n/provider";
 import type { MapExternalListing, MapUEstateListing } from "./MarketMap";
 import { MarketMapLazy } from "./MarketMapLazy";
@@ -32,17 +32,26 @@ export type MarketCard = {
 };
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const desktopMapQuery = "(min-width: 1024px)";
+function subscribeToDesktopMap(changed: () => void) {
+  const media = window.matchMedia(desktopMapQuery);
+  media.addEventListener("change", changed);
+  return () => media.removeEventListener("change", changed);
+}
 
 export function MarketExplorer({ cards, total, external, uestate, isSample }: { cards: MarketCard[]; total: number; external: MapExternalListing[]; uestate: MapUEstateListing[]; isSample: boolean }) {
   const { t, locale, currency } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
-  const money = (thb: number) => formatMoney(thb, locale, currency);
+  const [mapOpen, setMapOpen] = useState(false);
+  const desktop = useSyncExternalStore(subscribeToDesktopMap, () => window.matchMedia(desktopMapQuery).matches, () => false);
+  const money = (thb: number) => formatMoneyRef(thb, locale, currency);
 
   const fromMarker = useCallback((id: string) => {
     setSelected(id);
     document.getElementById(`card-${id}`)?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, []);
   const showOnMap = (id: string) => {
+    setMapOpen(true);
     setSelected(id);
     document.getElementById("market-map")?.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   };
@@ -50,27 +59,33 @@ export function MarketExplorer({ cards, total, external, uestate, isSample }: { 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div id="market-map" className="lg:sticky lg:top-24 lg:order-2 lg:self-start">
-        <MarketMapLazy external={external} uestate={uestate} isSample={isSample} selectedId={selected} onSelect={fromMarker} />
+        <button type="button" className="btn btn-secondary mb-3 w-full lg:hidden" aria-expanded={mapOpen} aria-controls="market-map-content" onClick={() => setMapOpen(value => !value)}>
+          {t("Market map")} <span aria-hidden="true">{mapOpen ? "−" : "+"}</span>
+        </button>
+        <div id="market-map-content" hidden={!desktop && !mapOpen}>
+          {(desktop || mapOpen) && <MarketMapLazy external={external} uestate={uestate} isSample={isSample} selectedId={selected} onSelect={fromMarker} />}
+        </div>
+        {!desktop && <div aria-hidden="true" className="hidden min-h-[480px] lg:block" />}
       </div>
       <div className="grid content-start gap-3 lg:order-1">
         <p role="status" className="text-sm text-deep">{t("{count} results", { count: total })}</p>
         {cards.length === 0 ? (
-          <p className="rounded-[14px] border border-line bg-white p-6 text-ink-soft">{t("No listings match. Try another location or clear the filters.")}</p>
+          <p className="rounded-[14px] border border-line bg-paper p-6 text-ink-soft">{t("No listings match. Try another location or clear the filters.")}</p>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {cards.map((c) => {
               const isSelected = c.id === selected;
               const price = `${money(c.priceThb)}${c.kind === "rent" ? ` ${t("per month")}` : ""}`;
               return (
                 <li key={c.id} id={`card-${c.id}`}
-                  className={`relative overflow-hidden rounded-[24px] border bg-white shadow-[var(--shadow)] transition-shadow ${isSelected ? "border-blue ring-2 ring-blue" : "border-line"}`}>
+                  className={`relative overflow-hidden rounded-[24px] border bg-paper shadow-[var(--shadow)] transition-shadow ${isSelected ? "border-blue ring-2 ring-blue" : "border-line"}`}>
                   <div className="relative aspect-[16/10] bg-ice">
                     {c.photoUrl ? (
                       <Image src={c.photoUrl} alt="" fill unoptimized sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
                     ) : (
                       <MarketPropertyArt variant={c.art} className="h-full w-full" />
                     )}
-                    <span className={`absolute start-2 top-2 rounded-full px-2.5 py-1 text-xs font-semibold ${c.source === "uestate" ? "bg-midnight text-white" : "bg-white text-deep"}`}>
+                    <span className={`absolute start-2 top-2 rounded-full px-2.5 py-1 text-xs font-semibold ${c.source === "uestate" ? "bg-midnight text-on-strong" : "bg-paper text-deep"}`}>
                       {c.source === "uestate" ? "U-Estate" : t("Other website")}
                     </span>
                     <span className="absolute bottom-2 start-2 flex gap-1">

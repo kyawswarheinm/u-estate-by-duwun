@@ -85,8 +85,8 @@ export function ForecastChart({ history, forecast, title, isSample, months = 48,
           </svg>
 
           {/* last actual: dot + label */}
-          <span aria-hidden="true" className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-midnight ring-2 ring-white" style={{ left: pctX(xNow), top: pctY(y(last.value)) }} />
-          <span aria-hidden="true" className="absolute -translate-x-full translate-y-3 whitespace-nowrap rounded bg-white/90 px-1 me-1.5 text-xs font-semibold tabular-nums text-midnight shadow-sm" style={{ left: pctX(xNow), top: pctY(y(last.value)) }}>
+          <span aria-hidden="true" className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-midnight ring-2 ring-paper" style={{ left: pctX(xNow), top: pctY(y(last.value)) }} />
+          <span aria-hidden="true" className="absolute -translate-x-full translate-y-3 whitespace-nowrap rounded bg-paper/90 px-1 me-1.5 text-xs font-semibold tabular-nums text-midnight shadow-sm" style={{ left: pctX(xNow), top: pctY(y(last.value)) }}>
             {last.period}: {fmt(last.value)}
           </span>
           {/* forecast end: central value and range */}

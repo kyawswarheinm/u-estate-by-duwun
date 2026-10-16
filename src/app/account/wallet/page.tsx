@@ -1,6 +1,7 @@
+import { RecordCell } from "@/components/RecordCell";
 import { randomUUID } from "node:crypto";
 import { getPreferences } from "@/i18n/server";
-import { Text } from "@/i18n/Text";
+import { Label, Text } from "@/i18n/Text";
 import { Money } from "@/components/Money";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
@@ -35,7 +36,7 @@ export default async function WalletPage() {
         </p>
       </header>
 
-      <section aria-label="Balance" className="rounded-[14px] bg-midnight p-6 text-ice">
+      <section aria-label="Balance" className="band rounded-[14px] p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm text-silver"><Text message="Available test money" /></p>
@@ -65,15 +66,15 @@ export default async function WalletPage() {
           <p className="mt-2 text-deep"><Text message="No activity yet." /></p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="mt-3 w-full min-w-[520px] text-start text-sm">
+            <table role="table" className="record-table mt-3 w-full text-start text-sm">
               <caption className="sr-only"><Text message="Wallet activity, newest first" /></caption>
               <thead><tr className="border-b border-silver text-deep"><th scope="col" className="py-2 text-start"><Text message="Date" /></th><th scope="col" className="text-start"><Text message="What" /></th><th scope="col" className="text-end"><Text message="Amount" /></th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} className="border-b border-ice">
-                    <td className="py-2 whitespace-nowrap">{new Date(r.at).toLocaleDateString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</td>
-                    <td>{r.href ? <Link href={r.href} className="underline">{r.label}</Link> : r.label}</td>
-                    <td className={`text-end font-semibold ${r.amount < 0 ? "text-deep" : "text-teal"}`}>{r.amount < 0 ? "−" : "+"}<Money amount={Math.abs(r.amount)} /></td>
+                    <RecordCell label="Date" className="py-2 whitespace-nowrap">{new Date(r.at).toLocaleDateString(locale, { numberingSystem: "latn", timeZone: "Asia/Bangkok" })}</RecordCell>
+                    <RecordCell label="What">{r.href ? <Link href={r.href} className="underline"><Label>{r.label}</Label></Link> : <Label>{r.label}</Label>}</RecordCell>
+                    <RecordCell label="Amount" className={`text-end font-semibold ${r.amount < 0 ? "text-deep" : "text-teal"}`}>{r.amount < 0 ? "−" : "+"}<Money amount={Math.abs(r.amount)} /></RecordCell>
                   </tr>
                 ))}
               </tbody>

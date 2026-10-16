@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatMoney, formatNumber } from "@/i18n";
+import { formatNumber, formatMoneyRef } from "@/i18n";
 import { getPreferences, getTranslations } from "@/i18n/server";
 import { MarketExplorer, type MarketCard } from "@/components/MarketExplorer";
 import { MarketForecastChart } from "@/components/MarketForecastChart";
@@ -19,12 +19,12 @@ const TYPES = ["condo", "house", "townhouse", "land", "building"] as const;
 const TYPE_LABEL = { condo: "Condo", house: "House", townhouse: "Townhouse", land: "Land", building: "Building" } as const;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? "";
 // Real snapshots hold hundreds of rows: cards, map markers and the table show one page of other websites' listings.
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 12;
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
   const [t, { locale, currency }, db] = await Promise.all([getTranslations(), getPreferences(), readDb()]);
-  const money = (thb: number) => formatMoney(thb, locale, currency);
+  const money = (thb: number) => formatMoneyRef(thb, locale, currency);
 
   const type = (TYPES as readonly string[]).includes(one(sp.type)) ? one(sp.type) : "";
   const kind = MarketKind.safeParse(one(sp.kind)).success ? one(sp.kind) : "";
@@ -106,7 +106,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <p className="max-w-3xl text-deep">{MARKET_LISTINGS.meta.is_sample ? t("U-Estate listings first, then sample market listings, with a price forecast.") : t("U-Estate listings first, then asking prices on other websites, with a price forecast.")}</p>
       </header>
 
-      <form method="get" className="grid gap-3 rounded-[14px] border border-line bg-white p-4 shadow-[var(--shadow)] md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto] md:items-end">
+      <form method="get" className="grid gap-3 rounded-[14px] border border-line bg-paper p-4 shadow-[var(--shadow)] sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto] sm:items-end">
         <label className="grid gap-1 text-sm font-semibold">
           {t("Search location")}
           <input name="q" defaultValue={q} list="market-places" placeholder={t("District or project, e.g. Sathorn")} className="input" autoComplete="off" />
@@ -156,7 +156,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
           {rows.length === 0 ? (
             <p className="text-ink-soft">{t("No statistics for this type yet.")}</p>
           ) : (
-            <div className="overflow-x-auto rounded-[14px] border border-line bg-white">
+            <div role="region" aria-label={t("Asking prices by district")} tabIndex={0} className="table-scroll rounded-[14px] border border-line bg-paper">
               <table className="w-full min-w-[520px] text-sm">
                 <thead className="bg-ice text-start">
                   <tr>{[t("District"), t("Listings"), t("Median price per m²"), t("Middle half per m² (p25–p75)"), t("Median price"), t("Median size")].map((h) => <th key={h} scope="col" className="p-2 text-start">{h}</th>)}</tr>
@@ -196,7 +196,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         <section aria-labelledby="external-title" className="grid gap-3">
           <h2 id="external-title" className="text-2xl font-bold">{MARKET_LISTINGS.meta.is_sample ? t("Sample listings (synthetic, not real)") : t("Listings on other websites")}</h2>
           <p className="text-sm text-amber">{t("Not checked by U-Estate")}{MARKET_LISTINGS.meta.is_sample ? " · SAMPLE" : ""}</p>
-          <div className="overflow-x-auto rounded-[14px] border border-line bg-white">
+          <div role="region" aria-label={t("Listings on other websites")} tabIndex={0} className="table-scroll rounded-[14px] border border-line bg-paper">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="bg-ice">
                 <tr>{[t("District"), t("Type"), t("Price"), t("Size"), t("Price per m²"), t("Site"), t("Listed"), t("Source")].map((h) => <th key={h} scope="col" className="p-2 text-start">{h}</th>)}</tr>
@@ -220,7 +220,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
         </section>
       )}
 
-      <footer className="grid gap-3 rounded-[14px] border border-line bg-white p-4">
+      <footer className="grid gap-3 rounded-[14px] border border-line bg-paper p-4">
         <p className="text-sm text-deep">
           {t("Data: {sites}, collected {date}. Statistics: {method} Forecast: {model}, from {series}.", {
             sites: MARKET_LISTINGS.meta.sites.map((s) => s.name).join(", "),

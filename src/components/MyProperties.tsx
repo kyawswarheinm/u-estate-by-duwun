@@ -33,10 +33,10 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
   return (
     <ul className="grid gap-3">
       {mine.map(({ l, p, round, offers, group }) => (
-        <li key={l.id} className="panel grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+        <li key={l.id} className="panel grid gap-3 p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
           <div className="min-w-0">
             <p className="text-sm text-deep">{p.type} in {p.district}, {p.province} · {p.areaSqm} m² · for {l.kind}</p>
-            <h3 className="truncate text-lg font-bold">
+            <h3 className="break-words text-lg font-bold">
               <Link href={`/listing/${l.id}`} className="hover:underline"><bdi>{p.title}</bdi></Link>
             </h3>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
@@ -46,8 +46,10 @@ export function MyProperties({ db, userId, compact = false }: { db: DB; userId: 
             </div>
             {!compact && (
               <p className="mt-2 text-sm text-deep">
-                {round ? `FairOffer room ${round.status}: ${offers} sealed offer${offers === 1 ? "" : "s"}` : "No offer room yet"}
-                {group && ` · Co-buy group ${group.status}`}
+                {round
+                  ? <Text message={round.status === "open" ? "FairOffer room open: {count} sealed offers" : round.status === "closed" ? "FairOffer room closed: {count} sealed offers" : "FairOffer room decided: {count} sealed offers"} values={{ count: offers }} />
+                  : <Text message="No offer room yet" />}
+                {group && <> · <Text message="Co-buy group: {status}" values={{ status: group.status }} /></>}
               </p>
             )}
           </div>

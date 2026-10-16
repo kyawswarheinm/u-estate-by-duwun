@@ -14,7 +14,7 @@ const str = (description) => ({ type: "string", description });
 const num = (description) => ({ type: "number", description });
 const bool = (description) => ({ type: "boolean", description });
 
-// Names and parameters must match src/lib/assistant-tools.ts and src/components/VoiceAgentDock.tsx.
+// Names and parameters must match src/lib/assistant-tools.ts and src/components/VoiceAgentSession.tsx (loaded by VoiceAgentDock.tsx).
 const TOOLS = [
   {
     name: "search_listings",

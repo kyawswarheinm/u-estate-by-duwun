@@ -1,5 +1,5 @@
 import { getPreferences } from "@/i18n/server";
-import { formatMoney, translator } from "@/i18n";
+import { translator, formatMoneyRef } from "@/i18n";
 import { Label, Text } from "@/i18n/Text";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Money } from "@/components/Money";
@@ -16,7 +16,7 @@ import { coverPhotos } from "@/app/market/cover-photos";
 const EXAMPLE_PRICE = 4_000_000;
 
 export default async function Home() {
-  const { locale } = await getPreferences();
+  const { locale, currency } = await getPreferences();
   const t = translator(locale);
   const [db, me] = await Promise.all([readDb(), currentUser()]);
   const active = db.listings.filter((l) => l.status !== "sold" && !l.archivedAt);
@@ -109,7 +109,7 @@ export default async function Home() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <VerificationBadge status={l.verificationStatus} />
-                  {l.cobuyEnabled && <span className="pill bg-[#eaf2ff] text-blue-ink"><Text message="Co-buy open to members" /></span>}
+                  {l.cobuyEnabled && <span className="pill bg-blue/10 text-blue-ink"><Text message="Co-buy open to members" /></span>}
                 </div>
                 {l.kind === "sale" && (
                   <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-t border-ice pt-3 text-sm">
@@ -128,9 +128,9 @@ export default async function Home() {
       </section>
       <section className="fee-story">
         <div><p className="eyebrow text-muted"><Text message="transparencyTitle" /></p><h2><Text message="Same facts. Same fees. For every party." /></h2><p className="mt-5 text-muted"><Text message="homeDescription" /></p><Link href="/sell" className="btn btn-primary mt-6"><Text message="Sell a property" /> &#8599;</Link></div>
-          <figure className="rounded-[16px] bg-white p-6 text-midnight shadow-[0_25px_70px_rgba(0,0,0,.25)]">
+          <figure className="rounded-[16px] bg-paper p-6 text-ink shadow-[var(--shadow-lg)]">
             <figcaption>
-              <p className="font-semibold"><Text message="Who pays what on a {price} condo" values={{ price: formatMoney(EXAMPLE_PRICE, locale) }} /></p>
+              <p className="font-semibold"><Text message="Who pays what on a {price} condo" values={{ price: formatMoneyRef(EXAMPLE_PRICE, locale, currency) }} /></p>
               <p className="text-sm text-deep"><Text message="The same rule is printed on every listing." /></p>
             </figcaption>
             <ul className="mt-5 grid gap-4">
