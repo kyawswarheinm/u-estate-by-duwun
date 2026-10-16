@@ -10,9 +10,12 @@ import { readSupabaseDb } from "./db/snapshot";
 // Offline JSON-file store; configured Supabase is the default runtime backend.
 // Local: .data/db.json. On Vercel the project dir is read-only, so /tmp is used (resets on cold start).
 // Set DEMO_OFFLINE=true only when explicitly exercising the offline prototype.
-const FILE = process.env.VERCEL
-  ? "/tmp/u-estate-db.json"
-  : path.join(process.cwd(), ".data", "db.json");
+// DEMO_DATA_FILE: an isolated file for automated QA (scripts/start-offline.mjs --data=...), never the hosted database.
+const FILE = process.env.DEMO_DATA_FILE
+  ? path.resolve(process.env.DEMO_DATA_FILE)
+  : process.env.VERCEL
+    ? "/tmp/u-estate-db.json"
+    : path.join(process.cwd(), ".data", "db.json");
 
 let queue: Promise<unknown> = Promise.resolve();
 
