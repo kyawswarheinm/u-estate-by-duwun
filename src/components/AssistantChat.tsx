@@ -31,11 +31,11 @@ function withLinks(text: string) {
 }
 
 // Typed real-time chat (streams as Claude writes). Same read-only tools as the voice agent.
-export function AssistantChat() {
+export function AssistantChat({ initialQuestion = "" }: { initialQuestion?: string } = {}) {
   const { locale: uiLocale } = useI18n();
   const [locale, setLocale] = useState<Locale>(uiLocale);
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialQuestion); // e.g. from /market's "Ask the AI about this market"
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const audioRef = useRef<HTMLAudioElement>(null);

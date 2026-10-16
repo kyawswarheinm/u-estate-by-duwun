@@ -1,10 +1,13 @@
 import { AssistantChat } from "@/components/AssistantChat";
 import { partnerStatus } from "@/lib/partners";
+import { geminiConfigured } from "@/app/api/assistant/gemini";
 
 export const metadata = { title: "Ask U-Estate AI" };
 
-export default function AssistantPage() {
+export default async function AssistantPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const status = partnerStatus();
+  const q = (await searchParams).q;
+  const initialQuestion = (Array.isArray(q) ? q[0] : q)?.slice(0, 300) ?? "";
   return (
     <article className="grid gap-4">
       <header>
@@ -14,12 +17,12 @@ export default function AssistantPage() {
           with tools, so every number comes from U-Estate data, not from the AI&apos;s memory. Or press <strong>Talk to U-Estate</strong> for a live voice conversation.
         </p>
       </header>
-      {!status.claude && (
+      {!status.claude && !geminiConfigured() && (
         <p role="alert" className="rounded-lg bg-amber-soft p-3 text-amber">
           AI is not connected on this server (ANTHROPIC_API_KEY). Voice search on the home page still works with keyword rules.
         </p>
       )}
-      <AssistantChat />
+      <AssistantChat initialQuestion={initialQuestion} />
     </article>
   );
 }
