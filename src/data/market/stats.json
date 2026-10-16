@@ -2,8 +2,8 @@
  "meta": {
   "source": "fixture",
   "is_sample": true,
-  "based_on": "listings.json (fixture) scraped_at 2026-10-16T00:32:12.980151+00:00, 1200 listings from synthetic. Input note: SYNTHETIC: generated demo condo sales from data/valuation/demo_sales.csv, not real listings, asking prices or transactions",
-  "generated_at": "2026-10-16T07:32+07:00",
+  "based_on": "listings.json (fixture) scraped_at 2026-10-16T03:08:16.764259+00:00, 1200 listings from synthetic. Input note: SYNTHETIC: generated demo condo sales from data/valuation/demo_sales.csv, not real listings, asking prices or transactions",
+  "generated_at": "2026-10-16T10:08+07:00",
   "method": "Median and quartiles (linear interpolation) of price per m2 by district, type and kind, plus all districts together; groups with fewer than 5 listings are left out. Input is SAMPLE/SYNTHETIC demo data, not real listings or market prices.",
   "min_count": 5
  },

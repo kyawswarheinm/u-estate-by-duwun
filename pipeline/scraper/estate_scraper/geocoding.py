@@ -1,7 +1,6 @@
 """Offline batch coordinates; no generic app-facing geocoding service."""
 from collections import Counter
 from datetime import datetime, timezone
-import fcntl
 import hashlib
 import json
 from pathlib import Path
@@ -10,6 +9,21 @@ import unicodedata
 import re
 import time
 from urllib.error import HTTPError
+
+try:  # POSIX
+    import fcntl
+except ImportError:  # Windows: the team's laptops
+    fcntl = None
+    import msvcrt
+
+
+def lock_exclusive_nonblocking(f):
+    """Take an exclusive lock on an open file or raise OSError if another process holds it."""
+    if fcntl is not None:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    else:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
 from urllib.parse import unquote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from protego import Protego
@@ -121,7 +135,7 @@ class NominatimClient:
         if self.online:
             self.lock = (self.cache_dir / ".batch.lock").open("a")
             try:
-                fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                lock_exclusive_nonblocking(self.lock)
                 last_path = self.cache_dir / ".last-request"
                 if last_path.exists():
                     previous = number(last_path.read_text())
