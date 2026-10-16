@@ -1,3 +1,4 @@
+import { Text } from "@/i18n/Text";
 import { AssistantChat } from "@/components/AssistantChat";
 import { partnerStatus } from "@/lib/partners";
 import { geminiConfigured } from "@/app/api/assistant/gemini";
@@ -9,9 +10,9 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
   const q = (await searchParams).q;
   const initialQuestion = (Array.isArray(q) ? q[0] : q)?.slice(0, 300) ?? "";
   return (
-    <article className="grid gap-4">
-      <header>
-        <h1 className="text-3xl font-bold">Ask U-Estate AI</h1>
+    <article className="assistant-page grid gap-6">
+      <header className="assistant-intro"><div className="ai-orb" aria-hidden="true" />
+        <h1 className="text-3xl font-bold"><Text message="aiTitle" /></h1><p className="mt-4 text-xl text-muted"><Text message="aiSubtitle" /></p>
         <p className="mt-1 max-w-3xl text-ink-soft">
           Chat in real time, in English, Thai, Arabic, Traditional Chinese or Spanish. The AI looks up our listings, fees, co-buy rules and token-unlock data
           with tools, so every number comes from U-Estate data, not from the AI&apos;s memory. Or press <strong>Talk to U-Estate</strong> for a live voice conversation.

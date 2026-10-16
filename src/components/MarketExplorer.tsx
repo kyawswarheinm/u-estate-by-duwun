@@ -2,6 +2,7 @@
 
 // Listing cards beside the map, linked both ways: "Show on map" flies the map to the marker and opens it;
 // clicking a marker highlights its card and scrolls it into view. U-Estate listings come first (TECH_STACK §5).
+import { FavoriteButton } from "./FavoriteButton";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
@@ -62,7 +63,7 @@ export function MarketExplorer({ cards, total, external, uestate, isSample }: { 
               const price = `${money(c.priceThb)}${c.kind === "rent" ? ` ${t("per month")}` : ""}`;
               return (
                 <li key={c.id} id={`card-${c.id}`}
-                  className={`overflow-hidden rounded-[14px] border bg-white shadow-[var(--shadow)] transition-shadow ${isSelected ? "border-blue ring-2 ring-blue" : "border-line"}`}>
+                  className={`relative overflow-hidden rounded-[24px] border bg-white shadow-[var(--shadow)] transition-shadow ${isSelected ? "border-blue ring-2 ring-blue" : "border-line"}`}>
                   <div className="relative aspect-[16/10] bg-ice">
                     {c.photoUrl ? (
                       <Image src={c.photoUrl} alt="" fill unoptimized sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
@@ -73,11 +74,11 @@ export function MarketExplorer({ cards, total, external, uestate, isSample }: { 
                       {c.source === "uestate" ? "U-Estate" : t("Other website")}
                     </span>
                     <span className="absolute bottom-2 start-2 flex gap-1">
-                      {!c.photoUrl && <span className="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-deep">{t("Illustration")}</span>}
                       {isSample && <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-semibold text-amber">SAMPLE</span>}
                     </span>
                   </div>
-                  <div className="grid gap-1 p-3">
+                  <FavoriteButton id={c.id} />
+                  <div className="grid gap-1 p-5">
                     <p className="text-xl font-bold">{price}</p>
                     <p className="text-sm text-deep">
                       {[c.bedrooms != null ? t("{count} bed", { count: c.bedrooms }) : null, `${formatNumber(c.areaSqm, locale)} m²`, c.kind === "sale" ? `${money(c.pricePerSqm)}/m²` : null].filter(Boolean).join(" · ")}

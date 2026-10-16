@@ -28,7 +28,7 @@ export function RiskIcon({ level }: { level: "ok" | "warning" | "unknown" }) {
 }
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-[14px] border border-line bg-paper p-5 sm:p-6 ${className}`}>{children}</section>;
+  return <section className={`rounded-[24px] border border-line bg-paper p-6 sm:p-8 ${className}`}>{children}</section>;
 }
 
 export function SampleTag() {

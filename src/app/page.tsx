@@ -1,6 +1,7 @@
 import { getPreferences } from "@/i18n/server";
 import { formatMoney, translator } from "@/i18n";
 import { Label, Text } from "@/i18n/Text";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Money } from "@/components/Money";
 import Link from "next/link";
 import { readDb } from "@/lib/store";
@@ -33,56 +34,30 @@ export default async function Home() {
 
   return (
     <>
-      <section className="-mt-8 mx-[calc(50%-50vw)] bg-midnight px-4 pb-24 pt-14 text-ice sm:pt-20">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.15fr_1fr] lg:items-center">
-          <div>
-            <h1 className="font-display text-5xl font-semibold leading-[1.05] sm:text-6xl"><Text message="Same facts. Same fees. For every party." /></h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-silver">
-              <Text message="homeDescription" />
-            </p>
-            {/* Location search: opens the market map and cards at that place (works without JavaScript). */}
-            <form action="/market" method="get" role="search" className="mt-7 grid max-w-xl gap-2">
-              <label htmlFor="hero-q" className="font-semibold text-white"><Text message="Where do you want to live?" /></label>
-              <div className="flex gap-2 rounded-[14px] bg-white p-1.5 shadow-[0_15px_40px_rgba(0,0,0,.25)]">
-                <input id="hero-q" name="q" list="hero-places" autoComplete="off" placeholder={t("District or project, e.g. Sathorn")} className="min-h-12 min-w-0 flex-1 rounded-[10px] px-3 text-midnight outline-offset-2" />
-                <datalist id="hero-places">{districts.map((d) => <option key={d} value={d} />)}</datalist>
-                <button type="submit" className="btn btn-primary"><Text message="Search" /></button>
-              </div>
-            </form>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a href="#homes" className="btn btn-on-dark"><Text message="Find a home" /></a>
-              <Link href="/sell" className="btn btn-ghost-dark"><Text message="Sell a property" /></Link>
-              {!me && <Link href="/signup" className="btn btn-ghost-dark"><Text message="Create account" /></Link>}
-            </div>
+      <section className="home-hero">
+        <Image src="/photography/residence.jpg" alt="" fill priority sizes="100vw" className="object-cover" />
+        <div className="hero-shade" />
+        <div className="hero-copy">
+          <p className="eyebrow"><Text message="heroEyebrow" /></p>
+          <h1><Text message="heroTitle" /></h1>
+          <p className="hero-description"><Text message="heroDescription" /></p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#homes" className="btn btn-on-dark"><Text message="exploreProperties" /> <span aria-hidden="true">&#8599;</span></a>
+            <Link href="/assistant" className="btn btn-ghost-dark"><Text message="askEstate" /></Link>
           </div>
-
-          <figure className="rounded-[16px] bg-white p-6 text-midnight shadow-[0_25px_70px_rgba(0,0,0,.25)]">
-            <figcaption>
-              <p className="font-semibold"><Text message="Who pays what on a {price} condo" values={{ price: formatMoney(EXAMPLE_PRICE, locale) }} /></p>
-              <p className="text-sm text-deep"><Text message="The same rule is printed on every listing." /></p>
-            </figcaption>
-            <ul className="mt-5 grid gap-4">
-              {fees.map((f) => (
-                <li key={f.who}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-sm"><Label>{f.who}</Label></span>
-                    <span className="text-lg font-bold"><Money amount={f.thb} /></span>
-                  </div>
-                  <div className="mt-1.5 h-2.5 rounded-full bg-ice" aria-hidden="true">
-                    <div className={`h-2.5 rounded-full ${f.tone}`} style={{ width: `${Math.max(1.5, (f.thb / max) * 100)}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 text-xs text-deep"><Text message="Excludes government transfer fees and taxes. Typical agent fee is common market practice, not a quote." /></p>
-          </figure>
         </div>
+        <p className="hero-caption"><Text message="editorialPhotography" /></p>
       </section>
-
-      <div className="relative -mt-14">
-        <VoiceSearch />
-      </div>
-
+      <form action="/market" method="get" role="search" className="spotlight-search">
+        <label><span><Text message="searchLocation" /></span><input name="q" list="hero-places" placeholder={t("District or project, e.g. Sathorn")} /><datalist id="hero-places">{districts.map(d => <option key={d} value={d} />)}</datalist></label>
+        <label><span><Text message="searchType" /></span><select name="type"><option value="">{t("searchAllTypes")}</option>{(["condo", "house", "townhouse", "building", "land"] as const).map(v => <option key={v} value={v}>{t(v)}</option>)}</select></label>
+        <label><span><Text message="buyOrRent" /></span><select name="kind"><option value="sale">{t("sale")}</option><option value="rent">{t("rent")}</option></select></label>
+        <label><span><Text message="maxPriceLabel" /></span><input name="maxPrice" type="number" min="1" step="1" placeholder={t("anyPrice")} /></label>
+        <button className="btn btn-primary"><Text message="Search" /> <span aria-hidden="true">&#8599;</span></button>
+      </form>
+      <section className="values-grid" aria-label={t("valuesTitle")}>
+        {([["01", "trustTitle", "trustDescription"], ["02", "transparencyTitle", "transparencyDescription"], ["03", "inclusivityTitle", "inclusivityDescription"]] as const).map(([n, title, description]) => <div key={n}><span className="value-number" aria-hidden="true">{n} /</span><h2><Text message={title} /></h2><p><Text message={description} /></p></div>)}
+      </section>
       <nav aria-labelledby="browse-title" className="mb-10 grid gap-3">
         <h2 id="browse-title" className="text-2xl font-bold"><Text message="Browse by type" /></h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -110,17 +85,17 @@ export default async function Home() {
             const p = db.properties.find((x) => x.id === l.propertyId)!;
             const mine = me?.id === l.sellerId;
             return (
-              <li key={l.id} className="panel relative flex flex-col overflow-hidden p-5 transition-colors hover:border-deep">
+              <li key={l.id} className="property-card panel relative flex flex-col overflow-hidden p-5 transition-colors hover:border-deep">
                 <div className="relative -mx-5 -mt-5 mb-4 aspect-[16/10] bg-ice">
                   {photos[l.id] ? (
                     <Image src={photos[l.id]} alt="" fill unoptimized sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
                   ) : (
                     <>
                       <MarketPropertyArt variant={artVariant(p.type, p.title)} className="h-full w-full" />
-                      <span className="absolute bottom-2 start-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-deep"><Text message="Illustration" /></span>
                     </>
                   )}
                 </div>
+                <FavoriteButton id={l.id} />
                 <div className="flex items-center justify-between gap-2 text-sm text-deep">
                   <span className="capitalize"><Text message="{type} for {kind}" values={{ type: t(p.type), kind: t(l.kind) }} /></span>
                   {mine && <span className="pill bg-ice text-midnight"><Text message="Your listing" /></span>}
@@ -151,6 +126,30 @@ export default async function Home() {
           })}
         </ul>
       </section>
+      <section className="fee-story">
+        <div><p className="eyebrow text-muted"><Text message="transparencyTitle" /></p><h2><Text message="Same facts. Same fees. For every party." /></h2><p className="mt-5 text-muted"><Text message="homeDescription" /></p><Link href="/sell" className="btn btn-primary mt-6"><Text message="Sell a property" /> &#8599;</Link></div>
+          <figure className="rounded-[16px] bg-white p-6 text-midnight shadow-[0_25px_70px_rgba(0,0,0,.25)]">
+            <figcaption>
+              <p className="font-semibold"><Text message="Who pays what on a {price} condo" values={{ price: formatMoney(EXAMPLE_PRICE, locale) }} /></p>
+              <p className="text-sm text-deep"><Text message="The same rule is printed on every listing." /></p>
+            </figcaption>
+            <ul className="mt-5 grid gap-4">
+              {fees.map((f) => (
+                <li key={f.who}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm"><Label>{f.who}</Label></span>
+                    <span className="text-lg font-bold"><Money amount={f.thb} /></span>
+                  </div>
+                  <div className="mt-1.5 h-2.5 rounded-full bg-ice" aria-hidden="true">
+                    <div className={`h-2.5 rounded-full ${f.tone}`} style={{ width: `${Math.max(1.5, (f.thb / max) * 100)}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-xs text-deep"><Text message="Excludes government transfer fees and taxes. Typical agent fee is common market practice, not a quote." /></p>
+          </figure>
+      </section>
+      <details className="voice-search-disclosure"><summary><Text message="voiceDiscovery" /></summary><div className="mt-5"><VoiceSearch /></div></details>
     </>
   );
 }

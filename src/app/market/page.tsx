@@ -30,6 +30,8 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
   const kind = MarketKind.safeParse(one(sp.kind)).success ? one(sp.kind) : "";
   const district = one(sp.district).slice(0, 60);
   const q = one(sp.q).slice(0, 80);
+  const maxPriceValue = Number(one(sp.maxPrice));
+  const maxPrice = Number.isFinite(maxPriceValue) && maxPriceValue > 0 ? maxPriceValue : null;
   const ql = q.toLowerCase();
   const matchesPlace = (d: string, name: string) =>
     (!district || d.toLowerCase() === district.toLowerCase()) && (!ql || d.toLowerCase().includes(ql) || ql.includes(d.toLowerCase()) || name.toLowerCase().includes(ql));
@@ -41,15 +43,15 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       const p = db.properties.find((x) => x.id === l.propertyId);
       return p ? [{ l, p }] : [];
     })
-    .filter(({ l, p }) => (!type || p.type === type) && (!kind || l.kind === kind) && matchesPlace(p.district, p.title));
+    .filter(({ l, p }) => (!type || p.type === type) && (!kind || l.kind === kind) && (!maxPrice || l.askingPriceThb <= maxPrice) && matchesPlace(p.district, p.title));
   const photos = await coverPhotos(ours.map(({ l }) => l.id));
 
-  const allTheirs = MARKET_LISTINGS.listings.filter((l) => (!type || l.type === type) && (!kind || l.kind === kind) && matchesPlace(l.district, l.project ?? ""));
+  const allTheirs = MARKET_LISTINGS.listings.filter((l) => (!type || l.type === type) && (!kind || l.kind === kind) && (!maxPrice || l.price_thb <= maxPrice) && matchesPlace(l.district, l.project ?? ""));
   const pages = Math.max(1, Math.ceil(allTheirs.length / PAGE_SIZE));
   const pageNo = Math.min(pages, Math.max(1, Number.parseInt(one(sp.page), 10) || 1));
   const theirs = allTheirs.slice((pageNo - 1) * PAGE_SIZE, pageNo * PAGE_SIZE);
   const pageHref = (n: number) => {
-    const params = new URLSearchParams(Object.entries({ q, type, kind, district }).filter(([, v]) => v));
+    const params = new URLSearchParams(Object.entries({ q, type, kind, district, maxPrice: maxPrice ? String(maxPrice) : "" }).filter(([, v]) => v));
     if (n > 1) params.set("page", String(n));
     const s = params.toString();
     return s ? `/market?${s}` : "/market";
@@ -132,9 +134,10 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
             {districts.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </label>
+        <label className="grid gap-1 text-sm font-semibold">{t("maxPriceLabel")}<input className="input" type="number" name="maxPrice" min="1" step="1" defaultValue={maxPrice ?? ""} placeholder={t("anyPrice")} /></label>
         <div className="flex gap-2">
           <button type="submit" className="btn btn-primary">{t("Search")}</button>
-          {(q || type || kind || district) && <Link href="/market" className="btn btn-secondary">{t("Clear filters")}</Link>}
+          {(q || type || kind || district || maxPrice) && <Link href="/market" className="btn btn-secondary">{t("Clear filters")}</Link>}
         </div>
       </form>
 

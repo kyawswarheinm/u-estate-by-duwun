@@ -214,7 +214,7 @@ function Dock({ userName }: { userName: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls="voice-agent-panel"
-        className="rounded-full bg-ink px-5 py-3 font-semibold text-paper shadow-lg"
+        className="voice-launcher rounded-full bg-ink px-5 py-3 font-semibold text-paper shadow-lg"
       >
         <span aria-hidden="true">🎙</span> {connected ? "In a call" : "Talk to U-Estate"}
       </button>

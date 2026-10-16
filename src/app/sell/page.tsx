@@ -1,3 +1,4 @@
+import { SellerFeePreview } from "@/components/SellerFeePreview";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { usesSupabase } from "@/lib/db/runtime";
 import { Text } from "@/i18n/Text";
@@ -19,9 +20,11 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
     return (
       <div className="grid gap-6">
         <header className="max-w-2xl">
-          <h1 className="font-display text-5xl font-semibold"><Text message="Sell with the same facts as your buyer" /></h1>
+          <h1 className="font-display text-5xl font-semibold"><Text message="sellTitle" /></h1>
           <p className="mt-3 text-lg text-deep"><Text message="List your property, check your deed, and compare offers by rules you publish before any offer arrives. Your fee: 1.5% (0.75% for U-topia members), against a typical 3%." /></p>
         </header>
+        <SellerSteps />
+        <SellerFeePreview />
         <div className="panel flex flex-wrap items-center gap-4 p-6">
           <p className="flex-1 font-semibold"><Text message="Create a free account to list a property. Any made-up email works in this demo." /></p>
           <Link href="/signup?next=/sell" className="btn btn-primary"><Text message="Create account" /></Link>
@@ -38,10 +41,12 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
   return (
     <div className="grid gap-8">
       <header className="max-w-2xl">
-        <h1 className="font-display text-5xl font-semibold"><Text message="List a property" /></h1>
+        <h1 className="font-display text-5xl font-semibold"><Text message="sellTitle" /></h1>
         <p className="mt-2 text-lg text-deep"><Text message="Publish your listing, then check the deed so buyers see a verified badge." /></p>
       </header>
 
+      <SellerSteps />
+      <SellerFeePreview />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section aria-labelledby="new-title" className="panel p-6">
           <h2 id="new-title" className="mb-4 text-xl font-bold"><Text message="Property details" /></h2>
@@ -77,4 +82,8 @@ export default async function SellPage({ searchParams }: { searchParams: Promise
       </section>
     </div>
   );
+}
+
+function SellerSteps() {
+  return <ol className="seller-steps">{(["stepProperty", "stepVerify", "stepValue", "stepPublish", "stepOffers"] as const).map((key,i) => <li key={key}><span>{String(i+1).padStart(2,"0")}</span><Text message={key} /></li>)}</ol>;
 }

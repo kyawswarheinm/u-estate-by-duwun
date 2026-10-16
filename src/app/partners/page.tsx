@@ -59,23 +59,9 @@ export default async function PartnersPage() {
         </p>
       </header>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-start text-sm">
-          <caption className="sr-only">Partner integrations, status and data shared</caption>
-          <thead><tr className="border-b border-line"><th scope="col" className="py-2">Partner</th><th scope="col">Feature</th><th scope="col">Status</th><th scope="col">Where</th><th scope="col">What we send</th></tr></thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.feature} className="border-b border-line align-top">
-                <th scope="row" className="py-2">{r.partner}</th>
-                <td>{r.feature}</td>
-                <td><Live on={r.live} /></td>
-                <td>{r.where}</td>
-                <td>{r.sends}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <section className="integration-grid">
+        {rows.map(r => <article key={r.feature} className="integration-card"><div className="integration-monogram" aria-hidden="true">{r.partner === "ElevenLabs" ? "II" : r.partner.slice(0,1)}</div><h2>{r.partner}</h2><p className="mt-2 text-sm text-muted">{r.feature}</p><div className="my-5"><Live on={r.live} /></div><details><summary><Text message="integrationDetails" /></summary><p className="mt-4 text-sm">{r.where}</p><h3 className="mt-4 text-sm font-semibold"><Text message="sharedData" /></h3><p className="mt-2 text-sm text-muted">{r.sends}</p></details></article>)}
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card>

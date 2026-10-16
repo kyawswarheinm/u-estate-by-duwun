@@ -86,14 +86,14 @@ export function AssistantChat({ initialQuestion = "" }: { initialQuestion?: stri
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="chat-surface grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <LocaleSelect id="chat-lang" value={locale} onChange={setLocale} label="Reply in" />
         <span className="text-sm text-ink-soft">Prefer to talk? Use <strong>Talk to U-Estate</strong> (bottom corner).</span>
       </div>
 
       {messages.length === 0 && (
-        <ul className="flex flex-wrap gap-2" aria-label="Example questions">
+        <ul className="suggested-questions" aria-label="Example questions">
           {EXAMPLES.map((q) => (
             <li key={q}><button type="button" onClick={() => send(q)} className="rounded-full border border-line px-3 py-2 text-sm hover:bg-mist">{q}</button></li>
           ))}
@@ -120,7 +120,7 @@ export function AssistantChat({ initialQuestion = "" }: { initialQuestion?: stri
       </ol>
 
       <form
-        className="flex flex-wrap gap-2"
+        className="chat-composer flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           void send(input);
