@@ -51,6 +51,21 @@
    - Ledger: "what you see = what is registered". Press **Verify last fingerprint**: ✓ Verified, plus the Avalanche explorer link (A1): "even we can't edit history".
    - Close with slide 4 (fees: ฿120k agent vs ฿60k / ฿30k member, buyer ฿0).
 
+## Market segment (60 s, after beat 2 or instead of beat 4 if time is short)
+
+**Before stage:** open `/market` once (warms the map tiles); check `/partners` shows the voice agent **Live**. Read every number from the screen: the market snapshot may be replaced by real data, so don't memorise figures.
+
+1. **Ask by voice (20 s):** press **Talk to U-Estate** and say *"How are condo prices in Sathorn?"*
+   - The agent calls `get_market_stats` (tool chip *Checked market asking prices*) and says the median asking price per m², the range, how many listings, and "asking prices on listing websites". It says SAMPLE while the snapshot is a sample.
+   - Then say *"Will they go up next year?"*: `get_price_forecast`, a **range** with the model name, "a forecast, not a guarantee".
+   - Say *"Yes, open the map"*: `open_page /market`.
+   - Fallback: the **Ask the AI about this market** button on `/market` opens the typed chat with the question filled in.
+2. **The map (25 s):** on `/market`:
+   - U-Estate listings come first (dark squares); other websites' listings are grey circles, "not checked by U-Estate", with a link to the source, and **never a photo** (facts only).
+   - Type *Sathorn* in **Search location**, press **Show on map** on a card: the map flies there and opens it. Press **3D view** for the buildings.
+   - Scroll to the forecast chart: "the shaded band is the 80% range, not a promise".
+3. **Back to the listing (15 s):** open the Sathorn condo. Under the price: *"Compared with N asking prices in Sathorn: X% below the median"*. "Code computes it; the AI only reads it out."
+
 **Optional 30-second beat (if a judge asks "can I try it?"):**
 1. Create an account with a made-up email.
 2. Sell → publish a listing.
@@ -71,3 +86,6 @@
 | How do you use the partners? | ElevenLabs: voice in 5 languages, voice search and a live agent with real tools. Tokenomist: protects crypto-funded deposits from token unlocks. Avalanche: public fingerprint of our ledger. Details on `/partners` |
 | Isn't Avalanche against "no blockchain"? | No tokens, no wallets for users, no payments: Avalanche is only a public notary for one fingerprint |
 | Do you accept crypto? | Never. We help members who sell crypto *before* paying in THB |
+| Where do the market prices come from? | A dated snapshot of public listing pages, collected politely (robots.txt, one request every 2 seconds), facts only: no photos, descriptions or agent contacts. Every row links to its source and says "not checked by U-Estate". If the page still says SAMPLE, say so: it's the agreed fixture. In production: licensed feeds |
+| Is the forecast reliable? | It's a range (p10–p90), never a single promise. The page names the model and the index it used: Google TimesFM on the Bank of Thailand index when that run is in, otherwise a labelled fallback, and the backtest only if one was measured. Check the provenance line before answering |
+| Why are the pictures drawings? | Sample listings use original illustrations, labelled "Illustration". Real sellers upload photos, which replace them. We never copy photos from other websites |
