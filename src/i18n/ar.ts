@@ -473,5 +473,15 @@ export const ar = {
   "Compared with {count} asking prices in {district}: at the median.": "مقارنةً بـ{count} من الأسعار المطلوبة في {district}: عند الوسيط.",
   "Price per m² here: {mine}. Median on listing websites: {median}.": "سعر المتر المربع هنا: {mine}. الوسيط على مواقع الإعلانات: {median}.",
   "Asking prices on listing websites, not sale prices.": "أسعار مطلوبة على مواقع الإعلانات، وليست أسعار بيع.",
-  "Confirm ownership at the Land Office before any money moves.": "تحقق من الملكية في مكتب الأراضي قبل دفع أي مبلغ."
+  "Confirm ownership at the Land Office before any money moves.": "تحقق من الملكية في مكتب الأراضي قبل دفع أي مبلغ.",
+  "Searched listings": "تم البحث في الإعلانات",
+  "Checked listing facts": "تم التحقق من بيانات الإعلان",
+  "Calculated fees": "تم حساب الرسوم",
+  "Checked token unlocks (Tokenomist)": "تم التحقق من فتح الرموز (Tokenomist)",
+  "Read co-buy rules": "تمت قراءة قواعد الشراء المشترك",
+  "Opened a page": "تم فتح صفحة",
+  "Searched other websites' listings": "تم البحث في إعلانات مواقع أخرى",
+  "Checked market asking prices": "تم التحقق من الأسعار المطلوبة في السوق",
+  "Checked the price forecast": "تم التحقق من توقع الأسعار",
+  "Compared with the market": "تمت المقارنة بالسوق"
 } satisfies Dictionary;

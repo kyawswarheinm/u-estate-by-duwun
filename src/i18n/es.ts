@@ -473,5 +473,15 @@ export const es = {
   "Compared with {count} asking prices in {district}: at the median.": "Comparado con {count} precios pedidos en {district}: en la mediana.",
   "Price per m² here: {mine}. Median on listing websites: {median}.": "Precio por m² aquí: {mine}. Mediana en sitios de anuncios: {median}.",
   "Asking prices on listing websites, not sale prices.": "Precios pedidos en sitios de anuncios, no precios de venta.",
-  "Confirm ownership at the Land Office before any money moves.": "Confirma la propiedad en la Oficina de Tierras antes de mover dinero."
+  "Confirm ownership at the Land Office before any money moves.": "Confirma la propiedad en la Oficina de Tierras antes de mover dinero.",
+  "Searched listings": "Anuncios buscados",
+  "Checked listing facts": "Datos del anuncio revisados",
+  "Calculated fees": "Comisiones calculadas",
+  "Checked token unlocks (Tokenomist)": "Desbloqueos de tokens revisados (Tokenomist)",
+  "Read co-buy rules": "Reglas de compra conjunta leídas",
+  "Opened a page": "Página abierta",
+  "Searched other websites' listings": "Anuncios de otros sitios buscados",
+  "Checked market asking prices": "Precios pedidos del mercado revisados",
+  "Checked the price forecast": "Previsión de precios revisada",
+  "Compared with the market": "Comparado con el mercado"
 } satisfies Dictionary;

@@ -1,5 +1,6 @@
 "use client";
 import { useI18n } from "@/i18n/provider";
+import type { MessageKey } from "@/i18n";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,7 +14,8 @@ import { LocaleSelect } from "./LocaleSelect";
 // The agent's tools are read-only (search, facts, fees, token unlocks, rules, market data) and run through /api/agent-tools.
 // Tool names must match scripts/create-voice-agent.mjs and src/lib/assistant-tools.ts.
 
-const TOOL_LABEL: Record<string, string> = {
+// English source text = dictionary keys, so the transcript chips follow the page language.
+const TOOL_LABEL: Record<string, MessageKey> = {
   search_listings: "Searched listings",
   get_listing_facts: "Checked listing facts",
   compute_fees: "Calculated fees",
@@ -47,7 +49,7 @@ export function VoiceAgentDock({ userName }: { userName: string }) {
 }
 
 function Dock({ userName }: { userName: string }) {
-  const { locale: uiLocale } = useI18n();
+  const { locale: uiLocale, t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -61,7 +63,7 @@ function Dock({ userName }: { userName: string }) {
   const add = (l: Line) => setLines((prev) => [...prev.slice(-40), l]);
 
   const serverTool = (name: string) => async (params: Record<string, unknown>) => {
-    add({ role: "tool", text: TOOL_LABEL[name] ?? name });
+    add({ role: "tool", text: TOOL_LABEL[name] ? t(TOOL_LABEL[name]) : name });
     const r = await fetch("/api/agent-tools", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tool: name, input: params }) });
     const j = await r.json().catch(() => ({ message: "Tool failed" }));
     return JSON.stringify(r.ok ? j.result : { error: j.message ?? "Tool failed" });
@@ -81,7 +83,7 @@ function Dock({ userName }: { userName: string }) {
       open_page: (params: Record<string, unknown>) => {
         const path = String(params.path ?? "");
         if (!SAFE_PATH.test(path)) return "That page is not available.";
-        add({ role: "tool", text: `${TOOL_LABEL.open_page}: ${path}` });
+        add({ role: "tool", text: `${t(TOOL_LABEL.open_page)}: ${path}` });
         router.push(path);
         return `Opened ${path}`;
       },

@@ -473,5 +473,15 @@ export const th = {
   "Compared with {count} asking prices in {district}: at the median.": "เทียบกับราคาที่ประกาศขาย {count} รายการใน{district}: เท่ากับค่ากลาง",
   "Price per m² here: {mine}. Median on listing websites: {median}.": "ราคาต่อ ตร.ม. ของที่นี่: {mine} ค่ากลางบนเว็บไซต์ประกาศ: {median}",
   "Asking prices on listing websites, not sale prices.": "ราคาที่ประกาศบนเว็บไซต์ ไม่ใช่ราคาขายจริง",
-  "Confirm ownership at the Land Office before any money moves.": "ตรวจสอบกรรมสิทธิ์ที่สำนักงานที่ดินก่อนจ่ายเงินใดๆ"
+  "Confirm ownership at the Land Office before any money moves.": "ตรวจสอบกรรมสิทธิ์ที่สำนักงานที่ดินก่อนจ่ายเงินใดๆ",
+  "Searched listings": "ค้นหาประกาศแล้ว",
+  "Checked listing facts": "ตรวจข้อมูลประกาศแล้ว",
+  "Calculated fees": "คำนวณค่าธรรมเนียมแล้ว",
+  "Checked token unlocks (Tokenomist)": "ตรวจการปลดล็อกโทเคนแล้ว (Tokenomist)",
+  "Read co-buy rules": "อ่านกฎการซื้อร่วมแล้ว",
+  "Opened a page": "เปิดหน้าแล้ว",
+  "Searched other websites' listings": "ค้นหาประกาศจากเว็บไซต์อื่นแล้ว",
+  "Checked market asking prices": "ตรวจราคาที่ประกาศในตลาดแล้ว",
+  "Checked the price forecast": "ตรวจการคาดการณ์ราคาแล้ว",
+  "Compared with the market": "เทียบกับตลาดแล้ว"
 } satisfies Dictionary;

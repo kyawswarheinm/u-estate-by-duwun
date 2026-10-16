@@ -471,7 +471,17 @@ export const en = {
   "Compared with {count} asking prices in {district}: at the median.": "Compared with {count} asking prices in {district}: at the median.",
   "Price per m² here: {mine}. Median on listing websites: {median}.": "Price per m² here: {mine}. Median on listing websites: {median}.",
   "Asking prices on listing websites, not sale prices.": "Asking prices on listing websites, not sale prices.",
-  "Confirm ownership at the Land Office before any money moves.": "Confirm ownership at the Land Office before any money moves."
+  "Confirm ownership at the Land Office before any money moves.": "Confirm ownership at the Land Office before any money moves.",
+  "Searched listings": "Searched listings",
+  "Checked listing facts": "Checked listing facts",
+  "Calculated fees": "Calculated fees",
+  "Checked token unlocks (Tokenomist)": "Checked token unlocks (Tokenomist)",
+  "Read co-buy rules": "Read co-buy rules",
+  "Opened a page": "Opened a page",
+  "Searched other websites' listings": "Searched other websites' listings",
+  "Checked market asking prices": "Checked market asking prices",
+  "Checked the price forecast": "Checked the price forecast",
+  "Compared with the market": "Compared with the market"
 } as const;
 export type MessageKey = keyof typeof en;
 export type Dictionary = { [K in MessageKey]: string };

@@ -473,5 +473,15 @@ export const zhHant = {
   "Compared with {count} asking prices in {district}: at the median.": "與{district}的 {count} 筆開價相比：等於中位數。",
   "Price per m² here: {mine}. Median on listing websites: {median}.": "此物件每平方公尺：{mine}。刊登網站中位數：{median}。",
   "Asking prices on listing websites, not sale prices.": "為刊登網站上的開價，並非成交價。",
-  "Confirm ownership at the Land Office before any money moves.": "在任何款項支付前，請先到土地廳確認產權。"
+  "Confirm ownership at the Land Office before any money moves.": "在任何款項支付前，請先到土地廳確認產權。",
+  "Searched listings": "已搜尋刊登",
+  "Checked listing facts": "已查看刊登資料",
+  "Calculated fees": "已計算費用",
+  "Checked token unlocks (Tokenomist)": "已查看代幣解鎖（Tokenomist）",
+  "Read co-buy rules": "已讀取共同購買規則",
+  "Opened a page": "已開啟頁面",
+  "Searched other websites' listings": "已搜尋其他網站的刊登",
+  "Checked market asking prices": "已查看市場開價",
+  "Checked the price forecast": "已查看價格預測",
+  "Compared with the market": "已與市場比較"
 } satisfies Dictionary;
