@@ -33,7 +33,7 @@ export default async function OffersPage({ params }: { params: Promise<{ id: str
     <article className="grid gap-5">
       <header>
         <p className="text-sm text-ink-soft"><Link href={`/listing/${id}`} className="underline"><span aria-hidden="true" className="inline-block rtl:-scale-x-100">←</span> <bdi>{property.title}</bdi></Link></p>
-        <h1 className="text-3xl font-bold"><Text message="FairOffer room" /></h1>
+        <h1 className="page-title"><Text message="FairOffer room" /></h1>
         <p className="mt-1 text-ink-soft"><Text message="Asking {amount} · round {status} · sealed offers until the seller closes the round" values={{ amount: formatMoney(listing.askingPriceThb, locale), status: translateLabel(locale, round.status) }} /></p>
       </header>
 

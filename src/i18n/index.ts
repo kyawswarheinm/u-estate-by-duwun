@@ -15,7 +15,7 @@ export function resolveLocale(cookie: unknown, profile: unknown): Locale {
 }
 export function translator(locale: Locale) {
   return (key: MessageKey, values: Record<string, string | number> = {}) =>
-    dictionaries[locale][key].replace(/\{(\w+)\}/g, (token, name: string) =>
+    (dictionaries[locale][key] ?? en[key] ?? String(key)).replace(/\{(\w+)\}/g, (token, name: string) =>
       Object.hasOwn(values, name) ? String(values[name]) : token);
 }
 /** Data and server validation messages can include source labels outside the UI dictionary.
@@ -34,6 +34,11 @@ export const FX_DATE = "2025-01-02";
 export const FX_RATES: Record<Currency, number> = { THB: 1, USD: 0.02919, EUR: 0.02828, CNY: 0.21309 };
 export function formatMoney(amountThb: number, locale: Locale, currency: Currency = "THB") {
   return new Intl.NumberFormat(locale, { style: "currency", currency, numberingSystem: "latn", maximumFractionDigits: 0 })
+    .format(amountThb * FX_RATES[currency]);
+}
+/** Short form for tight labels, e.g. "฿3K", "$146", "฿2.5M". Same conversion as formatMoney. */
+export function formatMoneyCompact(amountThb: number, locale: Locale, currency: Currency = "THB") {
+  return new Intl.NumberFormat(locale, { style: "currency", currency, currencyDisplay: "narrowSymbol", numberingSystem: "latn", notation: "compact", maximumFractionDigits: 1 })
     .format(amountThb * FX_RATES[currency]);
 }
 export function formatNumber(value: number, locale: Locale) {

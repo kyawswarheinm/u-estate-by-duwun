@@ -1,6 +1,6 @@
 import "server-only";
 
-// Which partner integrations are live. Shown honestly on /partners (D-36). Never exposes key values.
+// Which partner integrations are live. Used by the voice and assistant routes. Never exposes key values.
 export const ELEVENLABS = {
   apiKey: () => process.env.ELEVENLABS_API_KEY,
   voiceId: () => process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM",

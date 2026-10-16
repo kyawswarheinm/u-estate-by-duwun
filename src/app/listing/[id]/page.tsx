@@ -20,6 +20,8 @@ import { createCobuyGroup } from "@/app/actions";
 import { openOfferRound } from "@/app/sell/actions";
 import { compareToMarket } from "@/lib/market-data/analytics";
 import { MarketType } from "@/lib/market-data";
+import { googleMapsLink } from "@/lib/listings/maps";
+import { UPalPageContext } from "@/components/upal/UPalProvider";
 
 // A median of one or two asking prices says nothing useful, so the comparison needs at least three.
 const MIN_MARKET_COMPARE = 3;
@@ -52,6 +54,12 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
 
   return (
     <article className="grid gap-5">
+      <UPalPageContext facts={{
+        listing_id: listing.id, title: property.title, type: property.type, for: listing.kind, district: property.district, province: property.province,
+        asking_price_thb: listing.askingPriceThb, area_sqm: property.areaSqm, verification_status: listing.verificationStatus,
+        status: listing.archivedAt ? "archived" : listing.status, viewer_is_seller: isOwner,
+        market_diff_pct: market?.available && market.listings_compared >= MIN_MARKET_COMPARE ? market.diff_pct : null,
+      }} />
       {isOwner && (
         <section aria-label="Your listing" className="grid gap-3 rounded-[14px] bg-midnight p-5 text-ice sm:grid-cols-[1fr_auto] sm:items-center">
           <div>
@@ -77,7 +85,11 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
       <ListingPhotos id={listing.id} locale={me?.locale}/>
       <header>
         <p className="text-sm text-deep"><Text message="{type} in {district}, {province} · {area} m² · for {kind}" values={{ type: translateLabel(locale, property.type), district: property.district, province: property.province, area: property.areaSqm, kind: translateLabel(locale, listing.kind) }} /></p>
-        <h1 className="font-display text-4xl font-semibold sm:text-5xl"><bdi>{property.title}</bdi></h1>
+        <h1 className="page-title"><bdi>{property.title}</bdi></h1>
+        {/* No stored coordinates for U-Estate properties yet: an area search, labelled as such. */}
+        <a href={googleMapsLink({ district: property.district, province: property.province })!.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm font-semibold text-deep underline">
+          <Text message="Area on Google Maps" /> ↗
+        </a>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <VerificationBadge status={listing.verificationStatus} />
           <span className="text-sm text-ink-soft"><Text message="Seller: {name} · Deed type: {deed}" values={{ name: seller.name, deed: property.deedType }} /></span>

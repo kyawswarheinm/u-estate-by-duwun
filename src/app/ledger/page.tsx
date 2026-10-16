@@ -5,6 +5,7 @@ import { thb } from "@/lib/rules";
 import { hashChain, headHash } from "@/lib/ledger-hash";
 import { avalancheConfigured } from "@/lib/avalanche";
 import { AnchorPanel } from "@/components/AnchorPanel";
+import { UPalPageContext } from "@/components/upal/UPalProvider";
 
 const LABEL = {
   commit_test_funds: "Commitment (test money)",
@@ -28,8 +29,13 @@ export default async function LedgerPage() {
 
   return (
     <article className="grid gap-4">
+      <UPalPageContext facts={{
+        entries: db.ledger.length, all_entries_simulated: db.ledger.every((e) => e.isSimulated), entries_anchored: anchoredUpTo,
+        entries_not_yet_anchored: db.ledger.filter((e) => e.id > anchoredUpTo).length, latest_anchor_network: latest?.network ?? null,
+        latest_anchor_tx: latest?.txHash ?? null, anchoring_configured: avalancheConfigured(), money: "test money only",
+      }} />
       <header>
-        <h1 className="text-3xl font-bold"><Text message="ledgerTitle" /></h1>
+        <h1 className="page-title"><Text message="ledgerTitle" /></h1>
         <p className="mt-1 max-w-3xl text-ink-soft">
           <Text message="What you see here is exactly what is (or would be) registered: co-owner shares, loans and accepted offers. There are no hidden owners and no side records. Entries can only be added, never edited. In this demo every entry is simulated and uses test money." />
         </p>

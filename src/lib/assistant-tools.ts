@@ -12,6 +12,8 @@ import { lookupToken } from "./tokenomist";
 import { compareToMarket, getMarketStats, getPriceForecast, MarketStatsSchema, PriceForecastSchema } from "./market-data/analytics";
 import { findMarketListings, MarketSearchSchema } from "./market-data/find";
 import { MarketType, provenance } from "./market-data";
+import { findRealListings, RealListingSearchSchema } from "./listings/find";
+import { googleMapsLink } from "./listings/maps";
 
 export const ToolInputs = {
   search_listings: SearchFiltersSchema.partial().extend({
@@ -30,6 +32,8 @@ export const ToolInputs = {
   get_market_stats: MarketStatsSchema,
   get_price_forecast: PriceForecastSchema,
   compare_to_market: z.object({ listing_id: z.string().max(40).describe("A U-Estate listing id or code, e.g. l-condo") }),
+  // Real third-party listings imported with permission (src/data/market/verified-listings.json).
+  search_real_listings: RealListingSearchSchema,
 } as const;
 export type ToolName = keyof typeof ToolInputs;
 export const TOOL_NAMES = Object.keys(ToolInputs) as ToolName[];
@@ -44,6 +48,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   get_market_stats: "Get asking-price statistics from listing websites for a property type and district: median, 25th and 75th percentile price per m², median price, median size and the number of listings. Asking prices, not sale prices.",
   get_price_forecast: "Get the price-index forecast for a property type: the 80% range (p10 to p90) and central value months ahead, with the model name and the index source. A forecast, never a guarantee.",
   compare_to_market: "Compare one U-Estate listing's asking price per m² with asking prices on listing websites in its district: the median, the difference in % and how many listings were compared.",
+  search_real_listings: "Search real third-party listings (owners, agencies, licensed feeds) by sale/rent, types, area, budget, bedrooms, bathrooms, furnishing or amenities, or fetch up to 5 by id to compare. Returns stated facts only, with source, original listing link, Google Maps link, verification and availability. Use after search_listings.",
 };
 
 /** Finds a U-Estate listing by id or code, with its property. */
@@ -100,6 +105,7 @@ export async function listingFacts(listingId: string) {
     title: property.title,
     type: property.type,
     location: `${property.district}, ${property.province}`,
+    google_maps_url: googleMapsLink({ district: property.district, province: property.province })?.url ?? null, // area search: no stored coordinates
     area_sqm: property.areaSqm,
     deed_type: property.deedType,
     asking_price_thb: panel.askingThb,
@@ -189,5 +195,7 @@ export async function runTool(name: string, rawInput: unknown): Promise<unknown>
       return getPriceForecast(input);
     case "compare_to_market":
       return compareTool((input as { listing_id: string }).listing_id);
+    case "search_real_listings":
+      return findRealListings(input);
   }
 }

@@ -20,7 +20,9 @@
     "qa:archive": "node --env-file-if-exists=.env.local scripts/db/archive-qa-fixtures.mjs --apply",
     "db:make-reviewer": "node --env-file-if-exists=.env.local scripts/db/make-reviewer.mjs",
     "valuation:dataset": "npx --yes tsx@4.20.6 scripts/make-demo-dataset.ts",
-    "eval:valuation": "npx --yes tsx@4.20.6 scripts/eval-valuation.ts"
+    "eval:valuation": "npx --yes tsx@4.20.6 scripts/eval-valuation.ts",
+    "listings:import": "npx --yes tsx@4.20.6 scripts/import-listings.ts",
+    "listings:refresh": "npx --yes tsx@4.20.6 scripts/import-listings.ts --refresh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",
